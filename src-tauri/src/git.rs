@@ -318,6 +318,11 @@ fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), String> {
     Ok(())
 }
 
+pub fn emit_current_status(app: &AppHandle) -> Result<(), String> {
+    let repo = Repository::open(repo_dir(app)?).map_err(git_err)?;
+    emit_status(app, &status_of(&repo)?)
+}
+
 pub fn iso8601_now() -> String {
     let secs = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

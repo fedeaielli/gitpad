@@ -1,0 +1,250 @@
+<script lang="ts">
+  import { onMount } from 'svelte'
+  import { invoke } from '@tauri-apps/api/core'
+  import loader from '@monaco-editor/loader'
+  import * as monaco from 'monaco-editor'
+  import editorWorker from 'monaco-editor/editor/editor.worker?worker'
+  import jsonWorker from 'monaco-editor/language/json/json.worker?worker'
+  import cssWorker from 'monaco-editor/language/css/css.worker?worker'
+  import htmlWorker from 'monaco-editor/language/html/html.worker?worker'
+  import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
+  import { tabs } from '../stores/tabs.svelte'
+  import { ui } from '../stores/ui.svelte'
+  import { gitStatus, markPushed, type GitStatus } from '../stores/git.svelte'
+  import { debounce } from '../utils/debounce'
+
+  self.MonacoEnvironment = {
+    getWorker(_workerId, label) {
+      if (label === 'json') return new jsonWorker()
+      if (label === 'css' || label === 'scss' || label === 'less') return new cssWorker()
+      if (label === 'html' || label === 'handlebars' || label === 'razor') return new htmlWorker()
+      if (label === 'typescript' || label === 'javascript') return new tsWorker()
+      return new editorWorker()
+    },
+  }
+  loader.config({ monaco })
+
+  monaco.editor.defineTheme('gitpad-dark', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#1e1e1e',
+      'editor.foreground': '#d4d4d4',
+      'editorLineNumber.foreground': '#6e6e6e',
+      'editorLineNumber.activeForeground': '#d4d4d4',
+      'editor.selectionBackground': '#2f6fa866',
+      'editorCursor.foreground': '#d4d4d4',
+      'editorIndentGuide.background1': '#3c3c3c',
+    },
+  })
+
+  let host: HTMLDivElement
+  let editor: monaco.editor.IStandaloneCodeEditor | undefined
+  let saveError = $state<string | null>(null)
+  let pendingId = ''
+  let currentPath = ''
+
+  const models = new Map<string, monaco.editor.ITextModel>()
+  const saved = new Map<string, string>()
+  const inFlight = new Set<string>()
+  const viewStates = new Map<string, monaco.editor.ICodeEditorViewState | null>()
+
+  const persist = debounce(() => void savePending(), 2000)
+  let pushTimer: ReturnType<typeof setTimeout> | undefined
+
+  function activeTab() {
+    return tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null
+  }
+
+  async function savePending() {
+    const id = pendingId
+    pendingId = ''
+    const tab = tabs.tabs.find((t) => t.id === id)
+    if (!tab) return
+    const content = tab.content
+    inFlight.add(tab.path)
+    try {
+      await invoke('fs_write_file', { path: tab.path, content })
+      saved.set(tab.path, content)
+      if (tab.content === content) tab.modified = false
+      saveError = null
+      armPush()
+    } catch (e) {
+      tab.modified = true
+      saveError = `save failed: ${String(e)}`
+    } finally {
+      inFlight.delete(tab.path)
+    }
+  }
+
+  function armPush() {
+    clearTimeout(pushTimer)
+    pushTimer = setTimeout(() => void push(), 30_000)
+  }
+
+  async function push() {
+    if (gitStatus.syncing) return
+    gitStatus.syncing = true
+    try {
+      markPushed(await invoke<GitStatus>('git_push', { message: null }))
+    } catch (e) {
+      const message = String(e)
+      if (!message.includes('not authenticated')) gitStatus.error = message
+    } finally {
+      gitStatus.syncing = false
+    }
+  }
+
+  function onEdit() {
+    const tab = activeTab()
+    const model = editor?.getModel()
+    if (!tab || !model) return
+    tab.content = model.getValue()
+    tab.modified = true
+    pendingId = tab.id
+    persist.run()
+  }
+
+  function applyActive() {
+    const tab = activeTab()
+    const path = tab?.path ?? ''
+    if (path === currentPath) return
+    if (editor && currentPath) viewStates.set(currentPath, editor.saveViewState())
+    if (pendingId && pendingId !== path) {
+      persist.cancel()
+      void savePending()
+    }
+    currentPath = path
+    if (!editor) return
+    if (!tab) {
+      editor.setModel(null)
+      return
+    }
+    let model = models.get(path)
+    if (!model) {
+      model = monaco.editor.createModel(tab.content, tab.language, monaco.Uri.file(path))
+      models.set(path, model)
+      saved.set(path, tab.content)
+    }
+    editor.setModel(model)
+    const state = viewStates.get(path)
+    if (state) editor.restoreViewState(state)
+    editor.focus()
+  }
+
+  $effect(() => {
+    applyActive()
+  })
+
+  // Closed tabs: keep the last edits and drop the model.
+  $effect(() => {
+    const open = new Set(tabs.tabs.map((t) => t.path))
+    for (const [path, model] of models) {
+      if (open.has(path)) continue
+      if (!inFlight.has(path) && model.getValue() !== saved.get(path)) {
+        void invoke('fs_write_file', { path, content: model.getValue() }).catch((e) => {
+          saveError = `save failed: ${String(e)}`
+        })
+      }
+      if (editor?.getModel() === model) editor.setModel(null)
+      model.dispose()
+      models.delete(path)
+      saved.delete(path)
+      viewStates.delete(path)
+    }
+  })
+
+  $effect(() => {
+    monaco.editor.setTheme(ui.editorTheme)
+  })
+
+  async function onBlur() {
+    if (pendingId) {
+      persist.cancel()
+      await savePending()
+    }
+    await push()
+  }
+
+  onMount(() => {
+    editor = monaco.editor.create(host, {
+      theme: ui.editorTheme,
+      automaticLayout: true,
+      minimap: { enabled: false },
+      fontSize: 13,
+      fontFamily: 'ui-monospace, monospace',
+      scrollBeyondLastLine: false,
+      renderWhitespace: 'selection',
+    })
+    const contentSub = editor.onDidChangeModelContent(onEdit)
+    const cursorSub = editor.onDidChangeCursorPosition((e) => {
+      ui.cursor = { line: e.position.lineNumber, column: e.position.column }
+    })
+    editor.addAction({
+      id: 'gitpad.findReplace',
+      label: 'Find and Replace',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyH],
+      run: () => {
+        void editor?.getAction('editor.action.startFindReplaceAction')?.run()
+      },
+    })
+    window.addEventListener('blur', onBlur)
+    applyActive()
+
+    return () => {
+      window.removeEventListener('blur', onBlur)
+      contentSub.dispose()
+      cursorSub.dispose()
+      persist.cancel()
+      clearTimeout(pushTimer)
+      models.forEach((m) => m.dispose())
+      models.clear()
+      editor?.dispose()
+    }
+  })
+</script>
+
+<div class="pane">
+  <div class="editor" bind:this={host}></div>
+  {#if !activeTab()}
+    <p class="empty">No file open</p>
+  {/if}
+  {#if saveError}
+    <p class="error">{saveError}</p>
+  {/if}
+</div>
+
+<style>
+  .pane {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+  .editor {
+    position: absolute;
+    inset: 0;
+  }
+  .empty {
+    position: absolute;
+    top: 40%;
+    right: 0;
+    left: 0;
+    margin: 0;
+    color: var(--muted);
+    text-align: center;
+    pointer-events: none;
+  }
+  .error {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    margin: 0;
+    padding: 4px 8px;
+    border: 1px solid var(--err);
+    border-radius: 3px;
+    background: var(--bg-panel);
+    color: var(--err);
+    font-size: 12px;
+  }
+</style>
