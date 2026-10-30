@@ -26,6 +26,8 @@
 
   type Step = 'welcome' | 'auth' | 'repo' | 'done'
 
+  let { onskip }: { onskip: () => void } = $props()
+
   let step = $state<Step>('welcome')
   let token = $state('')
   let user = $state<UserInfo | null>(null)
@@ -160,6 +162,7 @@
     {#if error}
       <p class="error">{error}</p>
     {/if}
+    <button class="skip" onclick={onskip}>Skip configuration</button>
   </div>
 </div>
 
@@ -243,5 +246,16 @@
   }
   .primary {
     color: var(--ok);
+  }
+  .skip {
+    align-self: center;
+    padding: 2px 4px;
+    border: 0;
+    color: var(--muted);
+    font-size: 11px;
+    text-decoration: underline;
+  }
+  .skip:hover {
+    color: var(--text);
   }
 </style>
