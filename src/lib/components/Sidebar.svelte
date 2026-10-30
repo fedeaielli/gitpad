@@ -1,12 +1,23 @@
 <script lang="ts">
   import FileTree from './FileTree.svelte'
   import GitPanel from './GitPanel.svelte'
+  import { tabs } from '../stores/tabs.svelte'
+  import { ui, cyclePreview } from '../stores/ui.svelte'
 
   let filesOpen = $state(true)
   let gitOpen = $state(true)
+
+  const isMarkdown = $derived(
+    tabs.tabs.find((t) => t.id === tabs.activeTabId)?.language === 'markdown',
+  )
 </script>
 
 <aside class="sidebar">
+  <div class="actions">
+    <button class="preview" onclick={cyclePreview} disabled={!isMarkdown}>
+      Preview: {ui.previewMode}
+    </button>
+  </div>
   <section class="files">
     <button class="section" onclick={() => (filesOpen = !filesOpen)}>
       <span class="chevron">{filesOpen ? '▾' : '▸'}</span> Files
@@ -36,6 +47,27 @@
     min-height: 0;
     background: var(--bg-panel);
     border-right: 1px solid var(--border);
+  }
+  .actions {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .preview {
+    width: 100%;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .preview:hover:not(:disabled) {
+    color: var(--text);
+  }
+  .preview:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
   section {
     display: flex;

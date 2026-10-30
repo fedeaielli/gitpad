@@ -1,5 +1,8 @@
 <script module lang="ts">
+  import type { editor } from 'monaco-editor'
+
   let flush: (() => Promise<void>) | null = null
+  let current = $state<editor.IStandaloneCodeEditor | null>(null)
 
   export function registerFlush(fn: (() => Promise<void>) | null) {
     flush = fn
@@ -8,6 +11,15 @@
   /// Used by the close handshake in App.svelte before the app exits.
   export async function flushPendingSave() {
     await flush?.()
+  }
+
+  /// Shared with MarkdownPreview so it can sync its scroll position.
+  export function getEditor() {
+    return current
+  }
+
+  export function setEditor(next: editor.IStandaloneCodeEditor | null) {
+    current = next
   }
 </script>
 
@@ -30,6 +42,7 @@
     type GitStatus,
   } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
+  import MarkdownPreview from './MarkdownPreview.svelte'
 
   self.MonacoEnvironment = {
     getWorker(_workerId, label) {
@@ -74,6 +87,9 @@
   function activeTab() {
     return tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null
   }
+
+  const isMarkdown = $derived(activeTab()?.language === 'markdown')
+  const previewVisible = $derived(ui.previewMode !== 'off' && isMarkdown)
 
   async function savePending() {
     const id = pendingId
@@ -200,6 +216,7 @@
       scrollBeyondLastLine: false,
       renderWhitespace: 'selection',
     })
+    setEditor(editor)
     const contentSub = editor.onDidChangeModelContent(onEdit)
     const cursorSub = editor.onDidChangeCursorPosition((e) => {
       ui.cursor = { line: e.position.lineNumber, column: e.position.column }
@@ -221,6 +238,7 @@
 
     return () => {
       registerFlush(null)
+      setEditor(null)
       window.removeEventListener('blur', onBlur)
       contentSub.dispose()
       cursorSub.dispose()
@@ -234,9 +252,14 @@
 </script>
 
 <div class="pane">
-  <div class="editor" bind:this={host}></div>
-  {#if !activeTab()}
-    <p class="empty">No file open</p>
+  <div class="editor-wrap" class:hidden={ui.previewMode === 'full' && isMarkdown}>
+    <div class="editor" bind:this={host}></div>
+    {#if !activeTab()}
+      <p class="empty">No file open</p>
+    {/if}
+  </div>
+  {#if previewVisible}
+    <div class="preview"><MarkdownPreview /></div>
   {/if}
   {#if saveError}
     <p class="error">{saveError}</p>
@@ -246,12 +269,26 @@
 <style>
   .pane {
     position: relative;
+    display: flex;
     flex: 1;
     min-height: 0;
+  }
+  .editor-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  .editor-wrap.hidden {
+    display: none;
   }
   .editor {
     position: absolute;
     inset: 0;
+  }
+  .preview {
+    flex: 1;
+    min-width: 0;
+    border-left: 1px solid var(--border);
   }
   .empty {
     position: absolute;

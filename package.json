@@ -24,6 +24,7 @@
     "@monaco-editor/loader": "^1.7.0",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-opener": "^2.7.2",
+    "github-markdown-css": "^5.9.0",
     "highlight.js": "^11.12.0",
     "marked": "^18.1.2",
     "monaco-editor": "^0.57.0"

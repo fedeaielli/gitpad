@@ -1,3 +1,5 @@
+import { tabs } from './tabs.svelte'
+
 export interface FileNode {
   name: string
   path: string
@@ -16,3 +18,10 @@ export const ui = $state({
   editorTheme: 'gitpad-dark',
   cursor: { line: 1, column: 1 },
 })
+
+/// off → split → full → off, only while a markdown tab is active.
+export function cyclePreview() {
+  const active = tabs.tabs.find((t) => t.id === tabs.activeTabId)
+  if (active?.language !== 'markdown') return
+  ui.previewMode = ui.previewMode === 'off' ? 'split' : ui.previewMode === 'split' ? 'full' : 'off'
+}
