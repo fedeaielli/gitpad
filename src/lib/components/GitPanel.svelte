@@ -1,6 +1,12 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
-  import { gitStatus, applyGitStatus, markPushed, type GitStatus } from '../stores/git.svelte'
+  import {
+    gitStatus,
+    applyGitStatus,
+    isIgnorableSyncError,
+    markPushed,
+    type GitStatus,
+  } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
 
   let commitMessage = $state('')
@@ -9,13 +15,15 @@
   let showClone = $state(false)
 
   async function push(message: string | null) {
+    if (gitStatus.syncing) return false
     gitStatus.syncing = true
     gitStatus.error = null
     try {
       markPushed(await invoke<GitStatus>('git_push', { message }))
       return true
     } catch (e) {
-      gitStatus.error = String(e)
+      const text = String(e)
+      if (!isIgnorableSyncError(text)) gitStatus.error = text
       return false
     } finally {
       gitStatus.syncing = false

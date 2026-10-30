@@ -56,7 +56,7 @@ pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, String> {
         .map_err(|e| format!("read repos dir: {e}"))?
         .filter_map(Result::ok)
         .map(|e| e.path())
-        .filter(|p| p.is_dir())
+        .filter(|p| p.is_dir() && p.join(".git").exists())
         .collect();
     dirs.sort();
     dirs.into_iter()
@@ -362,6 +362,12 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), String> {
     let target = repos_root(&app)?.join(name);
     if target.join(".git").exists() {
         return Ok(());
+    }
+    if let Ok(existing) = repo_dir(&app) {
+        return Err(format!(
+            "a repository is already cloned at {}; remove it before cloning another",
+            existing.display()
+        ));
     }
     let token = auth::token().ok();
     tokio::task::spawn_blocking(move || {

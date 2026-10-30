@@ -1,3 +1,16 @@
+<script module lang="ts">
+  let flush: (() => Promise<void>) | null = null
+
+  export function registerFlush(fn: (() => Promise<void>) | null) {
+    flush = fn
+  }
+
+  /// Used by the close handshake in App.svelte before the app exits.
+  export async function flushPendingSave() {
+    await flush?.()
+  }
+</script>
+
 <script lang="ts">
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
@@ -8,9 +21,14 @@
   import cssWorker from 'monaco-editor/language/css/css.worker?worker'
   import htmlWorker from 'monaco-editor/language/html/html.worker?worker'
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
-  import { tabs } from '../stores/tabs.svelte'
+  import { tabs, discarded } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
-  import { gitStatus, markPushed, type GitStatus } from '../stores/git.svelte'
+  import {
+    gitStatus,
+    isIgnorableSyncError,
+    markPushed,
+    type GitStatus,
+  } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
 
   self.MonacoEnvironment = {
@@ -90,7 +108,7 @@
       markPushed(await invoke<GitStatus>('git_push', { message: null }))
     } catch (e) {
       const message = String(e)
-      if (!message.includes('not authenticated')) gitStatus.error = message
+      if (!isIgnorableSyncError(message)) gitStatus.error = message
     } finally {
       gitStatus.syncing = false
     }
@@ -142,11 +160,16 @@
     const open = new Set(tabs.tabs.map((t) => t.path))
     for (const [path, model] of models) {
       if (open.has(path)) continue
-      if (!inFlight.has(path) && model.getValue() !== saved.get(path)) {
+      if (
+        !discarded.has(path) &&
+        !inFlight.has(path) &&
+        model.getValue() !== saved.get(path)
+      ) {
         void invoke('fs_write_file', { path, content: model.getValue() }).catch((e) => {
           saveError = `save failed: ${String(e)}`
         })
       }
+      discarded.delete(path)
       if (editor?.getModel() === model) editor.setModel(null)
       model.dispose()
       models.delete(path)
@@ -190,9 +213,14 @@
       },
     })
     window.addEventListener('blur', onBlur)
+    registerFlush(async () => {
+      persist.cancel()
+      await savePending()
+    })
     applyActive()
 
     return () => {
+      registerFlush(null)
       window.removeEventListener('blur', onBlur)
       contentSub.dispose()
       cursorSub.dispose()

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
   import { ui, type FileNode } from '../stores/ui.svelte'
-  import { tabs, openTab, activateTab, closeTab } from '../stores/tabs.svelte'
+  import { tabs, openTab, activateTab, discardUnder, retarget } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
 
   type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'rename' | 'delete'
@@ -99,7 +99,15 @@
       if (menu.mode === 'new-folder') {
         await invoke('fs_create_dir', { path: join(base, value) })
       } else if (menu.mode === 'rename' && menu.node) {
-        await invoke('fs_rename', { from: menu.node.path, to: join(parentOf(menu.node.path), value) })
+        const from = menu.node.path
+        const to = join(parentOf(from), value)
+        if (to !== from) {
+          await invoke('fs_rename', { from, to })
+          retarget(from, to)
+          expanded = expanded.map((p) =>
+            p === from || p.startsWith(`${from}/`) ? to + p.slice(from.length) : p,
+          )
+        }
       }
       menu = null
       await loadTree()
@@ -113,8 +121,7 @@
     const path = menu.node.path
     try {
       await invoke('fs_delete', { path })
-      const tab = tabs.tabs.find((t) => t.path === path || t.path.startsWith(`${path}/`))
-      if (tab) closeTab(tab.id)
+      discardUnder(path)
       menu = null
       await loadTree()
     } catch (e) {

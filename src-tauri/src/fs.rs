@@ -26,9 +26,37 @@ fn resolve_in(root: &Path, path: &str) -> Result<PathBuf, String> {
         candidate.to_path_buf()
     };
     for component in rel.components() {
-        if !matches!(component, Component::Normal(_)) {
-            return Err(format!("invalid path: {path}"));
+        match component {
+            Component::Normal(name) if name == ".git" => {
+                return Err("refusing to touch .git".to_string())
+            }
+            Component::Normal(_) | Component::CurDir => {}
+            _ => return Err(format!("invalid path: {path}")),
         }
+    }
+    // Symlinks would let a path inside the clone reach files outside app_data.
+    let root = root
+        .canonicalize()
+        .map_err(|e| format!("repository: {e}"))?;
+    let abs = root.join(&rel);
+    let mut probe = abs.as_path();
+    while !probe.exists() {
+        probe = probe
+            .parent()
+            .ok_or_else(|| format!("path outside repository: {path}"))?;
+    }
+    let real = probe
+        .canonicalize()
+        .map_err(|e| format!("path {path}: {e}"))?;
+    if !real.starts_with(&root) {
+        return Err(format!("path escapes repository: {path}"));
+    }
+    if abs
+        .symlink_metadata()
+        .map(|m| m.file_type().is_symlink())
+        .unwrap_or(false)
+    {
+        return Err(format!("refusing symlink: {path}"));
     }
     Ok(rel)
 }
@@ -83,7 +111,13 @@ fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
 #[tauri::command]
 pub fn fs_read_file(app: AppHandle, path: String) -> Result<String, String> {
     let (root, rel) = resolve(&app, &path)?;
-    std::fs::read_to_string(root.join(rel)).map_err(|e| format!("read {path}: {e}"))
+    std::fs::read_to_string(root.join(rel)).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::InvalidData {
+            format!("{path} is not UTF-8 text")
+        } else {
+            format!("read {path}: {e}")
+        }
+    })
 }
 
 #[tauri::command]
@@ -115,6 +149,7 @@ pub fn fs_create_dir(app: AppHandle, path: String) -> Result<(), String> {
     if empty {
         std::fs::write(abs.join(".gitkeep"), "").map_err(|e| format!("create dir {path}: {e}"))?;
     }
+    let _ = git::emit_current_status(&app);
     Ok(())
 }
 
@@ -127,17 +162,32 @@ pub fn fs_delete(app: AppHandle, path: String) -> Result<(), String> {
     let abs = root.join(rel);
     let metadata = std::fs::symlink_metadata(&abs).map_err(|e| format!("delete {path}: {e}"))?;
     if metadata.is_dir() {
-        std::fs::remove_dir_all(&abs).map_err(|e| format!("delete {path}: {e}"))
+        std::fs::remove_dir_all(&abs).map_err(|e| format!("delete {path}: {e}"))?;
     } else {
-        std::fs::remove_file(&abs).map_err(|e| format!("delete {path}: {e}"))
+        std::fs::remove_file(&abs).map_err(|e| format!("delete {path}: {e}"))?;
     }
+    let _ = git::emit_current_status(&app);
+    Ok(())
+}
+
+fn rename_in(root: &Path, from: &str, to: &str) -> Result<(), String> {
+    let from_rel = resolve_in(root, from)?;
+    let to_rel = resolve_in(root, to)?;
+    if from_rel.as_os_str().is_empty() {
+        return Err("refusing to rename the repository root".into());
+    }
+    if root.join(&to_rel).symlink_metadata().is_ok() {
+        return Err(format!("target already exists: {to}"));
+    }
+    std::fs::rename(root.join(from_rel), root.join(to_rel)).map_err(|e| format!("rename {from}: {e}"))
 }
 
 #[tauri::command]
 pub fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), String> {
-    let (root, from_rel) = resolve(&app, &from)?;
-    let (_, to_rel) = resolve(&app, &to)?;
-    std::fs::rename(root.join(from_rel), root.join(to_rel)).map_err(|e| format!("rename {from}: {e}"))
+    let root = git::repo_dir(&app)?;
+    rename_in(&root, &from, &to)?;
+    let _ = git::emit_current_status(&app);
+    Ok(())
 }
 
 #[tauri::command]
@@ -191,6 +241,52 @@ mod tests {
         assert_eq!(tree[1].name, "b.md");
         assert_eq!(tree[0].path, "dir");
         assert_eq!(tree[0].children.as_ref().unwrap()[0].path, "dir/a.md");
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn rejects_git_directories_and_symlinks() {
+        let root = std::env::temp_dir().join(format!("gitpad-links-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("sub/.git")).unwrap();
+        std::fs::write(root.join("note.md"), "note").unwrap();
+
+        assert!(resolve_in(&root, ".git/config").is_err());
+        assert!(resolve_in(&root, "sub/.git/config").is_err());
+
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::symlink;
+            let outside =
+                std::env::temp_dir().join(format!("gitpad-outside-{}", std::process::id()));
+            std::fs::write(&outside, "secret").unwrap();
+            symlink(&outside, root.join("link")).unwrap();
+            symlink(&outside, root.join("link.md")).unwrap();
+            assert!(resolve_in(&root, "link").is_err());
+            assert!(resolve_in(&root, "link.md").is_err());
+            let _ = std::fs::remove_file(&outside);
+        }
+
+        assert_eq!(resolve_in(&root, "note.md").unwrap(), PathBuf::from("note.md"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn rename_refuses_existing_target_and_root() {
+        let root = std::env::temp_dir().join(format!("gitpad-rename-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("a.md"), "a").unwrap();
+        std::fs::write(root.join("b.md"), "b").unwrap();
+
+        assert!(rename_in(&root, "a.md", "b.md").is_err());
+        assert!(rename_in(&root, "", "x.md").is_err());
+        assert_eq!(std::fs::read_to_string(root.join("b.md")).unwrap(), "b");
+
+        rename_in(&root, "a.md", "c.md").unwrap();
+        assert!(!root.join("a.md").exists());
+        assert_eq!(std::fs::read_to_string(root.join("c.md")).unwrap(), "a");
 
         let _ = std::fs::remove_dir_all(&root);
     }
