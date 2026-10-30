@@ -36,7 +36,13 @@
 <footer class="statusbar">
   <span class="path">{active?.path ?? 'No file'}</span>
   <span class="spacer"></span>
-  <span class="badge {badge}">{badge}</span>
+  {#if badge === 'conflict'}
+    <button class="badge conflict" title="Open merge conflicts" onclick={() => (ui.conflictsHidden = false)}>
+      {badge}
+    </button>
+  {:else}
+    <span class="badge {badge}">{badge}</span>
+  {/if}
   <span>last push: {relative(gitStatus.lastPush)}</span>
   <span>{ui.cursor.line}:{ui.cursor.column}</span>
   <span>{active?.language ?? 'plaintext'}</span>

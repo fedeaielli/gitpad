@@ -66,6 +66,7 @@ pub fn run() {
             git::git_status,
             git::git_conflicts,
             git::git_resolve_conflict,
+            git::git_conflict_versions,
             github::github_validate_token,
             github::github_get_user,
             github::github_init_repo,
