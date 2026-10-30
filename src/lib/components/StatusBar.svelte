@@ -36,6 +36,9 @@
 <footer class="statusbar">
   <span class="path">{active?.path ?? 'No file'}</span>
   <span class="spacer"></span>
+  {#if gitStatus.syncing}
+    <span class="spinner" aria-label="Syncing"></span>
+  {/if}
   {#if badge === 'conflict'}
     <button class="badge conflict" title="Open merge conflicts" onclick={() => (ui.conflictsHidden = false)}>
       {badge}
@@ -95,5 +98,18 @@
   }
   .gear:hover {
     color: var(--text);
+  }
+  .spinner {
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

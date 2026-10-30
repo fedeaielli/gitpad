@@ -10,6 +10,8 @@
   import CommandPalette from './lib/components/CommandPalette.svelte'
   import ConflictModal from './lib/components/ConflictModal.svelte'
   import Settings from './lib/components/Settings.svelte'
+  import Toasts from './lib/components/Toasts.svelte'
+  import { pushToast } from './lib/stores/toasts.svelte'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
   import {
@@ -38,7 +40,7 @@
       extensions: { ...ui.extensions },
     }
     if (!configLoaded) return
-    void saveConfig(config).catch(() => {})
+    void saveConfig(config).catch((e) => pushToast(`save settings: ${String(e)}`))
   })
 
   // Settings > Supported extensions override the built-in language map.
@@ -104,12 +106,17 @@
       void invoke<GitStatus>('git_status')
         .then(applyGitStatus)
         .catch((e) => {
-          if (isIgnorableSyncError(String(e))) gitStatus.configured = false
+          const message = String(e)
+          if (isIgnorableSyncError(message)) gitStatus.configured = false
+          else pushToast(message)
         })
     }
     window.addEventListener('focus', onFocus)
     void (async () => {
-      const config = await loadConfig().catch(() => null)
+      const config = await loadConfig().catch((e) => {
+        pushToast(`load settings: ${String(e)}`)
+        return null
+      })
       if (config) {
         if (THEMES.includes(config.theme)) ui.editorTheme = config.theme
         if (config.previewMode === 'off' || config.previewMode === 'split' || config.previewMode === 'full') {
@@ -170,6 +177,8 @@
 {#if ui.settingsOpen}
   <Settings />
 {/if}
+
+<Toasts />
 
 <style>
   :global(html, body, #app) {

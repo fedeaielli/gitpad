@@ -8,6 +8,7 @@
 
   let expanded = $state<string[]>([])
   let error = $state<string | null>(null)
+  let loading = $state(true)
   let noRepo = $state(false)
   let menu = $state<{ x: number; y: number; node: FileNode | null; mode: MenuMode } | null>(null)
   let name = $state('')
@@ -54,6 +55,8 @@
       const message = String(e)
       noRepo = message.includes('no repository cloned')
       error = noRepo ? null : message
+    } finally {
+      loading = false
     }
   }
 
@@ -177,12 +180,20 @@
 {/snippet}
 
 <div class="tree" role="tree" tabindex="0" aria-label="Files" oncontextmenu={(e) => openMenu(e, null)}>
-  {#if noRepo}
-    <p class="hint">No repository yet. Clone one from the Git panel.</p>
-  {:else if error}
-    <p class="error">{error}</p>
+  {#if loading}
+    <div class="skeleton" aria-label="Loading files">
+      {#each { length: 5 } as _, i (i)}
+        <div class="bone" style="width: {65 - i * 7}%"></div>
+      {/each}
+    </div>
+  {:else}
+    {#if noRepo}
+      <p class="hint">No repository yet. Clone one from the Git panel.</p>
+    {:else if error}
+      <p class="error">{error}</p>
+    {/if}
+    {@render tree(ui.fileTree)}
   {/if}
-  {@render tree(ui.fileTree)}
 </div>
 
 {#if menu}
@@ -266,6 +277,23 @@
     margin: 4px 8px;
     color: var(--muted);
     font-size: 11px;
+  }
+  .skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  .bone {
+    height: 10px;
+    border-radius: 3px;
+    background: var(--bg-raised);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.45;
+    }
   }
   .backdrop {
     position: fixed;
