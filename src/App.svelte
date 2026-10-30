@@ -8,6 +8,7 @@
   import EditorPane, { flushPendingSave } from './lib/components/EditorPane.svelte'
   import Onboarding from './lib/components/Onboarding.svelte'
   import CommandPalette from './lib/components/CommandPalette.svelte'
+  import ConflictModal from './lib/components/ConflictModal.svelte'
   import { ui, cyclePreview, THEMES } from './lib/stores/ui.svelte'
   import {
     applyGitStatus,
@@ -29,6 +30,11 @@
     }
     if (!configLoaded) return
     void saveConfig(config).catch(() => {})
+  })
+
+  // A resolved merge re-arms the conflict modal for the next one.
+  $effect(() => {
+    if (gitStatus.conflicts.length === 0) ui.conflictsHidden = false
   })
 
   async function boot() {
@@ -126,6 +132,10 @@
 
 {#if ui.commandPaletteOpen}
   <CommandPalette />
+{/if}
+
+{#if gitStatus.conflicts.length > 0 && !ui.conflictsHidden}
+  <ConflictModal />
 {/if}
 
 <style>

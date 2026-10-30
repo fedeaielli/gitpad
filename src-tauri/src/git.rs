@@ -15,6 +15,13 @@ pub struct ConflictFile {
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct ConflictVersions {
+    pub ours: String,
+    pub theirs: String,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct GitStatus {
     pub synced: bool,
     pub modified_files: Vec<String>,
@@ -152,6 +159,32 @@ fn status_of(repo: &Repository) -> Result<GitStatus, String> {
     })
 }
 
+/// Parents recorded in MERGE_HEAD while a merge is waiting for conflict resolution.
+fn merge_parents(repo: &Repository) -> Vec<git2::Commit<'_>> {
+    let Ok(raw) = std::fs::read_to_string(repo.path().join("MERGE_HEAD")) else {
+        return Vec::new();
+    };
+    raw.lines()
+        .filter_map(|line| Oid::from_str(line.trim()).ok())
+        .filter_map(|oid| repo.find_commit(oid).ok())
+        .collect()
+}
+
+/// Commit on HEAD, keeping the merge parent, then clear MERGE_HEAD.
+fn commit_head(repo: &Repository, tree: &git2::Tree, message: &str) -> Result<(), String> {
+    let sig = signature()?;
+    let head = repo.head().ok().and_then(|h| h.peel_to_commit().ok());
+    let mut parents: Vec<git2::Commit> = head.into_iter().collect();
+    parents.extend(merge_parents(repo));
+    let refs: Vec<&git2::Commit> = parents.iter().collect();
+    repo.commit(Some("HEAD"), &sig, &sig, message, tree, &refs)
+        .map_err(git_err)?;
+    if repo.state() == git2::RepositoryState::Merge {
+        repo.cleanup_state().map_err(git_err)?;
+    }
+    Ok(())
+}
+
 fn commit_pending(repo: &Repository, message: Option<&str>) -> Result<(), String> {
     let mut index = repo.index().map_err(git_err)?;
     index
@@ -166,17 +199,15 @@ fn commit_pending(repo: &Repository, message: Option<&str>) -> Result<(), String
         .head()
         .ok()
         .and_then(|h| h.peel_to_commit().ok());
-    if parent.as_ref().map(|p| p.tree_id()) == Some(tree_id) {
+    // A merge commit records the remote parent even when the tree matches HEAD.
+    let merging = !merge_parents(repo).is_empty();
+    if parent.as_ref().map(|p| p.tree_id()) == Some(tree_id) && !merging {
         return Ok(());
     }
-    let sig = signature()?;
     let message = message
         .map(str::to_string)
         .unwrap_or_else(|| format!("gitpad: sync {}", iso8601_now()));
-    let parents: Vec<&git2::Commit> = parent.iter().collect();
-    repo.commit(Some("HEAD"), &sig, &sig, &message, &tree, &parents)
-        .map_err(git_err)?;
-    Ok(())
+    commit_head(repo, &tree, &message)
 }
 
 /// Stage + commit specific paths (used by fs_write_file for the per-file autosave commit).
@@ -187,17 +218,18 @@ pub fn commit_paths(root: &Path, paths: &[PathBuf], message: &str) -> Result<(),
         index.add_path(path).map_err(git_err)?;
     }
     index.write().map_err(git_err)?;
+    // Mid-merge: only stage; the merge commit happens once every conflict is resolved.
+    if repo.state() == git2::RepositoryState::Merge && index.has_conflicts() {
+        return Ok(());
+    }
     let tree_id = index.write_tree().map_err(git_err)?;
     let tree = repo.find_tree(tree_id).map_err(git_err)?;
     let parent = repo.head().ok().and_then(|h| h.peel_to_commit().ok());
-    if parent.as_ref().map(|p| p.tree_id()) == Some(tree_id) {
+    let merging = !merge_parents(&repo).is_empty();
+    if parent.as_ref().map(|p| p.tree_id()) == Some(tree_id) && !merging {
         return Ok(());
     }
-    let sig = signature()?;
-    let parents: Vec<&git2::Commit> = parent.iter().collect();
-    repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
-        .map_err(git_err)?;
-    Ok(())
+    commit_head(&repo, &tree, message)
 }
 
 /// Stage everything (including deletions/renames) and commit with `prefix + ISO8601`.
@@ -312,6 +344,45 @@ fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(
         }
     }
     index.write().map_err(git_err)
+}
+
+fn blob_text(repo: &Repository, oid: Oid) -> String {
+    repo.find_blob(oid)
+        .map(|blob| String::from_utf8_lossy(blob.content()).to_string())
+        .unwrap_or_default()
+}
+
+/// Both sides of a conflicted path, read from index stages 2 (ours) and 3 (theirs).
+fn conflict_versions(root: &Path, path: &str) -> Result<ConflictVersions, String> {
+    let repo = Repository::open(root).map_err(git_err)?;
+    let index = repo.index().map_err(git_err)?;
+    if index.has_conflicts() {
+        for entry in index.conflicts().map_err(git_err)? {
+            let entry = entry.map_err(git_err)?;
+            let entry_path = entry
+                .our
+                .as_ref()
+                .or(entry.their.as_ref())
+                .or(entry.ancestor.as_ref())
+                .map(|e| String::from_utf8_lossy(&e.path).to_string());
+            if entry_path.as_deref() != Some(path) {
+                continue;
+            }
+            return Ok(ConflictVersions {
+                ours: entry
+                    .our
+                    .as_ref()
+                    .map(|e| blob_text(&repo, e.id))
+                    .unwrap_or_default(),
+                theirs: entry
+                    .their
+                    .as_ref()
+                    .map(|e| blob_text(&repo, e.id))
+                    .unwrap_or_default(),
+            });
+        }
+    }
+    Err(format!("no conflict for {path}"))
 }
 
 fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), String> {
@@ -446,6 +517,17 @@ pub async fn git_resolve_conflict(
         .map_err(|e| format!("git task: {e}"))?
 }
 
+#[tauri::command]
+pub async fn git_conflict_versions(
+    app: AppHandle,
+    path: String,
+) -> Result<ConflictVersions, String> {
+    let root = repo_dir(&app)?;
+    tokio::task::spawn_blocking(move || conflict_versions(&root, &path))
+        .await
+        .map_err(|e| format!("git task: {e}"))?
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -545,6 +627,46 @@ mod tests {
         let head = repo.head().unwrap().peel_to_commit().unwrap();
         assert!(head.tree().unwrap().get_name("note.md").is_none());
         assert!(head.message().unwrap_or("").starts_with("gitpad: delete note.md "));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn conflict_versions_and_merge_commit_keep_both_parents() {
+        let root = tmp("conflict");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "note.md", "base\n");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "note.md", "theirs\n");
+        push_current(&b);
+
+        commit_file(&a, "note.md", "ours\n");
+        let status = pull_repo(&a, None).unwrap();
+        assert_eq!(status.conflicts.len(), 1);
+        assert!(a_path.join(".git/MERGE_HEAD").exists());
+
+        let versions = conflict_versions(&a_path, "note.md").unwrap();
+        assert_eq!(versions.ours, "ours\n");
+        assert_eq!(versions.theirs, "theirs\n");
+
+        resolve_conflict(&a_path, "note.md", Resolution::AcceptOurs).unwrap();
+        commit_pending(&a, Some("gitpad: merge")).unwrap();
+
+        let repo = Repository::open(&a_path).unwrap();
+        assert!(!a_path.join(".git/MERGE_HEAD").exists());
+        assert_eq!(
+            repo.head().unwrap().peel_to_commit().unwrap().parent_count(),
+            2
+        );
+        assert_eq!(
+            std::fs::read_to_string(a_path.join("note.md")).unwrap(),
+            "ours\n"
+        );
         let _ = std::fs::remove_dir_all(&root);
     }
 }
