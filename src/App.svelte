@@ -18,6 +18,7 @@
 
   const THEMES = ['gitpad-dark', 'vs-dark', 'vs', 'hc-black']
   let configLoaded = $state(false)
+  let onboardingSkipped = $state(false)
 
   // Persist user-level settings whenever they change; skip the initial load.
   $effect(() => {
@@ -101,8 +102,8 @@
 
 {#if !configLoaded}
   <!-- wait for config.json so an onboarded user doesn't see the wizard flash -->
-{:else if !ui.onboardingComplete}
-  <Onboarding />
+{:else if !ui.onboardingComplete && !onboardingSkipped}
+  <Onboarding onskip={() => (onboardingSkipped = true)} />
 {:else}
   <div class="app">
     <main class="body">
