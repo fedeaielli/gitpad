@@ -1,5 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
+  import { open } from '@tauri-apps/plugin-dialog'
   import { ui, type FileNode } from '../stores/ui.svelte'
   import { tabs, openTab, activateTab, discardUnder, retarget } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
@@ -88,6 +89,29 @@
     if (!menu) return
     name = mode === 'rename' ? (menu.node?.name ?? '') : ''
     menu = { ...menu, mode }
+  }
+
+  async function importFromPicker(directory: boolean) {
+    if (!menu) return
+    const base = menu.node ? (menu.node.type === 'dir' ? menu.node.path : parentOf(menu.node.path)) : ''
+    menu = null
+    error = null
+    try {
+      const source = await open({
+        multiple: false,
+        directory,
+        title: directory ? 'Import folder' : 'Import file',
+      })
+      if (typeof source !== 'string') return
+      const path = await invoke<string>('fs_import', { source, destDir: base || null })
+      if (base && !expanded.includes(base)) expanded = [...expanded, base]
+      await loadTree()
+      if (!directory) {
+        await openFile({ name: path.split('/').pop() ?? path, path, type: 'file' })
+      }
+    } catch (e) {
+      error = String(e)
+    }
   }
 
   async function submitName(event: SubmitEvent) {
@@ -202,6 +226,8 @@
     {#if menu.mode === 'menu'}
       <button onclick={() => start('new-file')}>New File</button>
       <button onclick={() => start('new-folder')}>New Folder</button>
+      <button onclick={() => importFromPicker(false)}>Import File…</button>
+      <button onclick={() => importFromPicker(true)}>Import Folder…</button>
       {#if menu.node}
         <button onclick={() => start('rename')}>Rename</button>
         <button onclick={() => (menu = { ...menu!, mode: 'delete' })}>Delete</button>

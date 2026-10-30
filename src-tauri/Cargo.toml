@@ -21,6 +21,7 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"       # open verification_uri in the browser
+tauri-plugin-dialog = "2"      # native picker for importing files/folders
 keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 # default-features = false drops libssh2 (SSH is not used); `https` keeps HTTPS push.
 git2 = { version = "0.20", default-features = false, features = ["https"] }

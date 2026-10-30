@@ -42,6 +42,7 @@ async fn app_exit(app: tauri::AppHandle) {
 pub fn run() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let http = Client::builder()
                 .user_agent("GitPad")
@@ -60,6 +61,7 @@ pub fn run() {
             fs::fs_delete,
             fs::fs_rename,
             fs::fs_list_dir,
+            fs::fs_import,
             git::git_clone,
             git::git_pull,
             git::git_push,
