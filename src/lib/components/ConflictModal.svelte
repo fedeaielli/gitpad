@@ -6,6 +6,7 @@
   import { ui } from '../stores/ui.svelte'
   import { tabs, openTab } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
+  import { monacoTheme } from '../utils/themes'
 
   interface Versions {
     ours: string
@@ -27,7 +28,7 @@
       readOnly: true,
       automaticLayout: true,
       renderSideBySide: true,
-      theme: ui.editorTheme,
+      theme: monacoTheme(ui.editorTheme),
     })
   })
 
@@ -38,7 +39,7 @@
   })
 
   $effect(() => {
-    monaco.editor.setTheme(ui.editorTheme)
+    monaco.editor.setTheme(monacoTheme(ui.editorTheme))
   })
 
   $effect(() => {

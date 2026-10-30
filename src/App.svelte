@@ -6,15 +6,16 @@
   import ActivityBar from './lib/components/ActivityBar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
-  import EditorPane, { flushPendingSave } from './lib/components/EditorPane.svelte'
+  import type { Component } from 'svelte'
+  import { flushPendingSave } from './lib/editor/bridge'
   import Onboarding from './lib/components/Onboarding.svelte'
   import CommandPalette from './lib/components/CommandPalette.svelte'
-  import ConflictModal from './lib/components/ConflictModal.svelte'
   import Settings from './lib/components/Settings.svelte'
   import Toasts from './lib/components/Toasts.svelte'
   import { pushToast } from './lib/stores/toasts.svelte'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
+  import { applyTheme } from './lib/utils/themes'
   import {
     applyGitStatus,
     gitStatus,
@@ -24,6 +25,11 @@
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
 
   let configLoaded = $state(false)
+  // Monaco is heavy: load it after the shell paints.
+  let EditorPane = $state<Component | null>(null)
+  let ConflictModal = $state<Component | null>(null)
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+  let pendingConfig: Config | null = null
   let onboardingSkipped = $state(false)
 
   // Persist user-level settings whenever they change; skip the initial load.
@@ -41,7 +47,9 @@
       extensions: { ...ui.extensions },
     }
     if (!configLoaded) return
-    void saveConfig(config).catch((e) => pushToast(`save settings: ${String(e)}`))
+    pendingConfig = config
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => void saveConfig(config).catch((e) => pushToast(`save settings: ${String(e)}`)), 300)
   })
 
   // Settings > Supported extensions override the built-in language map.
@@ -49,9 +57,16 @@
     setCustomLanguages(ui.extensions)
   })
 
+  $effect(() => {
+    applyTheme(ui.editorTheme)
+  })
+
   // A resolved merge re-arms the conflict modal for the next one.
   $effect(() => {
     if (gitStatus.conflicts.length === 0) ui.conflictsHidden = false
+    else if (!ConflictModal) {
+      void import('./lib/components/ConflictModal.svelte').then((m) => (ConflictModal = m.default))
+    }
   })
 
   function clamp(value: number, min: number, max: number) {
@@ -85,6 +100,7 @@
       cyclePreview()
       return
     }
+    if (ui.settingsOpen) return
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
       e.preventDefault()
       ui.commandPaletteOpen = true
@@ -92,12 +108,15 @@
   }
 
   onMount(() => {
+    void import('./lib/components/EditorPane.svelte').then((m) => (EditorPane = m.default))
     const unlistens: Array<() => void> = []
     void listen<GitStatus>('sync-status', (e) => applyGitStatus(e.payload)).then((fn) => {
       unlistens.push(fn)
     })
     void listen('app-closing', async () => {
       await flushPendingSave()
+      clearTimeout(saveTimer)
+      if (pendingConfig) await saveConfig(pendingConfig).catch(() => {})
       await invoke('app_exit').catch(() => {})
     }).then((fn) => {
       unlistens.push(fn)
@@ -161,7 +180,9 @@
       {/if}
       <section class="editor">
         <TabBar />
-        <EditorPane />
+        {#if EditorPane}
+          <EditorPane />
+        {/if}
       </section>
     </main>
     <StatusBar />
@@ -172,7 +193,7 @@
   <CommandPalette />
 {/if}
 
-{#if gitStatus.conflicts.length > 0 && !ui.conflictsHidden}
+{#if gitStatus.conflicts.length > 0 && !ui.conflictsHidden && ConflictModal}
   <ConflictModal />
 {/if}
 
@@ -198,6 +219,32 @@
     --ok: #4ec9b0;
     --warn: #d7ba7d;
     --err: #f14c4c;
+  }
+  :global(:root[data-theme='vs']) {
+    color-scheme: light;
+    --bg: #ffffff;
+    --bg-panel: #f3f3f3;
+    --bg-raised: #e7e7e7;
+    --border: #d4d4d4;
+    --text: #1f1f1f;
+    --muted: #6b6b6b;
+    --accent: #005fb8;
+    --ok: #107c10;
+    --warn: #9a6700;
+    --err: #d13438;
+  }
+  :global(:root[data-theme='hc-black']) {
+    color-scheme: dark;
+    --bg: #000000;
+    --bg-panel: #0a0a0a;
+    --bg-raised: #1a1a1a;
+    --border: #6fc3df;
+    --text: #ffffff;
+    --muted: #d4d4d4;
+    --accent: #f38518;
+    --ok: #3ff23f;
+    --warn: #fff200;
+    --err: #ff5252;
   }
   :global(body) {
     overflow: hidden;

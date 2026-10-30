@@ -1,11 +1,22 @@
 <script lang="ts">
   import { marked } from 'marked'
+  import DOMPurify from 'dompurify'
   import hljs from 'highlight.js/lib/common'
-  import 'highlight.js/styles/github-dark.css'
-  import 'github-markdown-css/github-markdown-dark.css'
+  import markdownDark from 'github-markdown-css/github-markdown-dark.css?url'
+  import markdownLight from 'github-markdown-css/github-markdown-light.css?url'
+  import codeDark from 'highlight.js/styles/github-dark.css?url'
+  import codeLight from 'highlight.js/styles/github.css?url'
+  import { registerThemeStyles } from '../utils/themes'
   import { openUrl } from '@tauri-apps/plugin-opener'
   import { tabs } from '../stores/tabs.svelte'
-  import { getEditor } from './EditorPane.svelte'
+  import { getEditor } from '../editor/bridge'
+
+  registerThemeStyles({
+    'gitpad-dark': { markdown: markdownDark, code: codeDark },
+    'vs-dark': { markdown: markdownDark, code: codeDark },
+    vs: { markdown: markdownLight, code: codeLight },
+    'hc-black': { markdown: markdownDark, code: codeDark },
+  })
 
   const renderer = new marked.Renderer()
   renderer.code = ({ text, lang }) => {
@@ -21,7 +32,7 @@
 
   const html = $derived.by(() => {
     const tab = tabs.tabs.find((t) => t.id === tabs.activeTabId)
-    return tab ? (marked.parse(tab.content) as string) : ''
+    return tab ? DOMPurify.sanitize(marked.parse(tab.content) as string) : ''
   })
 
   function syncFromEditor() {
