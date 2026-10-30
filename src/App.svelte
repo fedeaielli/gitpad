@@ -6,7 +6,7 @@
   import TabBar from './lib/components/TabBar.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
   import EditorPane, { flushPendingSave } from './lib/components/EditorPane.svelte'
-  import { ui } from './lib/stores/ui.svelte'
+  import { ui, cyclePreview } from './lib/stores/ui.svelte'
   import {
     applyGitStatus,
     gitStatus,
@@ -34,6 +34,13 @@
     }
   }
 
+  function onKeydown(e: KeyboardEvent) {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault()
+      cyclePreview()
+    }
+  }
+
   onMount(() => {
     const unlistens: Array<() => void> = []
     void listen<GitStatus>('sync-status', (e) => applyGitStatus(e.payload)).then((fn) => {
@@ -49,6 +56,8 @@
     return () => unlistens.forEach((fn) => fn())
   })
 </script>
+
+<svelte:window onkeydowncapture={onKeydown} />
 
 <div class="app">
   <main class="body">
