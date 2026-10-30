@@ -6,6 +6,7 @@
   import TabBar from './lib/components/TabBar.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
   import EditorPane, { flushPendingSave } from './lib/components/EditorPane.svelte'
+  import Onboarding from './lib/components/Onboarding.svelte'
   import { ui, cyclePreview } from './lib/stores/ui.svelte'
   import {
     applyGitStatus,
@@ -98,18 +99,24 @@
 
 <svelte:window onkeydowncapture={onKeydown} />
 
-<div class="app">
-  <main class="body">
-    {#if ui.sidebarOpen}
-      <Sidebar />
-    {/if}
-    <section class="editor">
-      <TabBar />
-      <EditorPane />
-    </section>
-  </main>
-  <StatusBar />
-</div>
+{#if !configLoaded}
+  <!-- wait for config.json so an onboarded user doesn't see the wizard flash -->
+{:else if !ui.onboardingComplete}
+  <Onboarding />
+{:else}
+  <div class="app">
+    <main class="body">
+      {#if ui.sidebarOpen}
+        <Sidebar />
+      {/if}
+      <section class="editor">
+        <TabBar />
+        <EditorPane />
+      </section>
+    </main>
+    <StatusBar />
+  </div>
+{/if}
 
 <style>
   :global(html, body, #app) {
