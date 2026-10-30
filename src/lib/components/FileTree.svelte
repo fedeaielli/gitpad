@@ -8,6 +8,7 @@
 
   let expanded = $state<string[]>([])
   let error = $state<string | null>(null)
+  let noRepo = $state(false)
   let menu = $state<{ x: number; y: number; node: FileNode | null; mode: MenuMode } | null>(null)
   let name = $state('')
 
@@ -47,9 +48,12 @@
     try {
       ui.fileTree = await invoke<FileNode[]>('fs_list_dir', { path: null })
       error = null
+      noRepo = false
     } catch (e) {
       ui.fileTree = []
-      error = String(e)
+      const message = String(e)
+      noRepo = message.includes('no repository cloned')
+      error = noRepo ? null : message
     }
   }
 
@@ -73,6 +77,7 @@
 
   function openMenu(event: MouseEvent, node: FileNode | null) {
     event.preventDefault()
+    if (noRepo) return
     menu = { x: event.clientX, y: event.clientY, node, mode: 'menu' }
   }
 
@@ -85,6 +90,7 @@
   async function submitName(event: SubmitEvent) {
     event.preventDefault()
     if (!menu || !name.trim()) return
+    error = null
     const value = name.trim()
     const base = menu.node ? (menu.node.type === 'dir' ? menu.node.path : parentOf(menu.node.path)) : ''
     try {
@@ -118,6 +124,7 @@
 
   async function remove() {
     if (!menu?.node) return
+    error = null
     const path = menu.node.path
     try {
       await invoke('fs_delete', { path })
@@ -170,7 +177,9 @@
 {/snippet}
 
 <div class="tree" role="tree" tabindex="0" aria-label="Files" oncontextmenu={(e) => openMenu(e, null)}>
-  {#if error}
+  {#if noRepo}
+    <p class="hint">No repository yet. Clone one from the Git panel.</p>
+  {:else if error}
     <p class="error">{error}</p>
   {/if}
   {@render tree(ui.fileTree)}
@@ -195,6 +204,9 @@
         <input bind:value={name} placeholder={menu.mode === 'rename' ? 'New name' : 'Name'} />
         <button type="submit">OK</button>
       </form>
+    {/if}
+    {#if error}
+      <p class="error">{error}</p>
     {/if}
   </div>
 {/if}
@@ -248,6 +260,11 @@
   .error {
     margin: 4px 8px;
     color: var(--err);
+    font-size: 11px;
+  }
+  .hint {
+    margin: 4px 8px;
+    color: var(--muted);
     font-size: 11px;
   }
   .backdrop {
