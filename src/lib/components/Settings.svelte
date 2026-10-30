@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import { ui, THEMES, KEYBINDINGS, type Keybinding } from '../stores/ui.svelte'
+  import { pushToast } from '../stores/toasts.svelte'
 
   interface UserInfo {
     login: string
@@ -63,7 +64,12 @@
   }
 
   async function logout() {
-    await invoke('auth_clear').catch(() => {})
+    try {
+      await invoke('auth_clear')
+    } catch (e) {
+      pushToast(`logout: ${String(e)}`)
+      return
+    }
     ui.onboardingComplete = false
     ui.settingsOpen = false
   }

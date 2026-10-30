@@ -121,6 +121,11 @@
     {#if step === 'welcome'}
       <h1>GitPad</h1>
       <p>Markdown notes in a Git repository you own. Everything is saved locally and pushed to GitHub.</p>
+      <ul class="shortcuts">
+        <li><kbd>Ctrl</kbd>+<kbd>P</kbd> command palette</li>
+        <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> markdown preview</li>
+        <li><kbd>Esc</kbd> close palette</li>
+      </ul>
       <button class="primary" onclick={() => (step = 'auth')}>Get Started</button>
     {:else if step === 'auth'}
       <h1>Connect GitHub</h1>
@@ -204,6 +209,23 @@
     color: var(--muted);
     font-size: 11px;
     overflow-wrap: anywhere;
+  }
+  .shortcuts {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 0 4px;
+    padding: 0;
+    list-style: none;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  kbd {
+    padding: 1px 4px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg-raised);
+    font: inherit;
   }
   .error {
     color: var(--err);
