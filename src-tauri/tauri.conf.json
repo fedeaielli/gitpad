@@ -25,7 +25,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["appimage"],
+    "category": "Productivity",
+    "shortDescription": "Markdown notes in a Git repository",
+    "longDescription": "GitPad is a desktop editor for markdown notes stored in a Git repository you own, with automatic save, GitHub sync and a local markdown preview.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
