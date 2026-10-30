@@ -200,6 +200,12 @@ pub fn commit_paths(root: &Path, paths: &[PathBuf], message: &str) -> Result<(),
     Ok(())
 }
 
+/// Stage everything (including deletions/renames) and commit with `prefix + ISO8601`.
+pub fn commit_all(root: &Path, prefix: &str) -> Result<(), String> {
+    let repo = Repository::open(root).map_err(git_err)?;
+    commit_pending(&repo, Some(&format!("{prefix} {}", iso8601_now())))
+}
+
 fn pull_repo(repo: &Repository, token: Option<String>) -> Result<GitStatus, String> {
     fetch(repo, token)?;
     let branch = current_branch(repo)?;
@@ -524,6 +530,21 @@ mod tests {
         assert!(a_path.join("b.txt").exists());
         assert!(a_path.join("c.txt").exists());
         assert_eq!(a.head().unwrap().peel_to_commit().unwrap().parent_count(), 2);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn commit_all_records_deletions() {
+        let root = tmp("commit-all");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "note.md", "hello");
+        std::fs::remove_file(root.join("note.md")).unwrap();
+        commit_all(&root, "gitpad: delete note.md").unwrap();
+
+        let repo = Repository::open(&root).unwrap();
+        let head = repo.head().unwrap().peel_to_commit().unwrap();
+        assert!(head.tree().unwrap().get_name("note.md").is_none());
+        assert!(head.message().unwrap_or("").starts_with("gitpad: delete note.md "));
         let _ = std::fs::remove_dir_all(&root);
     }
 }

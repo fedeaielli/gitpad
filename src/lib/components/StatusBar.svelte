@@ -12,6 +12,7 @@
 
   const active = $derived(tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null)
   const badge = $derived.by(() => {
+    if (!gitStatus.configured) return 'no repo'
     if (gitStatus.error) return 'offline'
     if (gitStatus.syncing) return 'syncing'
     if (gitStatus.conflicts.length > 0) return 'conflict'
@@ -75,5 +76,8 @@
   .badge.conflict,
   .badge.offline {
     color: var(--err);
+  }
+  .badge.no {
+    color: var(--muted);
   }
 </style>

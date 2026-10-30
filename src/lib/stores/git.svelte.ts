@@ -21,6 +21,8 @@ export const gitStatus = $state({
   lastPush: null as Date | null,
   conflicts: [] as ConflictFile[],
   error: null as string | null,
+  /** False until a repository answers git_status. */
+  configured: false,
 })
 
 export function applyGitStatus(status: GitStatus) {
@@ -31,6 +33,7 @@ export function applyGitStatus(status: GitStatus) {
   gitStatus.diverged = status.diverged
   gitStatus.conflicts = status.conflicts
   gitStatus.error = null
+  gitStatus.configured = true
 }
 
 export function markPushed(status: GitStatus) {

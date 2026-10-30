@@ -17,6 +17,7 @@ export const ui = $state({
   treeVersion: 0,
   editorTheme: 'gitpad-dark',
   cursor: { line: 1, column: 1 },
+  onboardingComplete: false,
 })
 
 /// off → split → full → off, only while a markdown tab is active.
