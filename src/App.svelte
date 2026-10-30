@@ -3,6 +3,7 @@
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
   import Sidebar from './lib/components/Sidebar.svelte'
+  import ActivityBar from './lib/components/ActivityBar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
   import EditorPane, { flushPendingSave } from './lib/components/EditorPane.svelte'
@@ -154,6 +155,7 @@
 {:else}
   <div class="app">
     <main class="body">
+      <ActivityBar />
       {#if ui.sidebarOpen}
         <Sidebar />
       {/if}

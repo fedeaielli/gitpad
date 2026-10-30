@@ -236,7 +236,7 @@
         ? `New ${prompt} name`
         : searching
           ? 'Search in files'
-          : 'Search files, or type > for commands'}
+          : 'Search files by name, or > for commands'}
       spellcheck="false"
     />
     <div class="list" bind:this={listEl}>
@@ -282,19 +282,19 @@
     z-index: 50;
     display: flex;
     justify-content: center;
-    padding-top: 80px;
+    padding: 8px 8px 0;
   }
   .backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.25);
   }
   .palette {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 560px;
-    max-width: calc(100vw - 32px);
+    width: 620px;
+    max-width: calc(100vw - 64px);
     max-height: 60vh;
     background: var(--bg-panel);
     border: 1px solid var(--border);
