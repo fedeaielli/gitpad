@@ -10,14 +10,14 @@ const GITHUB_CLIENT_ID: &str = "";
 const DEVICE_CODE_TTL_SECS: u64 = 900;
 
 #[derive(Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct UserInfo {
     pub login: String,
     pub avatar_url: String,
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct RepoInfo {
     pub name: String,
     pub full_name: String,
@@ -26,7 +26,7 @@ pub struct RepoInfo {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all(serialize = "camelCase"))]
 pub struct DeviceCode {
     pub device_code: String,
     pub user_code: String,
@@ -212,4 +212,37 @@ pub fn github_device_flow_poll(
         }
     });
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// GitHub sends snake_case; the frontend receives camelCase.
+    #[test]
+    fn decodes_github_payloads_and_serializes_camel_case() {
+        let user: UserInfo = serde_json::from_str(r#"{"login":"octo","avatar_url":"https://a/b"}"#)
+            .expect("user payload");
+        assert_eq!(user.login, "octo");
+        let user = serde_json::to_value(&user).unwrap();
+        assert_eq!(user["avatarUrl"], "https://a/b");
+
+        let repo: RepoInfo = serde_json::from_str(
+            r#"{"name":"notes","full_name":"octo/notes","clone_url":"https://x/y.git","private":true}"#,
+        )
+        .expect("repo payload");
+        assert_eq!(repo.full_name, "octo/notes");
+        let repo = serde_json::to_value(&repo).unwrap();
+        assert_eq!(repo["fullName"], "octo/notes");
+        assert_eq!(repo["cloneUrl"], "https://x/y.git");
+
+        let device: DeviceCode = serde_json::from_str(
+            r#"{"device_code":"d","user_code":"ABCD","verification_uri":"https://github.com/login/device","expires_in":900,"interval":5}"#,
+        )
+        .expect("device payload");
+        assert_eq!(device.user_code, "ABCD");
+        let device = serde_json::to_value(&device).unwrap();
+        assert_eq!(device["deviceCode"], "d");
+        assert_eq!(device["verificationUri"], "https://github.com/login/device");
+    }
 }
