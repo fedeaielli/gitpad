@@ -161,7 +161,7 @@ pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), String> {
     }
     let label = rel.display().to_string();
     let root_task = root.clone();
-    tauri::async_runtime::spawn_blocking(move || {
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         let abs = root_task.join(&rel);
         let metadata =
             std::fs::symlink_metadata(&abs).map_err(|e| format!("delete {label}: {e}"))?;
@@ -170,7 +170,11 @@ pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), String> {
         } else {
             std::fs::remove_file(&abs).map_err(|e| format!("delete {label}: {e}"))?;
         }
-        git::commit_all(&root_task, &format!("gitpad: delete {label}"))
+        // The filesystem is the source of truth: a failed commit is retried by the next push.
+        if let Err(e) = git::commit_all(&root_task, &format!("gitpad: delete {label}")) {
+            eprintln!("gitpad: commit after delete failed: {e}");
+        }
+        Ok(())
     })
     .await
     .map_err(|e| e.to_string())??;
@@ -194,9 +198,13 @@ fn rename_in(root: &Path, from: &str, to: &str) -> Result<(), String> {
 pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), String> {
     let root = git::repo_dir(&app)?;
     let root_task = root.clone();
-    tauri::async_runtime::spawn_blocking(move || {
+    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         rename_in(&root_task, &from, &to)?;
-        git::commit_all(&root_task, &format!("gitpad: rename {from}"))
+        // The filesystem is the source of truth: a failed commit is retried by the next push.
+        if let Err(e) = git::commit_all(&root_task, &format!("gitpad: rename {from}")) {
+            eprintln!("gitpad: commit after rename failed: {e}");
+        }
+        Ok(())
     })
     .await
     .map_err(|e| e.to_string())??;

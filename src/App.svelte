@@ -70,7 +70,11 @@
     })
     const onFocus = () => {
       ui.treeVersion += 1
-      void invoke<GitStatus>('git_status').then(applyGitStatus).catch(() => {})
+      void invoke<GitStatus>('git_status')
+        .then(applyGitStatus)
+        .catch((e) => {
+          if (isIgnorableSyncError(String(e))) gitStatus.configured = false
+        })
     }
     window.addEventListener('focus', onFocus)
     void (async () => {
