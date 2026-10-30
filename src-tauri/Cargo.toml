@@ -1,0 +1,31 @@
+[package]
+name = "gitpad"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2024"
+rust-version = "1.90"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix keeps the lib name distinct from the bin name.
+name = "gitpad_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"       # open verification_uri in the browser
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+# default-features = false drops libssh2 (SSH is not used); `https` keeps HTTPS push.
+git2 = { version = "0.20", default-features = false, features = ["https"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+ignore = "0.4"
