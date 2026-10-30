@@ -5,10 +5,36 @@ mod github;
 mod search;
 
 use reqwest::Client;
-use tauri::Manager;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+use tauri::{Emitter, Manager};
 
 pub struct AppState {
     pub http: Client,
+}
+
+static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
+
+/// Push the last local commits (short timeout, offline is fine) and exit.
+async fn shutdown(app: tauri::AppHandle) {
+    if SHUTTING_DOWN.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    if let Ok(path) = git::repo_dir(&app) {
+        let token = auth::token().ok();
+        let _ = tokio::time::timeout(
+            Duration::from_secs(3),
+            tokio::task::spawn_blocking(move || git::push_blocking(&path, None, token)),
+        )
+        .await;
+    }
+    app.exit(0);
+}
+
+/// Called by the frontend once pending edits are flushed.
+#[tauri::command]
+async fn app_exit(app: tauri::AppHandle) {
+    shutdown(app).await;
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -42,23 +68,17 @@ pub fn run() {
             github::github_device_flow_start,
             github::github_device_flow_poll,
             search::search_global,
+            app_exit,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                let _ = window.emit("app-closing", ());
                 let app = window.app_handle().clone();
+                // Frontend flushes pending edits then calls app_exit; this is the fallback.
                 tauri::async_runtime::spawn(async move {
-                    if let Ok(path) = git::repo_dir(&app) {
-                        let token = auth::token().ok();
-                        let _ = tokio::time::timeout(
-                            std::time::Duration::from_secs(3),
-                            tokio::task::spawn_blocking(move || {
-                                git::push_blocking(&path, None, token)
-                            }),
-                        )
-                        .await;
-                    }
-                    app.exit(0);
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                    shutdown(app).await;
                 });
             }
         })

@@ -5,9 +5,14 @@
   import Sidebar from './lib/components/Sidebar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
-  import EditorPane from './lib/components/EditorPane.svelte'
+  import EditorPane, { flushPendingSave } from './lib/components/EditorPane.svelte'
   import { ui } from './lib/stores/ui.svelte'
-  import { applyGitStatus, gitStatus, type GitStatus } from './lib/stores/git.svelte'
+  import {
+    applyGitStatus,
+    gitStatus,
+    isIgnorableSyncError,
+    type GitStatus,
+  } from './lib/stores/git.svelte'
 
   async function boot() {
     let repoReady = false
@@ -15,7 +20,8 @@
       applyGitStatus(await invoke<GitStatus>('git_status'))
       repoReady = true
     } catch (e) {
-      gitStatus.error = String(e)
+      const message = String(e)
+      if (!isIgnorableSyncError(message)) gitStatus.error = message
     }
     if (!repoReady) return
     const token = await invoke<string | null>('auth_get', { key: 'github_token' }).catch(() => null)
@@ -23,17 +29,24 @@
     try {
       applyGitStatus(await invoke<GitStatus>('git_pull'))
     } catch (e) {
-      gitStatus.error = String(e)
+      const message = String(e)
+      if (!isIgnorableSyncError(message)) gitStatus.error = message
     }
   }
 
   onMount(() => {
-    let unlisten: (() => void) | undefined
+    const unlistens: Array<() => void> = []
     void listen<GitStatus>('sync-status', (e) => applyGitStatus(e.payload)).then((fn) => {
-      unlisten = fn
+      unlistens.push(fn)
+    })
+    void listen('app-closing', async () => {
+      await flushPendingSave()
+      await invoke('app_exit').catch(() => {})
+    }).then((fn) => {
+      unlistens.push(fn)
     })
     void boot()
-    return () => unlisten?.()
+    return () => unlistens.forEach((fn) => fn())
   })
 </script>
 
