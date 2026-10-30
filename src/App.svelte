@@ -7,7 +7,8 @@
   import StatusBar from './lib/components/StatusBar.svelte'
   import EditorPane, { flushPendingSave } from './lib/components/EditorPane.svelte'
   import Onboarding from './lib/components/Onboarding.svelte'
-  import { ui, cyclePreview } from './lib/stores/ui.svelte'
+  import CommandPalette from './lib/components/CommandPalette.svelte'
+  import { ui, cyclePreview, THEMES } from './lib/stores/ui.svelte'
   import {
     applyGitStatus,
     gitStatus,
@@ -16,7 +17,6 @@
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
 
-  const THEMES = ['gitpad-dark', 'vs-dark', 'vs', 'hc-black']
   let configLoaded = $state(false)
   let onboardingSkipped = $state(false)
 
@@ -56,6 +56,11 @@
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
       e.preventDefault()
       cyclePreview()
+      return
+    }
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
+      e.preventDefault()
+      ui.commandPaletteOpen = true
     }
   }
 
@@ -117,6 +122,10 @@
     </main>
     <StatusBar />
   </div>
+{/if}
+
+{#if ui.commandPaletteOpen}
+  <CommandPalette />
 {/if}
 
 <style>

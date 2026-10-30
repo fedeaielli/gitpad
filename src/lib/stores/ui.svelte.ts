@@ -1,5 +1,7 @@
 import { tabs } from './tabs.svelte'
 
+export const THEMES = ['gitpad-dark', 'vs-dark', 'vs', 'hc-black']
+
 export interface FileNode {
   name: string
   path: string

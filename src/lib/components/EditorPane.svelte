@@ -18,6 +18,14 @@
     return current
   }
 
+  /// Jumps to a search hit; the editor already holds the active model.
+  export function revealLine(line: number, column: number) {
+    if (!current) return
+    current.revealLineInCenter(line)
+    current.setPosition({ lineNumber: line, column })
+    current.focus()
+  }
+
   export function setEditor(next: editor.IStandaloneCodeEditor | null) {
     current = next
   }
