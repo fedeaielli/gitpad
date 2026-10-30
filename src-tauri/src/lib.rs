@@ -1,4 +1,5 @@
 mod auth;
+mod config;
 mod fs;
 mod git;
 mod github;
@@ -39,10 +40,13 @@ async fn app_exit(app: tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let http = Client::builder().user_agent("GitPad").build()?;
+            let http = Client::builder()
+                .user_agent("GitPad")
+                .timeout(Duration::from_secs(15))
+                .build()?;
             app.manage(AppState { http });
             Ok(())
         })
@@ -68,6 +72,8 @@ pub fn run() {
             github::github_device_flow_start,
             github::github_device_flow_poll,
             search::search_global,
+            config::config_get,
+            config::config_save,
             app_exit,
         ])
         .on_window_event(|window, event| {
@@ -82,6 +88,10 @@ pub fn run() {
                 });
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while building tauri application");
+        .run(tauri::generate_context!());
+
+    if let Err(err) = result {
+        eprintln!("gitpad: {err}");
+        std::process::exit(1);
+    }
 }

@@ -13,6 +13,21 @@
     isIgnorableSyncError,
     type GitStatus,
   } from './lib/stores/git.svelte'
+  import { loadConfig, saveConfig, type Config } from './lib/utils/config'
+
+  const THEMES = ['gitpad-dark', 'vs-dark', 'vs', 'hc-black']
+  let configLoaded = $state(false)
+
+  // Persist user-level settings whenever they change; skip the initial load.
+  $effect(() => {
+    const config: Config = {
+      onboardingComplete: ui.onboardingComplete,
+      theme: ui.editorTheme,
+      previewMode: ui.previewMode,
+    }
+    if (!configLoaded) return
+    void saveConfig(config).catch(() => {})
+  })
 
   async function boot() {
     let repoReady = false
@@ -21,7 +36,8 @@
       repoReady = true
     } catch (e) {
       const message = String(e)
-      if (!isIgnorableSyncError(message)) gitStatus.error = message
+      if (isIgnorableSyncError(message)) gitStatus.configured = false
+      else gitStatus.error = message
     }
     if (!repoReady) return
     const token = await invoke<string | null>('auth_get', { key: 'github_token' }).catch(() => null)
@@ -52,8 +68,27 @@
     }).then((fn) => {
       unlistens.push(fn)
     })
-    void boot()
-    return () => unlistens.forEach((fn) => fn())
+    const onFocus = () => {
+      ui.treeVersion += 1
+      void invoke<GitStatus>('git_status').then(applyGitStatus).catch(() => {})
+    }
+    window.addEventListener('focus', onFocus)
+    void (async () => {
+      const config = await loadConfig().catch(() => null)
+      if (config) {
+        if (THEMES.includes(config.theme)) ui.editorTheme = config.theme
+        if (config.previewMode === 'off' || config.previewMode === 'split' || config.previewMode === 'full') {
+          ui.previewMode = config.previewMode
+        }
+        ui.onboardingComplete = config.onboardingComplete
+      }
+      configLoaded = true
+      await boot()
+    })()
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      unlistens.forEach((fn) => fn())
+    }
   })
 </script>
 

@@ -118,7 +118,7 @@
   }
 
   async function push() {
-    if (gitStatus.syncing) return
+    if (gitStatus.syncing || !gitStatus.configured) return
     gitStatus.syncing = true
     try {
       markPushed(await invoke<GitStatus>('git_push', { message: null }))

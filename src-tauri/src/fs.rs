@@ -154,18 +154,26 @@ pub fn fs_create_dir(app: AppHandle, path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn fs_delete(app: AppHandle, path: String) -> Result<(), String> {
+pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), String> {
     let (root, rel) = resolve(&app, &path)?;
     if rel.as_os_str().is_empty() {
         return Err("refusing to delete the repository root".into());
     }
-    let abs = root.join(rel);
-    let metadata = std::fs::symlink_metadata(&abs).map_err(|e| format!("delete {path}: {e}"))?;
-    if metadata.is_dir() {
-        std::fs::remove_dir_all(&abs).map_err(|e| format!("delete {path}: {e}"))?;
-    } else {
-        std::fs::remove_file(&abs).map_err(|e| format!("delete {path}: {e}"))?;
-    }
+    let label = rel.display().to_string();
+    let root_task = root.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let abs = root_task.join(&rel);
+        let metadata =
+            std::fs::symlink_metadata(&abs).map_err(|e| format!("delete {label}: {e}"))?;
+        if metadata.is_dir() {
+            std::fs::remove_dir_all(&abs).map_err(|e| format!("delete {label}: {e}"))?;
+        } else {
+            std::fs::remove_file(&abs).map_err(|e| format!("delete {label}: {e}"))?;
+        }
+        git::commit_all(&root_task, &format!("gitpad: delete {label}"))
+    })
+    .await
+    .map_err(|e| e.to_string())??;
     let _ = git::emit_current_status(&app);
     Ok(())
 }
@@ -183,9 +191,15 @@ fn rename_in(root: &Path, from: &str, to: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), String> {
+pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), String> {
     let root = git::repo_dir(&app)?;
-    rename_in(&root, &from, &to)?;
+    let root_task = root.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        rename_in(&root_task, &from, &to)?;
+        git::commit_all(&root_task, &format!("gitpad: rename {from}"))
+    })
+    .await
+    .map_err(|e| e.to_string())??;
     let _ = git::emit_current_status(&app);
     Ok(())
 }

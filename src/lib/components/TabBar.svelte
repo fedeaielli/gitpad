@@ -1,8 +1,15 @@
 <script lang="ts">
   import { tabs, activateTab, closeTab } from '../stores/tabs.svelte'
+  import { ui } from '../stores/ui.svelte'
 </script>
 
 <div class="tabbar">
+  <button
+    class="toggle"
+    aria-label="Toggle sidebar"
+    title="Toggle sidebar"
+    onclick={() => (ui.sidebarOpen = !ui.sidebarOpen)}>☰</button
+  >
   {#each tabs.tabs as tab (tab.id)}
     <div
       class="tab"
@@ -35,6 +42,15 @@
     flex: 0 0 auto;
     max-width: 240px;
     border-right: 1px solid var(--border);
+  }
+  .toggle {
+    flex: 0 0 auto;
+    padding: 0 10px;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
+  }
+  .toggle:hover {
+    color: var(--text);
   }
   .tab.active {
     background: var(--bg);
