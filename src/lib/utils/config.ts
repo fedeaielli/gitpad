@@ -4,6 +4,13 @@ export interface Config {
   onboardingComplete: boolean
   theme: string
   previewMode: string
+  fontSize: number
+  fontFamily: string
+  autoSync: boolean
+  saveDebounceMs: number
+  pushIdleMs: number
+  keybindings: string
+  extensions: Record<string, string>
 }
 
 export const loadConfig = () => invoke<Config>('config_get')
