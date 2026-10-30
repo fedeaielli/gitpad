@@ -1,47 +1,87 @@
-# Svelte + TS + Vite
+# GitPad
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+A desktop editor for markdown notes that live in a Git repository you own.
+Svelte 5 + Monaco front end, Tauri 2 + Rust back end, Linux first.
 
-## Recommended IDE Setup
+- One repository, GitHub push/pull, no merge tool required for daily use.
+- Automatic save (debounced) and automatic push after you stop typing.
+- Markdown preview with scroll sync.
+- Merge conflicts resolved from a diff dialog (local / remote / edit manually).
+- Settings for theme, font, keybindings (VS Code, Vim, Emacs) and file extensions.
+- Credentials live in the OS keyring, never in a config file.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+## Install
 
-## Need an official Svelte framework?
+### AppImage
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+Download the `.AppImage` from the releases page, then:
 
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```sh
+chmod +x GitPad_*.AppImage
+./GitPad_*.AppImage
 ```
+
+No installation step; move it wherever you like. It needs `webkit2gtk-4.1` and
+`libsecret` on the system (installed by default on most desktops).
+
+### Arch Linux
+
+`PKGBUILD` is in the repository root but **not yet published on the AUR**.
+Build it locally:
+
+```sh
+git clone https://github.com/fedeaielli/gitpad.git
+cd gitpad
+makepkg -si
+```
+
+### From source
+
+Requirements: Rust (stable), Node.js 20+, `webkit2gtk-4.1`, `gtk3`,
+`libsoup3`, `openssl`, `libsecret`, `libgit2`.
+
+```sh
+npm ci
+npm run tauri dev      # development window
+npm run tauri build    # AppImage in src-tauri/target/release/bundle/
+```
+
+## First start
+
+The onboarding wizard appears on first launch:
+
+1. **Connect GitHub** — paste a personal access token with `repo` scope
+   (create one at <https://github.com/settings/tokens>). The token is stored in
+   the OS keyring. GitHub's device flow is wired up but needs a client id in
+   `src-tauri/src/github.rs`, so the token path is the supported one.
+2. **Repository** — GitPad looks for a private repository named `gitpad_notes`
+   on your account and creates it if missing, then clones it into the app data
+   directory.
+3. Done. Files created from the tree are committed and pushed automatically.
+
+You can skip the wizard and clone an existing repository from the Git panel
+instead.
+
+## Where things are stored
+
+| Path | Contents |
+|---|---|
+| `~/.local/share/com.gitpad.app/repos/gitpad_notes/` | Your notes (a normal Git clone) |
+| `~/.local/share/com.gitpad.app/config.json` | Theme, font, sync timings, extensions |
+| OS keyring (Secret Service) | GitHub token |
+
+Deleting `config.json` resets the settings; the repository is untouched.
+
+## Shortcuts
+
+See [SHORTCUTS.md](SHORTCUTS.md). The main ones: `Ctrl+P` for the command
+palette, `Ctrl+Shift+P` for the markdown preview, right-click in the file tree
+to create, rename or delete.
+
+## Limits worth knowing
+
+- A single repository at a time; switching means removing the clone by hand.
+- Changes made to files outside GitPad appear after the window regains focus,
+  but an already open tab is not reloaded.
+- The markdown preview does not render remote images (CSP blocks them).
+- The file tree watch is focus-based, not inotify-based.

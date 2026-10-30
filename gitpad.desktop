@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=GitPad
+GenericName=Markdown Notes
+Comment=Markdown notes in a Git repository you own
+Exec=gitpad
+Icon=gitpad
+Terminal=false
+Categories=Utility;TextEditor;
+StartupWMClass=Gitpad
