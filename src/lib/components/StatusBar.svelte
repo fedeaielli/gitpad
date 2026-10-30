@@ -49,9 +49,6 @@
   <span>last push: {relative(gitStatus.lastPush)}</span>
   <span>{ui.cursor.line}:{ui.cursor.column}</span>
   <span>{active?.language ?? 'plaintext'}</span>
-  <button class="gear" aria-label="Settings" title="Settings" onclick={() => (ui.settingsOpen = true)}>
-    ⚙
-  </button>
 </footer>
 
 <style>
@@ -91,13 +88,6 @@
   }
   .badge.no {
     color: var(--muted);
-  }
-  .gear {
-    padding: 0 4px;
-    color: var(--muted);
-  }
-  .gear:hover {
-    color: var(--text);
   }
   .spinner {
     width: 10px;
