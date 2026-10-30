@@ -2,6 +2,24 @@ import { tabs } from './tabs.svelte'
 
 export const THEMES = ['gitpad-dark', 'vs-dark', 'vs', 'hc-black']
 
+export type Keybinding = 'vscode' | 'vim' | 'emacs'
+
+export const KEYBINDINGS: Keybinding[] = ['vscode', 'vim', 'emacs']
+
+/// Matches the default map in src-tauri/src/config.rs.
+export const DEFAULT_EXTENSIONS: Record<string, string> = {
+  txt: 'plaintext',
+  md: 'markdown',
+  json: 'json',
+  yaml: 'yaml',
+  toml: 'toml',
+  sh: 'shell',
+  py: 'python',
+  rs: 'rust',
+  js: 'javascript',
+  ts: 'typescript',
+}
+
 export interface FileNode {
   name: string
   path: string
@@ -19,6 +37,13 @@ export const ui = $state({
   treeVersion: 0,
   conflictsHidden: false,
   editorTheme: 'gitpad-dark',
+  fontSize: 13,
+  fontFamily: 'ui-monospace, monospace',
+  autoSync: true,
+  saveDebounceMs: 2000,
+  pushIdleMs: 30_000,
+  keybindings: 'vscode' as Keybinding,
+  extensions: { ...DEFAULT_EXTENSIONS },
   cursor: { line: 1, column: 1 },
   onboardingComplete: false,
 })

@@ -19,8 +19,16 @@ export const LANG_MAP: Record<string, string> = {
   java: 'java',
 }
 
+/// Extensions added in Settings take precedence over the built-in map.
+let custom: Record<string, string> = {}
+
+export function setCustomLanguages(map: Record<string, string>) {
+  custom = map
+}
+
 export function languageFor(path: string): string {
   const dot = path.lastIndexOf('.')
   if (dot === -1) return 'plaintext'
-  return LANG_MAP[path.slice(dot + 1).toLowerCase()] ?? 'plaintext'
+  const ext = path.slice(dot + 1).toLowerCase()
+  return custom[ext] ?? LANG_MAP[ext] ?? 'plaintext'
 }

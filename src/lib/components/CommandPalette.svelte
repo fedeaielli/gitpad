@@ -41,6 +41,7 @@
     { id: 'new-file', label: 'New file' },
     { id: 'new-folder', label: 'New folder' },
     { id: 'search', label: 'Search in files' },
+    { id: 'settings', label: 'Open settings' },
   ])
 
   function flatten(nodes: FileNode[]): string[] {
@@ -130,6 +131,10 @@
       prompt = id === 'new-file' ? 'file' : 'folder'
       text = ''
       return
+    }
+    if (id === 'settings') {
+      ui.settingsOpen = true
+      return close()
     }
     if (id === 'search') {
       searching = true

@@ -9,7 +9,9 @@
   import Onboarding from './lib/components/Onboarding.svelte'
   import CommandPalette from './lib/components/CommandPalette.svelte'
   import ConflictModal from './lib/components/ConflictModal.svelte'
-  import { ui, cyclePreview, THEMES } from './lib/stores/ui.svelte'
+  import Settings from './lib/components/Settings.svelte'
+  import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
+  import { setCustomLanguages } from './lib/utils/langmap'
   import {
     applyGitStatus,
     gitStatus,
@@ -27,15 +29,31 @@
       onboardingComplete: ui.onboardingComplete,
       theme: ui.editorTheme,
       previewMode: ui.previewMode,
+      fontSize: ui.fontSize,
+      fontFamily: ui.fontFamily,
+      autoSync: ui.autoSync,
+      saveDebounceMs: ui.saveDebounceMs,
+      pushIdleMs: ui.pushIdleMs,
+      keybindings: ui.keybindings,
+      extensions: { ...ui.extensions },
     }
     if (!configLoaded) return
     void saveConfig(config).catch(() => {})
+  })
+
+  // Settings > Supported extensions override the built-in language map.
+  $effect(() => {
+    setCustomLanguages(ui.extensions)
   })
 
   // A resolved merge re-arms the conflict modal for the next one.
   $effect(() => {
     if (gitStatus.conflicts.length === 0) ui.conflictsHidden = false
   })
+
+  function clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, Math.round(value)))
+  }
 
   async function boot() {
     let repoReady = false
@@ -98,6 +116,17 @@
           ui.previewMode = config.previewMode
         }
         ui.onboardingComplete = config.onboardingComplete
+        if (Number.isFinite(config.fontSize)) ui.fontSize = clamp(config.fontSize, 8, 32)
+        if (config.fontFamily) ui.fontFamily = config.fontFamily
+        ui.autoSync = config.autoSync
+        if (Number.isFinite(config.saveDebounceMs)) {
+          ui.saveDebounceMs = clamp(config.saveDebounceMs, 500, 10_000)
+        }
+        if (Number.isFinite(config.pushIdleMs)) ui.pushIdleMs = clamp(config.pushIdleMs, 5000, 300_000)
+        if (KEYBINDINGS.includes(config.keybindings as Keybinding)) {
+          ui.keybindings = config.keybindings as Keybinding
+        }
+        if (config.extensions) ui.extensions = config.extensions
       }
       configLoaded = true
       await boot()
@@ -136,6 +165,10 @@
 
 {#if gitStatus.conflicts.length > 0 && !ui.conflictsHidden}
   <ConflictModal />
+{/if}
+
+{#if ui.settingsOpen}
+  <Settings />
 {/if}
 
 <style>

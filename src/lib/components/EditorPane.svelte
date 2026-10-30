@@ -50,6 +50,8 @@
     type GitStatus,
   } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
+  import { initVimMode } from 'monaco-vim'
+  import { EmacsExtension } from 'monaco-emacs'
   import MarkdownPreview from './MarkdownPreview.svelte'
 
   self.MonacoEnvironment = {
@@ -89,8 +91,10 @@
   const inFlight = new Set<string>()
   const viewStates = new Map<string, monaco.editor.ICodeEditorViewState | null>()
 
-  const persist = debounce(() => void savePending(), 2000)
+  const persist = debounce(() => void savePending(), () => ui.saveDebounceMs)
   let pushTimer: ReturnType<typeof setTimeout> | undefined
+  let keymap: { dispose(): void } | undefined
+  let vimStatus = $state<HTMLDivElement>()
 
   function activeTab() {
     return tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null
@@ -122,7 +126,8 @@
 
   function armPush() {
     clearTimeout(pushTimer)
-    pushTimer = setTimeout(() => void push(), 30_000)
+    if (!ui.autoSync) return
+    pushTimer = setTimeout(() => void push(), ui.pushIdleMs)
   }
 
   async function push() {
@@ -206,12 +211,31 @@
     monaco.editor.setTheme(ui.editorTheme)
   })
 
+  $effect(() => {
+    editor?.updateOptions({ fontSize: ui.fontSize, fontFamily: ui.fontFamily })
+  })
+
+  // Vim/Emacs keymaps wrap the single editor instance; swapping presets disposes the old one.
+  $effect(() => {
+    const mode = ui.keybindings
+    keymap?.dispose()
+    keymap = undefined
+    if (!editor) return
+    if (mode === 'vim' && vimStatus) {
+      keymap = initVimMode(editor, vimStatus)
+    } else if (mode === 'emacs') {
+      const emacs = new EmacsExtension(editor)
+      emacs.start()
+      keymap = emacs
+    }
+  })
+
   async function onBlur() {
     if (pendingId) {
       persist.cancel()
       await savePending()
     }
-    await push()
+    if (ui.autoSync) await push()
   }
 
   onMount(() => {
@@ -219,8 +243,8 @@
       theme: ui.editorTheme,
       automaticLayout: true,
       minimap: { enabled: false },
-      fontSize: 13,
-      fontFamily: 'ui-monospace, monospace',
+      fontSize: ui.fontSize,
+      fontFamily: ui.fontFamily,
       scrollBeyondLastLine: false,
       renderWhitespace: 'selection',
     })
@@ -254,6 +278,7 @@
       clearTimeout(pushTimer)
       models.forEach((m) => m.dispose())
       models.clear()
+      keymap?.dispose()
       editor?.dispose()
     }
   })
@@ -262,6 +287,9 @@
 <div class="pane">
   <div class="editor-wrap" class:hidden={ui.previewMode === 'full' && isMarkdown}>
     <div class="editor" bind:this={host}></div>
+    {#if ui.keybindings === 'vim'}
+      <div class="vim" bind:this={vimStatus}></div>
+    {/if}
     {#if !activeTab()}
       <p class="empty">No file open</p>
     {/if}
@@ -292,6 +320,18 @@
   .editor {
     position: absolute;
     inset: 0;
+  }
+  .vim {
+    position: absolute;
+    right: 8px;
+    bottom: 6px;
+    z-index: 5;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: var(--bg-panel);
+    color: var(--muted);
+    font: 12px ui-monospace, monospace;
+    pointer-events: none;
   }
   .preview {
     flex: 1;
