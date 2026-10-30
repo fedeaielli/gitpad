@@ -5,11 +5,9 @@
   import Sidebar from './lib/components/Sidebar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
-  import { tabs } from './lib/stores/tabs.svelte'
+  import EditorPane from './lib/components/EditorPane.svelte'
   import { ui } from './lib/stores/ui.svelte'
   import { applyGitStatus, gitStatus, type GitStatus } from './lib/stores/git.svelte'
-
-  const active = $derived(tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null)
 
   async function boot() {
     let repoReady = false
@@ -46,13 +44,7 @@
     {/if}
     <section class="editor">
       <TabBar />
-      <div class="pane">
-        {#if active}
-          <pre class="content">{active.content}</pre>
-        {:else}
-          <p class="empty">No file open</p>
-        {/if}
-      </div>
+      <EditorPane />
     </section>
   </main>
   <StatusBar />
@@ -111,21 +103,5 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-  }
-  .pane {
-    flex: 1;
-    overflow: auto;
-  }
-  .content {
-    margin: 0;
-    padding: 12px;
-    font-family: ui-monospace, monospace;
-    font-size: 12.5px;
-    white-space: pre-wrap;
-  }
-  .empty {
-    margin-top: 40vh;
-    color: var(--muted);
-    text-align: center;
   }
 </style>

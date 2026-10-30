@@ -97,7 +97,10 @@ pub async fn fs_write_file(
     let message = format!("gitpad: update {} {}", rel.display(), git::iso8601_now());
     tokio::task::spawn_blocking(move || git::commit_paths(&root, &[rel], &message))
         .await
-        .map_err(|e| format!("git task: {e}"))?
+        .map_err(|e| format!("git task: {e}"))??;
+    // Autosave flow: refresh ahead/behind so the status bar shows "queued".
+    let _ = git::emit_current_status(&app);
+    Ok(())
 }
 
 #[tauri::command]

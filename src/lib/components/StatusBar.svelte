@@ -1,6 +1,7 @@
 <script lang="ts">
   import { gitStatus } from '../stores/git.svelte'
   import { tabs } from '../stores/tabs.svelte'
+  import { ui } from '../stores/ui.svelte'
 
   let now = $state(Date.now())
 
@@ -36,7 +37,7 @@
   <span class="spacer"></span>
   <span class="badge {badge}">{badge}</span>
   <span>last push: {relative(gitStatus.lastPush)}</span>
-  <span>1:1</span>
+  <span>{ui.cursor.line}:{ui.cursor.column}</span>
   <span>{active?.language ?? 'plaintext'}</span>
 </footer>
 

@@ -2,6 +2,7 @@
   import { invoke } from '@tauri-apps/api/core'
   import { ui, type FileNode } from '../stores/ui.svelte'
   import { tabs, openTab, activateTab, closeTab } from '../stores/tabs.svelte'
+  import { languageFor } from '../utils/langmap'
 
   type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'rename' | 'delete'
 
@@ -64,8 +65,7 @@
     }
     try {
       const content = await invoke<string>('fs_read_file', { path: node.path })
-      // language stays plaintext until T3.5 maps extensions to Monaco modes
-      openTab({ id: node.path, path: node.path, content, modified: false, language: 'plaintext' })
+      openTab({ id: node.path, path: node.path, content, modified: false, language: languageFor(node.path) })
     } catch (e) {
       error = String(e)
     }
