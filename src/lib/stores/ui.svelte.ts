@@ -11,4 +11,6 @@ export const ui = $state({
   commandPaletteOpen: false,
   settingsOpen: false,
   fileTree: [] as FileNode[],
+  /** Bumped after clone/rename so the tree reloads without prop drilling. */
+  treeVersion: 0,
 })
