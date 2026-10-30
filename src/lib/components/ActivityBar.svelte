@@ -11,8 +11,15 @@
 
   let user = $state<UserInfo | null>(null)
 
-  onMount(async () => {
+  async function loadUser() {
     user = await invoke<UserInfo>('github_get_user').catch(() => null)
+  }
+
+  onMount(() => {
+    void loadUser()
+    // Refresh after login/logout without restarting the app.
+    window.addEventListener('focus', loadUser)
+    return () => window.removeEventListener('focus', loadUser)
   })
 
   // Clicking the active view folds the panel, like VS Code.

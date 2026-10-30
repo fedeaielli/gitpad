@@ -1,36 +1,3 @@
-<script module lang="ts">
-  import type { editor } from 'monaco-editor'
-
-  let flush: (() => Promise<void>) | null = null
-  let current = $state<editor.IStandaloneCodeEditor | null>(null)
-
-  export function registerFlush(fn: (() => Promise<void>) | null) {
-    flush = fn
-  }
-
-  /// Used by the close handshake in App.svelte before the app exits.
-  export async function flushPendingSave() {
-    await flush?.()
-  }
-
-  /// Shared with MarkdownPreview so it can sync its scroll position.
-  export function getEditor() {
-    return current
-  }
-
-  /// Jumps to a search hit; the editor already holds the active model.
-  export function revealLine(line: number, column: number) {
-    if (!current) return
-    current.revealLineInCenter(line)
-    current.setPosition({ lineNumber: line, column })
-    current.focus()
-  }
-
-  export function setEditor(next: editor.IStandaloneCodeEditor | null) {
-    current = next
-  }
-</script>
-
 <script lang="ts">
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
@@ -43,6 +10,8 @@
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
   import { tabs, discarded } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
+  import { getEditor, registerFlush, setEditorInstance } from '../editor/bridge'
+  import { monacoTheme } from '../utils/themes'
   import {
     gitStatus,
     isIgnorableSyncError,
@@ -153,6 +122,10 @@
     persist.run()
   }
 
+  function setEditor(next: monaco.editor.IStandaloneCodeEditor | null) {
+    setEditorInstance(next)
+  }
+
   function applyActive() {
     const tab = activeTab()
     const path = tab?.path ?? ''
@@ -208,7 +181,7 @@
   })
 
   $effect(() => {
-    monaco.editor.setTheme(ui.editorTheme)
+    monaco.editor.setTheme(monacoTheme(ui.editorTheme))
   })
 
   $effect(() => {
@@ -231,16 +204,18 @@
   })
 
   async function onBlur() {
+    const hadEdits = pendingId !== null || tabs.tabs.some((t) => t.modified)
     if (pendingId) {
       persist.cancel()
       await savePending()
     }
-    if (ui.autoSync) await push()
+    // Avoid pushing just because the window lost focus.
+    if (ui.autoSync && (hadEdits || gitStatus.ahead > 0)) await push()
   }
 
   onMount(() => {
     editor = monaco.editor.create(host, {
-      theme: ui.editorTheme,
+      theme: monacoTheme(ui.editorTheme),
       automaticLayout: true,
       minimap: { enabled: false },
       fontSize: ui.fontSize,

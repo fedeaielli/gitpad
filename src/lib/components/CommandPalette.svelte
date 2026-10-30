@@ -6,7 +6,7 @@
   import { languageFor } from '../utils/langmap'
   import { debounce } from '../utils/debounce'
   import { markPushed, type GitStatus } from '../stores/git.svelte'
-  import { revealLine } from './EditorPane.svelte'
+  import { revealLine } from '../editor/bridge'
 
   interface SearchResult {
     file: string
