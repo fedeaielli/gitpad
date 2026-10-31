@@ -239,6 +239,8 @@ pub fn commit_all(root: &Path, prefix: &str) -> Result<(), String> {
 }
 
 fn pull_repo(repo: &Repository, token: Option<String>) -> Result<GitStatus, String> {
+    // always commit before pull — reset(Hard) is used below
+    commit_pending(repo, None)?;
     fetch(repo, token)?;
     let (Some(local), Some(remote)) = branch_oids(repo) else {
         return status_of(repo);
@@ -455,8 +457,6 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, String> {
     let token = auth::token().ok();
     let status = tokio::task::spawn_blocking(move || {
         let repo = Repository::open(&path).map_err(git_err)?;
-        // Commit local edits first: the checkout below must not overwrite them.
-        commit_pending(&repo, None)?;
         pull_repo(&repo, token)
     })
     .await
