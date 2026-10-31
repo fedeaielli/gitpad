@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, tick } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
+  import { getCurrentWindow } from '@tauri-apps/api/window'
   import Sidebar from './lib/components/Sidebar.svelte'
   import ActivityBar from './lib/components/ActivityBar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
@@ -84,6 +85,11 @@
       else gitStatus.error = message
     }
     if (!repoReady) return
+    // Network work waits for first paint; the local status is enough to render.
+    setTimeout(() => void remoteSync(), 1200)
+  }
+
+  async function remoteSync() {
     const token = await invoke<string | null>('auth_get', { key: 'github_token' }).catch(() => null)
     if (!token) return
     try {
@@ -132,6 +138,8 @@
         })
     }
     window.addEventListener('focus', onFocus)
+    // Hidden until the first render; the timer keeps a JS failure from hiding the app forever.
+    const showTimer = setTimeout(() => void getCurrentWindow().show().catch(() => {}), 1500)
     void (async () => {
       const config = await loadConfig().catch((e) => {
         pushToast(`load settings: ${String(e)}`)
@@ -156,9 +164,13 @@
         if (config.extensions) ui.extensions = config.extensions
       }
       configLoaded = true
+      clearTimeout(showTimer)
+      await tick()
+      await getCurrentWindow().show().catch(() => {})
       await boot()
     })()
     return () => {
+      clearTimeout(showTimer)
       window.removeEventListener('focus', onFocus)
       unlistens.forEach((fn) => fn())
     }
