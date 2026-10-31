@@ -43,14 +43,23 @@ export function markPushed(status: GitStatus) {
   gitStatus.lastPush = new Date()
 }
 
+/// Tauri errors are either strings or `{ code, message }` from the Rust GitError enum.
+export function errorMessage(error: unknown): string {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string') return message
+  }
+  return String(error)
+}
+
 /// A missing repository is the only state that means "not configured yet".
-export function isNoRepoError(message: string) {
-  return message.includes('NOT_FOUND')
+export function isNoRepoError(error: unknown) {
+  return !!error && typeof error === 'object' && (error as { code?: unknown }).code === 'NOT_FOUND'
 }
 
 /// Expected states (no token yet, no clone yet) must not surface as sync errors.
-export function isIgnorableSyncError(message: string) {
-  return message.includes('not authenticated') || isNoRepoError(message)
+export function isIgnorableSyncError(error: unknown) {
+  return errorMessage(error).includes('not authenticated') || isNoRepoError(error)
 }
 
 /// Single push path for the editor, git panel and conflict dialog.

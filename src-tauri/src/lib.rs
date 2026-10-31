@@ -15,6 +15,9 @@ pub struct AppState {
 }
 
 static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
+/// Set by the frontend as soon as it handles `app-closing`; the watchdog below
+/// only fires when the webview is dead and never acknowledges.
+static CLOSE_ACK: AtomicBool = AtomicBool::new(false);
 
 /// Push the last local commits (short timeout, offline is fine) and exit.
 async fn shutdown(app: tauri::AppHandle) {
@@ -36,6 +39,12 @@ async fn shutdown(app: tauri::AppHandle) {
 #[tauri::command]
 async fn app_exit(app: tauri::AppHandle) {
     shutdown(app).await;
+}
+
+/// First thing the frontend does on `app-closing`: proves the webview is alive.
+#[tauri::command]
+fn app_closing_ack() {
+    CLOSE_ACK.store(true, Ordering::SeqCst);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -78,11 +87,23 @@ pub fn run() {
             config::config_get,
             config::config_save,
             app_exit,
+            app_closing_ack,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                CLOSE_ACK.store(false, Ordering::SeqCst);
                 let _ = window.emit("app-closing", ());
+                // Force-close only if the webview never answers (crash/hang). The
+                // frontend acks immediately, so the unsaved-changes dialog can stay
+                // open as long as the user needs without racing this timer.
+                let app = window.app_handle().clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(Duration::from_secs(5));
+                    if !CLOSE_ACK.load(Ordering::SeqCst) {
+                        app.exit(0);
+                    }
+                });
             }
         })
         .run(tauri::generate_context!());

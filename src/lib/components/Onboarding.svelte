@@ -4,7 +4,7 @@
   import { listen } from '@tauri-apps/api/event'
   import { openUrl } from '@tauri-apps/plugin-opener'
   import { ui } from '../stores/ui.svelte'
-  import { applyGitStatus, type GitStatus } from '../stores/git.svelte'
+  import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
 
   interface UserInfo {
     login: string
@@ -37,7 +37,7 @@
   let error = $state<string | null>(null)
 
   function fail(e: unknown) {
-    error = String(e)
+    error = errorMessage(e)
     busy = false
   }
 
@@ -73,7 +73,7 @@
     try {
       repo = await invoke<RepoInfo>('github_init_repo')
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     } finally {
       busy = false
     }
