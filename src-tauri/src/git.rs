@@ -336,7 +336,13 @@ fn commit_files(repo: &Repository, hash: &str) -> Result<Vec<FileChange>, GitErr
         .collect())
 }
 
-fn restore_file(repo: &Repository, hash: &str, rel: &Path) -> Result<GitStatus, GitError> {
+fn restore_file(
+    repo: &Repository,
+    hash: &str,
+    rel: &Path,
+    gate: &std::sync::RwLock<()>,
+) -> Result<GitStatus, GitError> {
+    let _gate = gate.write().map_err(|e| e.to_string())?;
     let oid = Oid::from_str(hash)
         .map_err(|e| GitError::Other(format!("bad commit {hash}: {e}")))?;
     let commit = repo.find_commit(oid).map_err(git_err)?;
@@ -354,7 +360,12 @@ fn restore_file(repo: &Repository, hash: &str, rel: &Path) -> Result<GitStatus, 
     status_of(repo)
 }
 
-fn revert_commit(repo: &Repository, hash: &str) -> Result<GitStatus, GitError> {
+fn revert_commit(
+    repo: &Repository,
+    hash: &str,
+    gate: &std::sync::RwLock<()>,
+) -> Result<GitStatus, GitError> {
+    let _gate = gate.write().map_err(|e| e.to_string())?;
     let oid = Oid::from_str(hash)
         .map_err(|e| GitError::Other(format!("bad commit {hash}: {e}")))?;
     let commit = repo.find_commit(oid).map_err(git_err)?;
@@ -635,6 +646,7 @@ pub fn push_only_blocking(
     path: &Path,
     message: Option<String>,
     token: Option<String>,
+    gate: Option<&std::sync::RwLock<()>>,
 ) -> Result<GitStatus, GitError> {
     let repo = open_repo(path)?;
     let (local, remote) = branch_oids(&repo);
@@ -645,7 +657,13 @@ pub fn push_only_blocking(
             return Ok(status);
         }
     }
+    // The gate covers the commit only: the network must not hold it.
+    let guard = match gate {
+        Some(gate) => Some(gate.write().map_err(|e| e.to_string())?),
+        None => None,
+    };
     commit_pending(&repo, message.as_deref())?;
+    drop(guard);
     push_refs(&repo, token)?;
     status_of(&repo)
 }
@@ -865,7 +883,8 @@ pub async fn git_push(
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
         if pull == Some(false) {
-            push_only_blocking(&path, message, token).map(|status| (status, Vec::new(), None))
+            push_only_blocking(&path, message, token, Some(&gate))
+                .map(|status| (status, Vec::new(), None))
         } else {
             push_blocking(&path, message, token, gate)
         }
@@ -896,7 +915,12 @@ fn safe_rel_path(path: &str) -> Result<PathBuf, GitError> {
     Ok(candidate.to_path_buf())
 }
 
-fn discard_file(repo: &Repository, rel: &Path) -> Result<(), GitError> {
+fn discard_file(
+    repo: &Repository,
+    rel: &Path,
+    gate: &std::sync::RwLock<()>,
+) -> Result<(), GitError> {
+    let _gate = gate.write().map_err(|e| e.to_string())?;
     let tracked = repo
         .index()
         .map_err(git_err)?
@@ -919,9 +943,10 @@ fn discard_file(repo: &Repository, rel: &Path) -> Result<(), GitError> {
 pub async fn git_discard_file(app: AppHandle, path: String) -> Result<GitStatus, GitError> {
     let root = repo_dir(&app)?;
     let rel = safe_rel_path(&path)?;
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
     let status = tokio::task::spawn_blocking(move || {
         let repo = open_repo(&root)?;
-        discard_file(&repo, &rel)?;
+        discard_file(&repo, &rel, &gate)?;
         status_of(&repo)
     })
     .await
@@ -954,9 +979,10 @@ pub async fn git_restore_file(
 ) -> Result<GitStatus, GitError> {
     let root = repo_dir(&app)?;
     let rel = safe_rel_path(&path)?;
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
     let status = tokio::task::spawn_blocking(move || {
         let repo = open_repo(&root)?;
-        restore_file(&repo, &hash, &rel)
+        restore_file(&repo, &hash, &rel, &gate)
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
@@ -967,9 +993,10 @@ pub async fn git_restore_file(
 #[tauri::command]
 pub async fn git_revert_commit(app: AppHandle, hash: String) -> Result<GitStatus, GitError> {
     let root = repo_dir(&app)?;
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
     let status = tokio::task::spawn_blocking(move || {
         let repo = open_repo(&root)?;
-        revert_commit(&repo, &hash)
+        revert_commit(&repo, &hash, &gate)
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
@@ -1334,17 +1361,20 @@ mod tests {
     fn restore_file_brings_back_old_content() {
         let root = tmp("restore");
         let repo = Repository::init(&root).unwrap();
+        let gate = std::sync::RwLock::new(());
         commit_file(&repo, "note.md", "old");
         let first = repo.head().unwrap().target().unwrap().to_string();
         commit_file(&repo, "note.md", "new");
         assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "new");
 
-        let status = restore_file(&repo, &first, Path::new("note.md")).unwrap();
+        let status = restore_file(&repo, &first, Path::new("note.md"), &gate).unwrap();
         assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
         assert!(!status.synced);
         assert!(status.changes.iter().any(|c| c.path == "note.md"));
 
-        assert!(restore_file(&repo, &first, Path::new("missing.md")).is_err());
+        assert!(restore_file(&repo, &first, Path::new("missing.md"), &gate).is_err());
+        // The guard must not outlive the call, error path included.
+        assert!(gate.try_write().is_ok());
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -1352,12 +1382,13 @@ mod tests {
     fn revert_commit_inverts_changes() {
         let root = tmp("revert");
         let repo = Repository::init(&root).unwrap();
+        let gate = std::sync::RwLock::new(());
         commit_file(&repo, "a.txt", "one");
         let first = repo.head().unwrap().target().unwrap().to_string();
         commit_file(&repo, "a.txt", "two");
         let second = repo.head().unwrap().target().unwrap().to_string();
 
-        let status = revert_commit(&repo, &second).unwrap();
+        let status = revert_commit(&repo, &second, &gate).unwrap();
         assert_eq!(std::fs::read_to_string(root.join("a.txt")).unwrap(), "one");
         let head = repo.head().unwrap().peel_to_commit().unwrap();
         assert_ne!(head.id().to_string(), second);
@@ -1367,7 +1398,92 @@ mod tests {
         );
         assert!(!status.branch.is_empty());
 
-        assert!(revert_commit(&repo, &first).is_err()); // first commit
+        assert!(revert_commit(&repo, &first, &gate).is_err()); // first commit
+        assert!(gate.try_write().is_ok());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn discard_file_holds_and_releases_the_gate() {
+        let root = tmp("discard-gate");
+        let repo = Repository::init(&root).unwrap();
+        let gate = std::sync::RwLock::new(());
+        commit_file(&repo, "note.md", "old");
+        std::fs::write(root.join("note.md"), "edited").unwrap();
+
+        discard_file(&repo, Path::new("note.md"), &gate).unwrap();
+        assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
+        assert!(gate.try_write().is_ok());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn push_only_releases_the_gate_after_committing() {
+        let root = tmp("push-only-gate");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+        commit_file(&a, "b.txt", "2");
+        drop(a);
+
+        let gate = std::sync::RwLock::new(());
+        let status = push_only_blocking(&a_path, None, None, Some(&gate)).unwrap();
+        assert_eq!(status.ahead, 0);
+        assert!(gate.try_write().is_ok());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn push_only_releases_the_gate_after_a_push_error() {
+        let root = tmp("push-only-gate-error");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+        commit_file(&a, "b.txt", "2");
+        drop(a);
+        // The remote disappears: the commit succeeds, the push does not.
+        std::fs::remove_dir_all(&remote_path).unwrap();
+
+        let gate = std::sync::RwLock::new(());
+        assert!(push_only_blocking(&a_path, None, None, Some(&gate)).is_err());
+        assert!(gate.try_write().is_ok());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn push_only_waits_for_a_held_gate() {
+        let root = tmp("push-only-wait");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+        commit_file(&a, "b.txt", "2");
+        drop(a);
+
+        let gate = std::sync::Arc::new(std::sync::RwLock::new(()));
+        let held = gate.write().unwrap();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let task_gate = gate.clone();
+        let task_path = a_path.clone();
+        let task = std::thread::spawn(move || {
+            let ok = push_only_blocking(&task_path, None, None, Some(task_gate.as_ref())).is_ok();
+            let _ = tx.send(ok);
+        });
+
+        assert!(rx
+            .recv_timeout(std::time::Duration::from_millis(200))
+            .is_err());
+        drop(held);
+        assert!(rx.recv_timeout(std::time::Duration::from_secs(10)).unwrap());
+        task.join().unwrap();
         let _ = std::fs::remove_dir_all(&root);
     }
 
