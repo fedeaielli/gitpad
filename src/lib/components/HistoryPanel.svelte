@@ -9,7 +9,7 @@
     type GitStatus,
   } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
-  import { closeTab, discarded, tabs } from '../stores/tabs.svelte'
+  import { closeIfClean, tabs } from '../stores/tabs.svelte'
 
   interface CommitEntry {
     hash: string
@@ -44,15 +44,6 @@
     }
     expanded = commit.hash
     files = await invoke<FileChange[]>('git_commit_files', { hash: commit.hash }).catch(() => [])
-  }
-
-  function closeIfClean(path: string) {
-    const open = tabs.tabs.find((t) => t.path === path)
-    if (!open) return true
-    if (open.modified) return false
-    discarded.add(open.id)
-    closeTab(open.id)
-    return true
   }
 
   async function restore(commit: CommitEntry, file: FileChange) {

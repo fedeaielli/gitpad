@@ -39,6 +39,16 @@ export function closeTab(id: string) {
   }
 }
 
+/// Close a tab only when it has no unsaved edits; false means it blocked.
+export function closeIfClean(path: string) {
+  const tab = tabs.tabs.find((t) => t.path === path)
+  if (!tab) return true
+  if (tab.modified) return false
+  discarded.add(tab.id)
+  closeTab(tab.id)
+  return true
+}
+
 /// Close every tab at or under `path` without writing anything back to disk.
 export function discardUnder(path: string) {
   for (const tab of [...tabs.tabs]) {

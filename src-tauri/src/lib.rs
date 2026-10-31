@@ -127,6 +127,8 @@ pub fn run() {
             git::git_commit_files,
             git::git_restore_file,
             git::git_revert_commit,
+            git::git_file_log,
+            git::git_file_diff,
             git::git_status,
             git::git_conflicts,
             git::git_resolve_conflict,

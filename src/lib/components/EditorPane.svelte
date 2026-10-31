@@ -30,6 +30,7 @@
   import { initVimMode } from 'monaco-vim'
   import { EmacsExtension } from 'monaco-emacs'
   import MarkdownPreview from './MarkdownPreview.svelte'
+  import FileTimeline from './FileTimeline.svelte'
 
   self.MonacoEnvironment = {
     getWorker(_workerId, label) {
@@ -248,6 +249,7 @@
       fontFamily: ui.fontFamily,
       scrollBeyondLastLine: false,
       renderWhitespace: 'selection',
+      scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
     })
     setEditor(editor)
     const contentSub = editor.onDidChangeModelContent(onEdit)
@@ -283,11 +285,26 @@
 </script>
 
 <div class="pane">
-  {#if isMarkdown}
-    <div class="preview-bar">
-      <button class="preview-toggle" onclick={cyclePreview} title="Cycle preview (Ctrl+Shift+P)">
-        Preview · {previewMode}
+  {#if activeTab()}
+    <div class="editor-bar">
+      <button
+        class="bar-icon"
+        class:active={ui.timelineOpen}
+        title="History for this file"
+        aria-label="File history"
+        aria-pressed={ui.timelineOpen}
+        onclick={() => (ui.timelineOpen = !ui.timelineOpen)}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.6" />
+          <path d="M8 5v3.2l2.2 1.3" />
+        </svg>
       </button>
+      {#if isMarkdown}
+        <button class="preview-toggle" onclick={cyclePreview} title="Cycle preview (Ctrl+Shift+P)">
+          Preview · {previewMode}
+        </button>
+      {/if}
     </div>
   {/if}
   <div class="content">
@@ -304,6 +321,9 @@
       <div class="preview"><MarkdownPreview /></div>
     {/if}
   </div>
+  {#if ui.timelineOpen && activeTab()}
+    <FileTimeline />
+  {/if}
   {#if saveError}
     <p class="error">{saveError}</p>
   {/if}
@@ -317,13 +337,34 @@
     flex: 1;
     min-height: 0;
   }
-  .preview-bar {
+  .editor-bar {
     display: flex;
     align-items: center;
+    gap: 6px;
     height: 26px;
     padding: 0 8px;
     border-bottom: 1px solid var(--border);
     background: var(--bg-panel);
+  }
+  .bar-icon {
+    display: flex;
+    padding: 2px;
+    border-radius: 3px;
+    color: var(--muted);
+  }
+  .bar-icon:hover {
+    color: var(--text);
+    background: var(--bg-raised);
+  }
+  .bar-icon.active {
+    color: var(--accent);
+  }
+  .bar-icon svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
   }
   .preview-toggle {
     padding: 1px 8px;
