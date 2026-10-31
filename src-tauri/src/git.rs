@@ -572,10 +572,11 @@ fn conflict_paths(repo: &Repository) -> Result<Vec<String>, GitError> {
     Ok(paths)
 }
 
-fn pull_repo(
+fn pull_repo_with(
     repo: &Repository,
     token: Option<String>,
     gate: &std::sync::RwLock<()>,
+    message: Option<&str>,
 ) -> Result<(GitStatus, Vec<FileChange>), GitError> {
     // refs only: no worktree writes, readers must not wait for the network
     fetch(repo, token)?;
@@ -584,7 +585,7 @@ fn pull_repo(
     let _gate = gate.write().map_err(|e| e.to_string())?;
     // Committed under the lock so a write that slips in before the reset is
     // not discarded by reset(Hard).
-    commit_pending(repo, None)?;
+    commit_pending(repo, message)?;
     let before = repo.head().ok().and_then(|head| head.target());
     let (Some(local), Some(remote)) = branch_oids(repo) else {
         return Ok((status_of(repo)?, Vec::new()));
@@ -633,20 +634,30 @@ fn pull_repo(
     Ok((status, changes))
 }
 
+fn pull_repo(
+    repo: &Repository,
+    token: Option<String>,
+    gate: &std::sync::RwLock<()>,
+) -> Result<(GitStatus, Vec<FileChange>), GitError> {
+    pull_repo_with(repo, token, gate, None)
+}
+
 pub fn push_blocking(
     path: &Path,
     message: Option<String>,
     token: Option<String>,
     gate: std::sync::Arc<std::sync::RwLock<()>>,
-) -> Result<(GitStatus, Vec<FileChange>), GitError> {
+) -> Result<(GitStatus, Vec<FileChange>, Option<GitError>), GitError> {
     let repo = open_repo(path)?;
-    commit_pending(&repo, message.as_deref())?;
-    let (status, changes) = pull_repo(&repo, token.clone(), &gate)?;
+    let (status, changes) = pull_repo_with(&repo, token.clone(), &gate, message.as_deref())?;
     if !status.conflicts.is_empty() {
-        return Ok((status, changes));
+        return Ok((status, changes, None));
     }
-    push_refs(&repo, token)?;
-    Ok((status_of(&repo)?, changes))
+    // The pull already rewrote the worktree: report it even when the push fails.
+    match push_refs(&repo, token) {
+        Ok(()) => Ok((status_of(&repo)?, changes, None)),
+        Err(e) => Ok((status, changes, Some(e))),
+    }
 }
 
 /// Commit and push without pulling first (used by the push-only button).
@@ -863,10 +874,10 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
-    emit_status(&app, &status)?;
     if !changes.is_empty() {
         let _ = app.emit("pull-changed", &changes);
     }
+    emit_status(&app, &status)?;
     Ok(status)
 }
 
@@ -878,20 +889,24 @@ pub async fn git_push(
 ) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     let gate = app.state::<crate::AppState>().repo_gate.clone();
-    let (status, changes) = tokio::task::spawn_blocking(move || {
+    let (status, changes, push_error) = tokio::task::spawn_blocking(move || {
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
         if pull == Some(false) {
-            push_only_blocking(&path, message, token).map(|status| (status, Vec::new()))
+            push_only_blocking(&path, message, token).map(|status| (status, Vec::new(), None))
         } else {
             push_blocking(&path, message, token, gate)
         }
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
-    emit_status(&app, &status)?;
+    // The worktree already changed: reload tabs before the push error surfaces.
     if !changes.is_empty() {
         let _ = app.emit("pull-changed", &changes);
+    }
+    emit_status(&app, &status)?;
+    if let Some(e) = push_error {
+        return Err(e);
     }
     Ok(status)
 }
@@ -1468,4 +1483,98 @@ mod tests {
         assert!(!a_path.join("a.txt").exists());
         let _ = std::fs::remove_dir_all(&root);
     }
+
+    #[test]
+    fn push_success_returns_pull_changes_and_no_error() {
+        let root = tmp("push-ok");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "b.txt", "2");
+        push_current(&b);
+
+        commit_file(&a, "c.txt", "3");
+        drop(a);
+        let (status, changes, push_error) = push_blocking(
+            &a_path,
+            None,
+            None,
+            std::sync::Arc::new(std::sync::RwLock::new(())),
+        )
+        .unwrap();
+
+        assert!(push_error.is_none());
+        assert!(status.conflicts.is_empty());
+        assert_eq!(status.ahead, 0);
+        assert!(changes
+            .iter()
+            .any(|change| change.path == "b.txt" && change.status == "A"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn push_failure_still_returns_pull_changes() {
+        // Root ignores file permissions: the read-only remote would accept.
+        if std::process::Command::new("id")
+            .arg("-u")
+            .output()
+            .is_ok_and(|out| out.stdout.first() == Some(&b'0'))
+        {
+            eprintln!("skipping: root can write to a read-only remote");
+            return;
+        }
+        let root = tmp("push-rejected");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "b.txt", "2");
+        push_current(&b);
+
+        commit_file(&a, "c.txt", "3");
+
+        // A read-only remote rejects the push; libgit2 does not run local hooks.
+        let chmod = |mode: &str| {
+            let ok = std::process::Command::new("chmod")
+                .arg("-R")
+                .arg(mode)
+                .arg(&remote_path)
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false);
+            assert!(ok, "chmod {mode} failed");
+        };
+        chmod("a-w");
+
+        drop(a);
+        let result = push_blocking(
+            &a_path,
+            None,
+            None,
+            std::sync::Arc::new(std::sync::RwLock::new(())),
+        );
+        chmod("u+w");
+        let (status, changes, push_error) = result.unwrap();
+
+        let error = push_error.expect("the read-only remote must reject the push");
+        assert!(error.to_string().contains("git push"));
+        assert!(status.ahead > 0);
+        assert!(changes
+            .iter()
+            .any(|change| change.path == "b.txt" && change.status == "A"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
 }
