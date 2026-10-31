@@ -27,6 +27,7 @@
   import { monacoTheme } from '../utils/themes'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
+  import { saveDecision } from '../utils/save-guard'
   import { initVimMode } from 'monaco-vim'
   import { EmacsExtension } from 'monaco-emacs'
   import MarkdownPreview from './MarkdownPreview.svelte'
@@ -87,11 +88,22 @@
     pendingId = ''
     const tab = tabs.tabs.find((t) => t.id === id)
     if (!tab) return true
+    const decision = saveDecision(tab)
+    if (decision === 'skip') {
+      tab.modified = false
+      return true
+    }
+    if (decision === 'refuse') {
+      tab.modified = true
+      saveError = 'refusing to save an empty file — reopen the tab'
+      return false
+    }
     const content = tab.content
     inFlight.add(tab.path)
     try {
       await invoke('fs_write_file', { path: tab.path, content })
       saved.set(tab.path, content)
+      tab.savedContent = content
       if (tab.content === content) tab.modified = false
       saveError = null
       armPush()
@@ -114,11 +126,23 @@
     let ok = await savePending()
     for (const tab of tabs.tabs) {
       if (!tab.modified || tab.id === attempted) continue
+      const decision = saveDecision(tab)
+      if (decision === 'skip') {
+        tab.modified = false
+        continue
+      }
+      if (decision === 'refuse') {
+        tab.modified = true
+        saveError = 'refusing to save an empty file — reopen the tab'
+        ok = false
+        break
+      }
       const content = tab.content
       inFlight.add(tab.path)
       try {
         await invoke('fs_write_file', { path: tab.path, content })
         saved.set(tab.path, content)
+        tab.savedContent = content
         if (tab.content === content) tab.modified = false
         saveError = null
       } catch (e) {

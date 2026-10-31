@@ -6,6 +6,8 @@ export interface Tab {
   content: string
   modified: boolean
   language: string
+  /// Last content known to be on disk; guards against writing an empty buffer.
+  savedContent?: string
 }
 
 export const tabs = $state({
@@ -22,6 +24,7 @@ export function openTab(tab: Tab) {
     tabs.activeTabId = existing.id
     return
   }
+  if (tab.savedContent === undefined) tab.savedContent = tab.content
   tabs.tabs.push(tab)
   tabs.activeTabId = tab.id
 }
