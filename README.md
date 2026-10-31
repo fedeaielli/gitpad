@@ -85,3 +85,20 @@ to create, rename or delete.
   but an already open tab is not reloaded.
 - The markdown preview does not render remote images (CSP blocks them).
 - The file tree watch is focus-based, not inotify-based.
+
+## Testing
+
+`npm test` runs the frontend unit tests (vitest), `cargo test` the Rust ones.
+
+### Closing with unsaved changes (manual)
+
+The save-failure path cannot be automated because it needs the OS dialog:
+
+1. `chmod -R a-w ~/.local/share/com.gitpad.app/repos/gitpad_notes`
+2. Edit a file in GitPad and close the window right away.
+3. A dialog appears: "Some changes could not be saved. Exit anyway?"
+4. Cancel keeps the app open with the edit still in the tab; Confirm exits.
+5. `chmod -R u+w ~/.local/share/com.gitpad.app/repos/gitpad_notes` to restore.
+
+The window force-closes after 5 s only if the webview stops answering
+(crash or hang). That watchdog is not active while the dialog is open.
