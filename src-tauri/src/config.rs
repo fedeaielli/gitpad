@@ -69,9 +69,13 @@ fn read_config(path: &Path) -> Config {
         .unwrap_or_default()
 }
 
+/// Sync Tauri commands run on the main thread, so two saves never overlap and
+/// the fixed `config.json.tmp` name is safe.
 fn write_config(path: &Path, config: &Config) -> Result<(), String> {
     let raw = serde_json::to_string_pretty(config).map_err(|e| format!("serialize config: {e}"))?;
-    std::fs::write(path, raw).map_err(|e| format!("write config: {e}"))
+    // Same directory as config.json so the rename stays atomic.
+    let tmp = path.with_extension("json.tmp");
+    crate::fs::write_atomic(path, &tmp, raw.as_bytes()).map_err(|e| format!("write config: {e}"))
 }
 
 #[tauri::command]
@@ -122,6 +126,7 @@ mod tests {
             extensions: [("md".to_string(), "markdown".to_string())].into(),
         };
         write_config(&path, &config).unwrap();
+        assert!(!dir.join("config.json.tmp").exists());
         let loaded = read_config(&path);
         assert!(loaded.onboarding_complete);
         assert_eq!(loaded.theme, "vs");
