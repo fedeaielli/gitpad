@@ -37,6 +37,25 @@ describe('tabs store', () => {
     expect(store.tabs.activeTabId).toBe('/a')
   })
 
+  it('discards a stale tab on close so its buffer is never written back', () => {
+    store.openTab({ ...tab('/notes/a.md'), staleUpstream: true })
+    store.closeTab('/notes/a.md')
+    expect(store.discarded.has('/notes/a.md')).toBe(true)
+  })
+
+  it('does not discard a clean tab on close', () => {
+    store.openTab(tab('/notes/a.md'))
+    store.closeTab('/notes/a.md')
+    expect(store.discarded.has('/notes/a.md')).toBe(false)
+  })
+
+  it('reopening a discarded path allows the next close to save again', () => {
+    store.openTab({ ...tab('/notes/a.md'), staleUpstream: true })
+    store.closeTab('/notes/a.md')
+    store.openTab(tab('/notes/a.md'))
+    expect(store.discarded.has('/notes/a.md')).toBe(false)
+  })
+
   it('discards every tab under a deleted path', () => {
     store.openTab(tab('/notes/a.md'))
     store.openTab(tab('/notes/deep/b.md'))

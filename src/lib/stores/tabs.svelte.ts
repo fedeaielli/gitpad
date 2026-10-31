@@ -27,6 +27,7 @@ export function openTab(tab: Tab) {
     return
   }
   if (tab.savedContent === undefined) tab.savedContent = tab.content
+  discarded.delete(tab.path)
   tabs.tabs.push(tab)
   tabs.activeTabId = tab.id
 }
@@ -38,6 +39,8 @@ export function activateTab(id: string) {
 export function closeTab(id: string) {
   const index = tabs.tabs.findIndex((t) => t.id === id)
   if (index === -1) return
+  // A stale buffer is older than the file on disk: never write it back on close.
+  if (tabs.tabs[index].staleUpstream) discarded.add(tabs.tabs[index].path)
   tabs.tabs.splice(index, 1)
   if (tabs.activeTabId === id) {
     tabs.activeTabId = (tabs.tabs[index] ?? tabs.tabs[index - 1])?.id ?? ''
