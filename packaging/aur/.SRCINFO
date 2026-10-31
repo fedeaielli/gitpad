@@ -8,6 +8,7 @@ pkgbase = gitpad
 	makedepends = rust
 	makedepends = nodejs
 	makedepends = npm
+	makedepends = binutils
 	depends = webkit2gtk-4.1
 	depends = gtk3
 	depends = libappindicator-gtk3

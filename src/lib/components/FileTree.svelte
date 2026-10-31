@@ -6,37 +6,96 @@
   import { languageFor } from '../utils/langmap'
   import { errorMessage, isNoRepoError } from '../stores/git.svelte'
 
-  type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'rename' | 'delete'
+  type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'delete'
 
-  let expanded = $state<string[]>([])
   let error = $state<string | null>(null)
   let loading = $state(true)
   let noRepo = $state(false)
   let menu = $state<{ x: number; y: number; node: FileNode | null; mode: MenuMode } | null>(null)
   let name = $state('')
+  let renaming = $state<string | null>(null)
+  let renameValue = $state('')
 
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
+  /// Dot files stay hidden unless the header toggle is on.
+  function visible(nodes: FileNode[]): FileNode[] {
+    return ui.showHidden ? nodes : nodes.filter((node) => !node.name.startsWith('.'))
+  }
+
+  function sorted(nodes: FileNode[]): FileNode[] {
+    const list = [...visible(nodes)]
+    if (ui.sortMode === 'modified') {
+      return list.sort(
+        (a, b) => (b.modified ?? 0) - (a.modified ?? 0) || collator.compare(a.name, b.name),
+      )
+    }
+    if (ui.sortMode === 'folders') {
+      return list.sort(
+        (a, b) =>
+          Number(b.type === 'dir') - Number(a.type === 'dir') || collator.compare(a.name, b.name),
+      )
+    }
+    return list.sort((a, b) => collator.compare(a.name, b.name))
+  }
+
+  function focusInput(node: HTMLElement) {
+    node.focus()
+    if (node instanceof HTMLInputElement) node.select()
+  }
+
+  function startRename(node: FileNode) {
+    renaming = node.path
+    renameValue = node.name
+  }
+
+  async function commitRename(node: FileNode) {
+    if (renaming !== node.path) return
+    const value = renameValue.trim()
+    renaming = null
+    const to = join(parentOf(node.path), value)
+    if (!value || to === node.path) return
+    error = null
+    try {
+      await invoke('fs_rename', { from: node.path, to })
+      retarget(node.path, to)
+      ui.expanded = ui.expanded.map((p) =>
+        p === node.path || p.startsWith(`${node.path}/`)
+          ? to + p.slice(node.path.length)
+          : p,
+      )
+      await loadTree()
+    } catch (e) {
+      error = errorMessage(e)
+    }
+  }
+
+  // Keyed by the language in ui.extensions so a custom extension inherits its
+  // icon; the extension keys cover files the default list does not map.
   const ICONS: Record<string, string> = {
-    md: 'M',
-    markdown: 'M',
-    ts: 'TS',
-    js: 'JS',
+    markdown: '📝',
+    plaintext: '📄',
+    python: '🐍',
+    rust: '⚙️',
+    javascript: '⚡',
+    typescript: '⚡',
     json: '{}',
-    css: '#',
-    html: '<>',
-    svelte: 'S',
-    txt: 'T',
-    png: '▣',
-    jpg: '▣',
-    svg: '◈',
+    yaml: '⚙',
+    toml: '⚙',
+    shell: '$',
+    css: '🎨',
+    html: '🌐',
   }
 
   function iconFor(file: string): string {
     const ext = file.split('.').pop()?.toLowerCase() ?? ''
-    return ICONS[ext] ?? '·'
+    return ICONS[ui.extensions[ext] ?? ext] ?? '📄'
   }
 
   function toggle(path: string) {
-    expanded = expanded.includes(path) ? expanded.filter((p) => p !== path) : [...expanded, path]
+    ui.expanded = ui.expanded.includes(path)
+      ? ui.expanded.filter((p) => p !== path)
+      : [...ui.expanded, path]
   }
 
   function parentOf(path: string): string {
@@ -88,7 +147,7 @@
 
   function start(mode: MenuMode) {
     if (!menu) return
-    name = mode === 'rename' ? (menu.node?.name ?? '') : ''
+    name = ''
     menu = { ...menu, mode }
   }
 
@@ -105,7 +164,7 @@
       })
       if (typeof source !== 'string') return
       const path = await invoke<string>('fs_import', { source, destDir: base || null })
-      if (base && !expanded.includes(base)) expanded = [...expanded, base]
+      if (base && !ui.expanded.includes(base)) ui.expanded = [...ui.expanded, base]
       await loadTree()
       if (!directory) {
         await openFile({ name: path.split('/').pop() ?? path, path, type: 'file' })
@@ -132,19 +191,21 @@
       }
       if (menu.mode === 'new-folder') {
         await invoke('fs_create_dir', { path: join(base, value) })
-      } else if (menu.mode === 'rename' && menu.node) {
-        const from = menu.node.path
-        const to = join(parentOf(from), value)
-        if (to !== from) {
-          await invoke('fs_rename', { from, to })
-          retarget(from, to)
-          expanded = expanded.map((p) =>
-            p === from || p.startsWith(`${from}/`) ? to + p.slice(from.length) : p,
-          )
-        }
       }
       menu = null
       await loadTree()
+    } catch (e) {
+      error = errorMessage(e)
+    }
+  }
+
+  async function reveal() {
+    if (!menu) return
+    const path = menu.node?.path ?? ''
+    menu = null
+    error = null
+    try {
+      await invoke('reveal_in_filemanager', { path })
     } catch (e) {
       error = errorMessage(e)
     }
@@ -167,22 +228,50 @@
 
 {#snippet tree(nodes: FileNode[])}
   <ul>
-    {#each nodes as node (node.path)}
+    {#each sorted(nodes) as node (node.path)}
       <li>
-        {#if node.type === 'dir'}
+        {#if renaming === node.path}
+          <form
+            class="rename"
+            onsubmit={(e) => {
+              e.preventDefault()
+              void commitRename(node)
+            }}
+          >
+            <input
+              bind:value={renameValue}
+              use:focusInput
+              aria-label="New name for {node.name}"
+              onblur={() => commitRename(node)}
+              onkeydown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault()
+                  renaming = null
+                }
+              }}
+            />
+          </form>
+        {:else if node.type === 'dir'}
           <button
             class="row"
             oncontextmenu={(e) => {
               e.stopPropagation()
               openMenu(e, node)
             }}
+            ondblclick={() => startRename(node)}
+            onkeydown={(e) => {
+              if (e.key === 'F2') {
+                e.preventDefault()
+                startRename(node)
+              }
+            }}
             onclick={() => toggle(node.path)}
           >
-            <span class="chevron">{expanded.includes(node.path) ? '▾' : '▸'}</span>
-            <span class="icon">▤</span>
+            <span class="chevron">{ui.expanded.includes(node.path) ? '▾' : '▸'}</span>
+            <span class="icon" aria-hidden="true">▤</span>
             <span class="name">{node.name}</span>
           </button>
-          {#if expanded.includes(node.path)}
+          {#if ui.expanded.includes(node.path)}
             {@render tree(node.children ?? [])}
           {/if}
         {:else}
@@ -193,9 +282,16 @@
               e.stopPropagation()
               openMenu(e, node)
             }}
+            ondblclick={() => startRename(node)}
+            onkeydown={(e) => {
+              if (e.key === 'F2') {
+                e.preventDefault()
+                startRename(node)
+              }
+            }}
             onclick={() => openFile(node)}
           >
-            <span class="icon">{iconFor(node.name)}</span>
+            <span class="icon" aria-hidden="true">{iconFor(node.name)}</span>
             <span class="name">{node.name}</span>
           </button>
         {/if}
@@ -229,8 +325,8 @@
       <button onclick={() => start('new-folder')}>New Folder</button>
       <button onclick={() => importFromPicker(false)}>Import File…</button>
       <button onclick={() => importFromPicker(true)}>Import Folder…</button>
+      <button onclick={reveal}>Reveal in File Manager</button>
       {#if menu.node}
-        <button onclick={() => start('rename')}>Rename</button>
         <button onclick={() => (menu = { ...menu!, mode: 'delete' })}>Delete</button>
       {/if}
     {:else if menu.mode === 'delete'}
@@ -239,7 +335,7 @@
       <button onclick={() => (menu = null)}>Cancel</button>
     {:else}
       <form onsubmit={submitName}>
-        <input bind:value={name} placeholder={menu.mode === 'rename' ? 'New name' : 'Name'} />
+        <input bind:value={name} placeholder="Name" />
         <button type="submit">OK</button>
       </form>
     {/if}
@@ -251,7 +347,9 @@
 
 <style>
   .tree {
-    min-height: 100%;
+    box-sizing: border-box;
+    height: 100%;
+    overflow-y: auto;
     padding: 4px 0;
   }
   ul {
@@ -278,6 +376,13 @@
     background: var(--bg-raised);
     color: #fff;
   }
+  .rename {
+    padding: 0 8px;
+  }
+  .rename input {
+    width: 100%;
+    padding: 1px 4px;
+  }
   .chevron {
     width: 8px;
     color: var(--muted);
@@ -288,7 +393,7 @@
     width: 18px;
     color: var(--muted);
     font-family: ui-monospace, monospace;
-    font-size: 10px;
+    font-size: 12px;
   }
   .name {
     overflow: hidden;

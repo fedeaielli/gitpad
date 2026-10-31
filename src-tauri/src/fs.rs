@@ -12,6 +12,8 @@ pub struct FileEntry {
     pub kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub children: Option<Vec<FileEntry>>,
+    /// Seconds since the epoch, for the "modified" sort mode.
+    pub modified: Option<u64>,
 }
 
 /// Resolves a repo-relative (or absolute-inside-repo) path and refuses anything that escapes the clone.
@@ -84,12 +86,19 @@ fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
         let file_type = entry
             .file_type()
             .map_err(|e| format!("read dir {}: {e}", dir.display()))?;
+        let modified = entry
+            .metadata()
+            .ok()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs());
         if file_type.is_dir() {
             entries.push(FileEntry {
                 name,
                 path: rel,
                 kind: "dir".into(),
                 children: Some(build_tree(root, &abs)?),
+                modified,
             });
         } else if file_type.is_file() {
             entries.push(FileEntry {
@@ -97,6 +106,7 @@ fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
                 path: rel,
                 kind: "file".into(),
                 children: None,
+                modified,
             });
         }
     }
@@ -343,6 +353,15 @@ pub async fn fs_import(
     let app_status = app.clone();
     let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
     Ok(rel.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub async fn reveal_in_filemanager(app: AppHandle, path: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let (root, rel) = resolve(&app, &path)?;
+    app.opener()
+        .reveal_item_in_dir(root.join(rel))
+        .map_err(|e| format!("reveal {path}: {e}"))
 }
 
 #[tauri::command]

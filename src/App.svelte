@@ -51,6 +51,7 @@
       previewMode: ui.previewMode,
       fontSize: ui.fontSize,
       fontFamily: ui.fontFamily,
+      sidebarWidth: ui.sidebarWidth,
       autoSync: ui.autoSync,
       saveDebounceMs: ui.saveDebounceMs,
       pushIdleMs: ui.pushIdleMs,
@@ -169,6 +170,7 @@
         ui.onboardingComplete = config.onboardingComplete
         if (Number.isFinite(config.fontSize)) ui.fontSize = clamp(config.fontSize, 8, 32)
         if (config.fontFamily) ui.fontFamily = config.fontFamily
+        if (Number.isFinite(config.sidebarWidth)) ui.sidebarWidth = clamp(config.sidebarWidth, 150, 500)
         ui.autoSync = config.autoSync
         if (Number.isFinite(config.saveDebounceMs)) {
           ui.saveDebounceMs = clamp(config.saveDebounceMs, 500, 10_000)

@@ -25,24 +25,13 @@
       <button class="close" aria-label="Close {tab.path}" onclick={() => closeTab(tab.id)}>×</button>
     </div>
   {/each}
-  <button
-    class="search"
-    aria-label="Search files"
-    title="Search files (Ctrl+P)"
-    onclick={() => (ui.commandPaletteOpen = true)}
-  >
-    <svg viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="7" cy="7" r="4.2" />
-      <path d="M10.2 10.2 13.5 13.5" />
-    </svg>
-    <span class="hint">Search files (Ctrl+P)</span>
-  </button>
 </div>
 
 <style>
   .tabbar {
     display: flex;
-    flex: 0 0 34px;
+    box-sizing: border-box;
+    flex: 0 0 35px;
     overflow-x: auto;
     overflow-y: hidden;
     background: var(--bg-panel);
@@ -94,36 +83,5 @@
   }
   .close:hover {
     color: var(--text);
-  }
-  .search {
-    position: sticky;
-    right: 0;
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 6px;
-    margin-left: auto;
-    padding: 0 10px;
-    border-left: 1px solid var(--border);
-    background: var(--bg-panel);
-    color: var(--muted);
-    font-size: 11px;
-    white-space: nowrap;
-  }
-  .search:hover {
-    color: var(--text);
-  }
-  .search svg {
-    width: 13px;
-    height: 13px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.4;
-    stroke-linecap: round;
-  }
-  @media (max-width: 640px) {
-    .hint {
-      display: none;
-    }
   }
 </style>
