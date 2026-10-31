@@ -1,12 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
-  import {
-    gitStatus,
-    applyGitStatus,
-    isIgnorableSyncError,
-    markPushed,
-    type GitStatus,
-  } from '../stores/git.svelte'
+  import { gitStatus, applyGitStatus, syncNow, type GitStatus } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
 
   let commitMessage = $state('')
@@ -14,25 +8,9 @@
   let cloning = $state(false)
   let showClone = $state(false)
 
-  async function push(message: string | null) {
-    if (gitStatus.syncing) return false
-    gitStatus.syncing = true
-    gitStatus.error = null
-    try {
-      markPushed(await invoke<GitStatus>('git_push', { message }))
-      return true
-    } catch (e) {
-      const text = String(e)
-      if (!isIgnorableSyncError(text)) gitStatus.error = text
-      return false
-    } finally {
-      gitStatus.syncing = false
-    }
-  }
-
   async function commit() {
     if (!commitMessage.trim()) return
-    if (await push(commitMessage.trim())) commitMessage = ''
+    if (await syncNow(commitMessage.trim())) commitMessage = ''
   }
 
   async function clone() {
@@ -55,7 +33,7 @@
 
 <div class="panel">
   <div class="row">
-    <button class="primary" disabled={gitStatus.syncing} onclick={() => push(null)}>
+    <button class="primary" disabled={gitStatus.syncing} onclick={() => syncNow(null)}>
       {gitStatus.syncing ? 'Syncing…' : 'Sync'}
     </button>
     <button onclick={() => (showClone = !showClone)}>Clone</button>

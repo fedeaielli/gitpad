@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core'
+
 export interface ConflictFile {
   path: string
 }
@@ -44,4 +46,21 @@ export function markPushed(status: GitStatus) {
 /// Expected states (no token yet, no clone yet) must not surface as sync errors.
 export function isIgnorableSyncError(message: string) {
   return message.includes('not authenticated') || message.includes('no repository cloned')
+}
+
+/// Single push path for the editor, git panel and conflict dialog.
+export async function syncNow(message: string | null) {
+  if (gitStatus.syncing || !gitStatus.configured) return false
+  gitStatus.syncing = true
+  gitStatus.error = null
+  try {
+    markPushed(await invoke<GitStatus>('git_push', { message }))
+    return true
+  } catch (e) {
+    const text = String(e)
+    if (!isIgnorableSyncError(text)) gitStatus.error = text
+    return false
+  } finally {
+    gitStatus.syncing = false
+  }
 }

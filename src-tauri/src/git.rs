@@ -1,7 +1,7 @@
 use crate::auth;
 use git2::{
     build::{CheckoutBuilder, RepoBuilder}, FetchOptions, IndexAddOption, Oid, PushOptions, Repository,
-    Signature, StatusOptions,
+    ResetType, Signature, StatusOptions,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -240,26 +240,17 @@ pub fn commit_all(root: &Path, prefix: &str) -> Result<(), String> {
 
 fn pull_repo(repo: &Repository, token: Option<String>) -> Result<GitStatus, String> {
     fetch(repo, token)?;
-    let branch = current_branch(repo)?;
     let (Some(local), Some(remote)) = branch_oids(repo) else {
         return status_of(repo);
     };
     let annotated = repo.find_annotated_commit(remote).map_err(git_err)?;
     let (analysis, _) = repo.merge_analysis(&[&annotated]).map_err(git_err)?;
     if analysis.is_fast_forward() {
-        let mut reference = repo
-            .find_reference(&format!("refs/heads/{branch}"))
-            .map_err(git_err)?;
-        reference
-            .set_target(remote, "gitpad: fast-forward")
-            .map_err(git_err)?;
-        repo.set_head(&format!("refs/heads/{branch}"))
-            .map_err(git_err)?;
-        repo.checkout_head(Some(CheckoutBuilder::new().force()))
+        let remote_commit = repo.find_commit(remote).map_err(git_err)?;
+        repo.reset(remote_commit.as_object(), ResetType::Hard, None)
             .map_err(git_err)?;
     } else if analysis.is_normal() {
         let mut checkout = CheckoutBuilder::new();
-        checkout.force();
         repo.merge(&[&annotated], None, Some(&mut checkout))
             .map_err(git_err)?;
         let mut index = repo.index().map_err(git_err)?;
@@ -464,6 +455,8 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, String> {
     let token = auth::token().ok();
     let status = tokio::task::spawn_blocking(move || {
         let repo = Repository::open(&path).map_err(git_err)?;
+        // Commit local edits first: the checkout below must not overwrite them.
+        commit_pending(&repo, None)?;
         pull_repo(&repo, token)
     })
     .await
@@ -667,6 +660,33 @@ mod tests {
             std::fs::read_to_string(a_path.join("note.md")).unwrap(),
             "ours\n"
         );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn pull_keeps_uncommitted_local_changes() {
+        let root = tmp("dirty-pull");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "b.txt", "2");
+        push_current(&b);
+
+        std::fs::write(a_path.join("a.txt"), "local edit").unwrap();
+        commit_pending(&a, None).unwrap();
+        let status = pull_repo(&a, None).unwrap();
+        assert!(status.conflicts.is_empty());
+        assert_eq!(
+            std::fs::read_to_string(a_path.join("a.txt")).unwrap(),
+            "local edit"
+        );
+        assert_eq!(std::fs::read_to_string(a_path.join("b.txt")).unwrap(), "2");
         let _ = std::fs::remove_dir_all(&root);
     }
 }

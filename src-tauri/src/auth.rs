@@ -6,27 +6,35 @@ fn entry(key: &str) -> Result<keyring::Entry, String> {
 }
 
 #[tauri::command]
-pub fn auth_store(key: String, value: String) -> Result<(), String> {
-    entry(&key)?
-        .set_password(&value)
-        .map_err(|e| format!("keyring store: {e}"))
+pub async fn auth_store(key: String, value: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        entry(&key)?
+            .set_password(&value)
+            .map_err(|e| format!("keyring store: {e}"))
+    })
+    .await
+    .map_err(|e| format!("keyring task: {e}"))?
 }
 
 #[tauri::command]
-pub fn auth_get(key: String) -> Result<Option<String>, String> {
-    match entry(&key)?.get_password() {
+pub async fn auth_get(key: String) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || match entry(&key)?.get_password() {
         Ok(value) => Ok(Some(value)),
         Err(keyring::Error::NoEntry) => Ok(None),
         Err(e) => Err(format!("keyring get: {e}")),
-    }
+    })
+    .await
+    .map_err(|e| format!("keyring task: {e}"))?
 }
 
 #[tauri::command]
-pub fn auth_clear() -> Result<(), String> {
-    match entry(TOKEN_KEY)?.delete_credential() {
+pub async fn auth_clear() -> Result<(), String> {
+    tokio::task::spawn_blocking(|| match entry(TOKEN_KEY)?.delete_credential() {
         Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(e) => Err(format!("keyring clear: {e}")),
-    }
+    })
+    .await
+    .map_err(|e| format!("keyring task: {e}"))?
 }
 
 /// Token used by the git/github modules. Never leaves the Rust side.
@@ -42,12 +50,12 @@ pub fn token() -> Result<String, String> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn keyring_roundtrip() {
+    #[tokio::test]
+    async fn keyring_roundtrip() {
         let key = "gitpad_test_key";
-        auth_store(key.into(), "value".into()).unwrap();
-        assert_eq!(auth_get(key.into()).unwrap(), Some("value".into()));
+        auth_store(key.into(), "value".into()).await.unwrap();
+        assert_eq!(auth_get(key.into()).await.unwrap(), Some("value".into()));
         entry(key).unwrap().delete_credential().unwrap();
-        assert_eq!(auth_get(key.into()).unwrap(), None);
+        assert_eq!(auth_get(key.into()).await.unwrap(), None);
     }
 }
