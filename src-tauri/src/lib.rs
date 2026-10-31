@@ -159,6 +159,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             auth::auth_store,
             auth::auth_get,
+            auth::auth_has_token,
             auth::auth_clear,
             fs::fs_read_file,
             fs::fs_write_file,

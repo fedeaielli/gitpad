@@ -16,6 +16,23 @@ pub async fn auth_store(key: String, value: String) -> Result<(), String> {
     .map_err(|e| format!("keyring task: {e}"))?
 }
 
+/// Reads the stored token without ever handing it to the webview.
+fn read_token() -> Result<Option<String>, String> {
+    match entry(TOKEN_KEY)?.get_password() {
+        Ok(value) if !value.is_empty() => Ok(Some(value)),
+        Ok(_) | Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(format!("keyring get: {e}")),
+    }
+}
+
+/// Whether a token is stored. Real keyring failures are errors, not "absent".
+#[tauri::command]
+pub async fn auth_has_token() -> Result<bool, String> {
+    tokio::task::spawn_blocking(|| read_token().map(|token| token.is_some()))
+        .await
+        .map_err(|e| format!("keyring task: {e}"))?
+}
+
 #[tauri::command]
 pub async fn auth_get(key: String) -> Result<Option<String>, String> {
     tokio::task::spawn_blocking(move || match entry(&key)?.get_password() {
@@ -37,13 +54,10 @@ pub async fn auth_clear() -> Result<(), String> {
     .map_err(|e| format!("keyring task: {e}"))?
 }
 
-/// Token used by the git/github modules. Never leaves the Rust side.
+/// Token used by the git/github modules. The webview only ever sees whether it
+/// exists (`auth_has_token`); the value stays in Rust.
 pub fn token() -> Result<String, String> {
-    match entry(TOKEN_KEY)?.get_password() {
-        Ok(value) if !value.is_empty() => Ok(value),
-        Ok(_) | Err(keyring::Error::NoEntry) => Err("not authenticated".into()),
-        Err(e) => Err(format!("keyring get: {e}")),
-    }
+    read_token()?.ok_or_else(|| "not authenticated".into())
 }
 
 #[cfg(test)]
