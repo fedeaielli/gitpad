@@ -1,6 +1,7 @@
 <script lang="ts">
   import FileTree from './FileTree.svelte'
   import GitPanel from './GitPanel.svelte'
+  import HistoryPanel from './HistoryPanel.svelte'
   import { ui } from '../stores/ui.svelte'
 
   const SORTS = ['name', 'folders', 'modified'] as const
@@ -57,7 +58,13 @@
     <kbd>Ctrl+P</kbd>
   </button>
   <div class="head">
-    <span>{ui.activeView === 'files' ? 'Explorer' : 'Source control'}</span>
+    <span>
+      {ui.activeView === 'files'
+        ? 'Explorer'
+        : ui.activeView === 'git'
+          ? 'Source control'
+          : 'History'}
+    </span>
     {#if ui.activeView === 'files'}
       <div class="actions">
         <button
@@ -75,8 +82,10 @@
   <div class="scroll">
     {#if ui.activeView === 'files'}
       <FileTree />
-    {:else}
+    {:else if ui.activeView === 'git'}
       <GitPanel />
+    {:else}
+      <HistoryPanel />
     {/if}
   </div>
 </aside>

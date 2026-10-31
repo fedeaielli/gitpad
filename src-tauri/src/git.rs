@@ -1,7 +1,7 @@
 use crate::auth;
 use git2::{
-    build::{CheckoutBuilder, RepoBuilder}, FetchOptions, IndexAddOption, Oid, PushOptions, Repository,
-    ResetType, Signature, StatusOptions,
+    build::{CheckoutBuilder, RepoBuilder}, Commit, Diff, FetchOptions, IndexAddOption, Oid,
+    PushOptions, Repository, ResetType, Signature, Sort, StatusOptions,
 };
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -40,6 +40,19 @@ pub struct GitStatus {
     pub behind: usize,
     pub diverged: bool,
 }
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CommitEntry {
+    pub hash: String,
+    pub short_hash: String,
+    pub message: String,
+    pub author: String,
+    pub timestamp: u64,
+    pub files_changed: usize,
+}
+
+const LOG_LIMIT: usize = 100;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -200,6 +213,101 @@ fn branch_oids(repo: &Repository) -> (Option<Oid>, Option<Oid>) {
         .refname_to_id(&format!("refs/remotes/origin/{branch}"))
         .ok();
     (local, remote)
+}
+
+fn commit_tree_diff<'r>(repo: &'r Repository, commit: &Commit<'_>) -> Result<Diff<'r>, GitError> {
+    let tree = commit.tree().map_err(git_err)?;
+    let parent_tree = match commit.parent(0) {
+        Ok(parent) => Some(parent.tree().map_err(git_err)?),
+        Err(_) => None, // root commit: everything shows as added
+    };
+    repo.diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)
+        .map_err(git_err)
+}
+
+fn log_entries(repo: &Repository) -> Result<Vec<CommitEntry>, GitError> {
+    let mut walk = repo.revwalk().map_err(git_err)?;
+    walk.set_sorting(Sort::TOPOLOGICAL | Sort::TIME)
+        .map_err(git_err)?;
+    walk.push_head().map_err(git_err)?;
+    let mut entries = Vec::new();
+    for oid in walk.take(LOG_LIMIT) {
+        let oid = oid.map_err(git_err)?;
+        let commit = repo.find_commit(oid).map_err(git_err)?;
+        let hash = oid.to_string();
+        entries.push(CommitEntry {
+            short_hash: hash[..7].to_string(),
+            hash,
+            message: commit.summary().unwrap_or("(no message)").to_string(),
+            author: commit.author().name().unwrap_or("unknown").to_string(),
+            timestamp: commit.time().seconds().max(0) as u64,
+            files_changed: commit_tree_diff(repo, &commit)?.deltas().len(),
+        });
+    }
+    Ok(entries)
+}
+
+fn delta_code(delta: git2::Delta) -> &'static str {
+    match delta {
+        git2::Delta::Added | git2::Delta::Untracked => "A",
+        git2::Delta::Deleted => "D",
+        _ => "M", // Modified, Renamed, Copied, TypeChange
+    }
+}
+
+fn commit_files(repo: &Repository, hash: &str) -> Result<Vec<FileChange>, GitError> {
+    let oid = Oid::from_str(hash)
+        .map_err(|e| GitError::Other(format!("bad commit {hash}: {e}")))?;
+    let commit = repo.find_commit(oid).map_err(git_err)?;
+    let diff = commit_tree_diff(repo, &commit)?;
+    Ok(diff
+        .deltas()
+        .filter_map(|delta| {
+            let path = delta.new_file().path()?.to_string_lossy().to_string();
+            Some(FileChange {
+                path,
+                status: delta_code(delta.status()).to_string(),
+            })
+        })
+        .collect())
+}
+
+fn restore_file(repo: &Repository, hash: &str, rel: &Path) -> Result<GitStatus, GitError> {
+    let oid = Oid::from_str(hash)
+        .map_err(|e| GitError::Other(format!("bad commit {hash}: {e}")))?;
+    let commit = repo.find_commit(oid).map_err(git_err)?;
+    let short = &hash[..7.min(hash.len())];
+    if commit.tree().map_err(git_err)?.get_path(rel).is_err() {
+        return Err(GitError::Other(format!(
+            "{} does not exist in {short}",
+            rel.display()
+        )));
+    }
+    let mut checkout = CheckoutBuilder::new();
+    checkout.path(rel).force();
+    repo.checkout_tree(commit.as_object(), Some(&mut checkout))
+        .map_err(git_err)?;
+    status_of(repo)
+}
+
+fn revert_commit(repo: &Repository, hash: &str) -> Result<GitStatus, GitError> {
+    let oid = Oid::from_str(hash)
+        .map_err(|e| GitError::Other(format!("bad commit {hash}: {e}")))?;
+    let commit = repo.find_commit(oid).map_err(git_err)?;
+    if commit.parent_count() > 1 {
+        return Err(GitError::Other("cannot revert a merge commit".into()));
+    }
+    if commit.parent_count() == 0 {
+        return Err(GitError::Other("cannot revert the first commit".into()));
+    }
+    repo.revert(&commit, None).map_err(git_err)?;
+    if repo.index().map_err(git_err)?.has_conflicts() {
+        // Conflicts stay in the index; the modal already handles them.
+        return status_of(repo);
+    }
+    let short = &hash[..7.min(hash.len())];
+    commit_pending(repo, Some(&format!("gitpad: revert {short}")))?;
+    status_of(repo)
 }
 
 fn change_code(status: git2::Status) -> &'static str {
@@ -674,6 +782,53 @@ pub async fn git_discard_file(app: AppHandle, path: String) -> Result<GitStatus,
 }
 
 #[tauri::command]
+pub async fn git_log(app: AppHandle) -> Result<Vec<CommitEntry>, GitError> {
+    let path = repo_dir(&app)?;
+    tokio::task::spawn_blocking(move || log_entries(&open_repo(&path)?))
+        .await
+        .map_err(|e| format!("git task: {e}"))?
+}
+
+#[tauri::command]
+pub async fn git_commit_files(app: AppHandle, hash: String) -> Result<Vec<FileChange>, GitError> {
+    let path = repo_dir(&app)?;
+    tokio::task::spawn_blocking(move || commit_files(&open_repo(&path)?, &hash))
+        .await
+        .map_err(|e| format!("git task: {e}"))?
+}
+
+#[tauri::command]
+pub async fn git_restore_file(
+    app: AppHandle,
+    hash: String,
+    path: String,
+) -> Result<GitStatus, GitError> {
+    let root = repo_dir(&app)?;
+    let rel = safe_rel_path(&path)?;
+    let status = tokio::task::spawn_blocking(move || {
+        let repo = open_repo(&root)?;
+        restore_file(&repo, &hash, &rel)
+    })
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
+    emit_status(&app, &status)?;
+    Ok(status)
+}
+
+#[tauri::command]
+pub async fn git_revert_commit(app: AppHandle, hash: String) -> Result<GitStatus, GitError> {
+    let root = repo_dir(&app)?;
+    let status = tokio::task::spawn_blocking(move || {
+        let repo = open_repo(&root)?;
+        revert_commit(&repo, &hash)
+    })
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
+    emit_status(&app, &status)?;
+    Ok(status)
+}
+
+#[tauri::command]
 pub async fn git_status(app: AppHandle) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || {
@@ -912,6 +1067,97 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+
+    #[test]
+    fn log_entries_lists_newest_first() {
+        let root = tmp("log");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "a.txt", "1");
+        commit_file(&repo, "b.txt", "2");
+
+        let entries = log_entries(&repo).unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].hash, repo.head().unwrap().target().unwrap().to_string());
+        assert_eq!(entries[0].short_hash.len(), 7);
+        assert_eq!(entries[0].files_changed, 1);
+        assert!(entries[0].timestamp > 0);
+        assert_eq!(entries[1].files_changed, 1);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn commit_files_reports_delta_codes() {
+        let root = tmp("commit-files");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "keep.txt", "keep");
+        commit_file(&repo, "gone.txt", "gone");
+        std::fs::write(root.join("keep.txt"), "edited").unwrap();
+        std::fs::remove_file(root.join("gone.txt")).unwrap();
+        std::fs::write(root.join("new.txt"), "new").unwrap();
+
+        let mut index = repo.index().unwrap();
+        index.add_path(Path::new("keep.txt")).unwrap();
+        index.remove_path(Path::new("gone.txt")).unwrap();
+        index.add_path(Path::new("new.txt")).unwrap();
+        index.write().unwrap();
+        let tree = repo.find_tree(index.write_tree().unwrap()).unwrap();
+        let sig = signature().unwrap();
+        let parent = repo.head().unwrap().peel_to_commit().unwrap();
+        repo.commit(Some("HEAD"), &sig, &sig, "test", &tree, &[&parent])
+            .unwrap();
+        let hash = repo.head().unwrap().target().unwrap().to_string();
+
+        let files: Vec<(String, String)> = commit_files(&repo, &hash)
+            .unwrap()
+            .into_iter()
+            .map(|f| (f.path, f.status))
+            .collect();
+        assert!(files.contains(&("keep.txt".into(), "M".into())));
+        assert!(files.contains(&("gone.txt".into(), "D".into())));
+        assert!(files.contains(&("new.txt".into(), "A".into())));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn restore_file_brings_back_old_content() {
+        let root = tmp("restore");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "note.md", "old");
+        let first = repo.head().unwrap().target().unwrap().to_string();
+        commit_file(&repo, "note.md", "new");
+        assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "new");
+
+        let status = restore_file(&repo, &first, Path::new("note.md")).unwrap();
+        assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
+        assert!(!status.synced);
+        assert!(status.changes.iter().any(|c| c.path == "note.md"));
+
+        assert!(restore_file(&repo, &first, Path::new("missing.md")).is_err());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn revert_commit_inverts_changes() {
+        let root = tmp("revert");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "a.txt", "one");
+        let first = repo.head().unwrap().target().unwrap().to_string();
+        commit_file(&repo, "a.txt", "two");
+        let second = repo.head().unwrap().target().unwrap().to_string();
+
+        let status = revert_commit(&repo, &second).unwrap();
+        assert_eq!(std::fs::read_to_string(root.join("a.txt")).unwrap(), "one");
+        let head = repo.head().unwrap().peel_to_commit().unwrap();
+        assert_ne!(head.id().to_string(), second);
+        assert_eq!(
+            head.message(),
+            Some(format!("gitpad: revert {}", &second[..7]).as_str())
+        );
+        assert!(!status.branch.is_empty());
+
+        assert!(revert_commit(&repo, &first).is_err()); // first commit
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn status_of_reports_branch_and_changes() {
