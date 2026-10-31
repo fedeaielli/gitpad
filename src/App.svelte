@@ -9,7 +9,7 @@
   import TabBar from './lib/components/TabBar.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
   import type { Component } from 'svelte'
-  import { flushPendingSave } from './lib/editor/bridge'
+  import { flushPendingSave, reloadOpenTabs } from './lib/editor/bridge'
   import Onboarding from './lib/components/Onboarding.svelte'
   import CommandPalette from './lib/components/CommandPalette.svelte'
   import Settings from './lib/components/Settings.svelte'
@@ -25,6 +25,7 @@
     errorMessage,
     isIgnorableSyncError,
     isNoRepoError,
+    type FileChange,
     type GitStatus,
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
@@ -132,6 +133,9 @@
   onMount(() => {
     const unlistens: Array<() => void> = []
     void listen<GitStatus>('sync-status', (e) => applyGitStatus(e.payload)).then((fn) => {
+      unlistens.push(fn)
+    })
+    void listen<FileChange[]>('pull-changed', (e) => void reloadOpenTabs(e.payload)).then((fn) => {
       unlistens.push(fn)
     })
     void listen('app-closing', async () => {
