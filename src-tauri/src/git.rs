@@ -680,7 +680,11 @@ fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
     Ok(())
 }
 
-fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(), GitError> {
+fn resolve_conflict(
+    root: &Path,
+    path: &str,
+    resolution: Resolution,
+) -> Result<(GitStatus, Vec<FileChange>), GitError> {
     let repo = open_repo(root)?;
     let mut index = repo.index().map_err(git_err)?;
     let target = {
@@ -719,7 +723,14 @@ fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(
             index.remove_path(Path::new(path)).map_err(git_err)?;
         }
     }
-    index.write().map_err(git_err)
+    index.write().map_err(git_err)?;
+    drop(index);
+    let status = status_of(&repo)?;
+    let changes = vec![FileChange {
+        path: path.to_string(),
+        status: "M".to_string(),
+    }];
+    Ok((status, changes))
 }
 
 fn blob_text(repo: &Repository, oid: Oid) -> String {
@@ -1056,12 +1067,16 @@ pub async fn git_resolve_conflict(
 ) -> Result<(), GitError> {
     let root = repo_dir(&app)?;
     let gate = app.state::<crate::AppState>().repo_gate.clone();
-    tokio::task::spawn_blocking(move || {
+    let (status, changes) = tokio::task::spawn_blocking(move || {
         let _gate = gate.write().map_err(|e| e.to_string())?;
         resolve_conflict(&root, &path, resolution)
     })
-        .await
-        .map_err(|e| format!("git task: {e}"))?
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
+    if !changes.is_empty() {
+        let _ = app.emit("pull-changed", &changes);
+    }
+    emit_status(&app, &status)
 }
 
 #[tauri::command]
@@ -1215,6 +1230,34 @@ mod tests {
             std::fs::read_to_string(a_path.join("note.md")).unwrap(),
             "ours\n"
         );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn resolve_conflict_reports_the_resolved_path() {
+        let root = tmp("resolve-report");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "note.md", "base\n");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "note.md", "theirs\n");
+        push_current(&b);
+
+        commit_file(&a, "note.md", "ours\n");
+        let (status, _) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        assert_eq!(status.conflicts.len(), 1);
+
+        let (status, changes) =
+            resolve_conflict(&a_path, "note.md", Resolution::AcceptOurs).unwrap();
+        assert!(!status.conflicts.iter().any(|c| c.path == "note.md"));
+        assert!(changes
+            .iter()
+            .any(|change| change.path == "note.md" && change.status == "M"));
         let _ = std::fs::remove_dir_all(&root);
     }
 
