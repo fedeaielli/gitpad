@@ -1078,6 +1078,7 @@ pub async fn git_conflict_versions(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_util::assert_waits_for_gate;
 
     fn tmp(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("gitpad-{name}-{}", std::process::id()));
@@ -1414,6 +1415,63 @@ mod tests {
         discard_file(&repo, Path::new("note.md"), &gate).unwrap();
         assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
         assert!(gate.try_write().is_ok());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn discard_file_waits_for_a_held_gate() {
+        let root = tmp("discard-wait");
+        {
+            let repo = Repository::init(&root).unwrap();
+            commit_file(&repo, "note.md", "old");
+        }
+        std::fs::write(root.join("note.md"), "edited").unwrap();
+        let root_task = root.clone();
+
+        assert_waits_for_gate(move |gate| {
+            let repo = Repository::open(&root_task).unwrap();
+            discard_file(&repo, Path::new("note.md"), &gate).is_ok()
+        });
+        assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn restore_file_waits_for_a_held_gate() {
+        let root = tmp("restore-wait");
+        let first = {
+            let repo = Repository::init(&root).unwrap();
+            commit_file(&repo, "note.md", "old");
+            let first = repo.head().unwrap().target().unwrap().to_string();
+            commit_file(&repo, "note.md", "new");
+            first
+        };
+        let root_task = root.clone();
+
+        assert_waits_for_gate(move |gate| {
+            let repo = Repository::open(&root_task).unwrap();
+            restore_file(&repo, &first, Path::new("note.md"), &gate).is_ok()
+        });
+        assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn revert_commit_waits_for_a_held_gate() {
+        let root = tmp("revert-wait");
+        let second = {
+            let repo = Repository::init(&root).unwrap();
+            commit_file(&repo, "a.txt", "one");
+            commit_file(&repo, "a.txt", "two");
+            repo.head().unwrap().target().unwrap().to_string()
+        };
+        let root_task = root.clone();
+
+        assert_waits_for_gate(move |gate| {
+            let repo = Repository::open(&root_task).unwrap();
+            revert_commit(&repo, &second, &gate).is_ok()
+        });
+        assert_eq!(std::fs::read_to_string(root.join("a.txt")).unwrap(), "one");
         let _ = std::fs::remove_dir_all(&root);
     }
 
