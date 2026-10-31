@@ -22,7 +22,7 @@
   import htmlWorker from 'monaco-editor/language/html/html.worker?worker'
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
   import { tabs, discarded } from '../stores/tabs.svelte'
-  import { ui } from '../stores/ui.svelte'
+  import { ui, cyclePreview } from '../stores/ui.svelte'
   import { getEditor, registerFlush, setEditorInstance } from '../editor/bridge'
   import { monacoTheme } from '../utils/themes'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
@@ -77,7 +77,9 @@
   }
 
   const isMarkdown = $derived(activeTab()?.language === 'markdown')
-  const previewVisible = $derived(ui.previewMode !== 'off' && isMarkdown)
+  // Preview is a markdown-only view: other tabs always render the editor alone.
+  const previewMode = $derived<'off' | 'split' | 'full'>(isMarkdown ? ui.previewMode : 'off')
+  const previewVisible = $derived(previewMode !== 'off')
 
   async function savePending(): Promise<boolean> {
     const id = pendingId
@@ -281,18 +283,27 @@
 </script>
 
 <div class="pane">
-  <div class="editor-wrap" class:hidden={ui.previewMode === 'full' && isMarkdown}>
-    <div class="editor" bind:this={host}></div>
-    {#if ui.keybindings === 'vim'}
-      <div class="vim" bind:this={vimStatus}></div>
-    {/if}
-    {#if !activeTab()}
-      <p class="empty">No file open</p>
+  {#if isMarkdown}
+    <div class="preview-bar">
+      <button class="preview-toggle" onclick={cyclePreview} title="Cycle preview (Ctrl+Shift+P)">
+        Preview · {previewMode}
+      </button>
+    </div>
+  {/if}
+  <div class="content">
+    <div class="editor-wrap" class:hidden={previewMode === 'full'}>
+      <div class="editor" bind:this={host}></div>
+      {#if ui.keybindings === 'vim'}
+        <div class="vim" bind:this={vimStatus}></div>
+      {/if}
+      {#if !activeTab()}
+        <p class="empty">No file open</p>
+      {/if}
+    </div>
+    {#if previewVisible}
+      <div class="preview"><MarkdownPreview /></div>
     {/if}
   </div>
-  {#if previewVisible}
-    <div class="preview"><MarkdownPreview /></div>
-  {/if}
   {#if saveError}
     <p class="error">{saveError}</p>
   {/if}
@@ -301,6 +312,34 @@
 <style>
   .pane {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .preview-bar {
+    display: flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  .preview-toggle {
+    padding: 1px 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .preview-toggle:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .content {
     display: flex;
     flex: 1;
     min-height: 0;

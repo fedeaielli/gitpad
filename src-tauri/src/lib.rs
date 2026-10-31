@@ -29,21 +29,29 @@ async fn shutdown(app: tauri::AppHandle) {
     }
     if let Ok(path) = git::repo_dir(&app) {
         let token = auth::token().ok();
+        // Push only: fetching at exit just delays closing, and a rejected push
+        // (remote moved) leaves the local commit for the next sync.
         let _ = tokio::time::timeout(
             Duration::from_secs(3),
-            tokio::task::spawn_blocking(move || git::push_blocking(&path, None, token)),
+            tokio::task::spawn_blocking(move || git::push_only_blocking(&path, None, token)),
         )
         .await;
     }
     app.exit(0);
 }
 
-/// SIGTERM: commit what is on disk and push before dying. `push_blocking`
+/// SIGTERM: commit what is on disk and push before dying. `push_only_blocking`
 /// commits pending changes first, so this is the whole shutdown path.
 fn terminate(app: tauri::AppHandle) {
     if let Ok(path) = git::repo_dir(&app) {
         let token = auth::token().ok();
-        let _ = git::push_blocking(&path, None, token);
+        // 5 s cap: a hanging push must not keep the process alive. No tokio
+        // here: this thread is outside the async runtime.
+        let (done, wait) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = done.send(git::push_only_blocking(&path, None, token));
+        });
+        let _ = wait.recv_timeout(Duration::from_secs(5));
     }
     app.exit(0);
 }
