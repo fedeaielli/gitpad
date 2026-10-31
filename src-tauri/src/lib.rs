@@ -15,6 +15,9 @@ pub struct AppState {
     pub http: Client,
     /// Cached clone path: every command resolves the same repository.
     pub repo_path: std::sync::Mutex<Option<std::path::PathBuf>>,
+    /// Guards the worktree against git2 rewrites (pull, reset, merge). Take it
+    /// only inside `spawn_blocking`, never across an `await` on the async runtime.
+    pub repo_gate: std::sync::Arc<std::sync::RwLock<()>>,
 }
 
 static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
@@ -28,6 +31,8 @@ async fn shutdown(app: tauri::AppHandle) {
         return;
     }
     if let Ok(path) = git::repo_dir(&app) {
+        // The worktree gate is deliberately not taken here: waiting for a pull
+        // could burn the whole close timeout.
         // Push only: fetching at exit just delays closing, and a rejected push
         // (remote moved) leaves the local commit for the next sync.
         let _ = tokio::time::timeout(
@@ -47,6 +52,7 @@ async fn shutdown(app: tauri::AppHandle) {
 /// commits pending changes first, so this is the whole shutdown path.
 fn terminate(app: tauri::AppHandle) {
     if let Ok(path) = git::repo_dir(&app) {
+        // No worktree gate either: the 5 s cap cannot wait for a pull.
         let token = auth::token().ok();
         // 5 s cap: a hanging push must not keep the process alive. No tokio
         // here: this thread is outside the async runtime.
@@ -95,6 +101,7 @@ pub fn run() {
             app.manage(AppState {
                 http,
                 repo_path: std::sync::Mutex::new(None),
+                repo_gate: std::sync::Arc::new(std::sync::RwLock::new(())),
             });
             // Warm the clone path once, off the main thread, so no command
             // pays for the directory scan on the hot path.

@@ -515,10 +515,19 @@ pub fn commit_all(root: &Path, prefix: &str) -> Result<(), GitError> {
     commit_pending(&repo, Some(&format!("{prefix} {}", iso8601_now())))
 }
 
-fn pull_repo(repo: &Repository, token: Option<String>) -> Result<GitStatus, GitError> {
-    // always commit before pull — reset(Hard) is used below
-    commit_pending(repo, None)?;
+fn pull_repo(
+    repo: &Repository,
+    token: Option<String>,
+    gate: &std::sync::RwLock<()>,
+) -> Result<GitStatus, GitError> {
+    // refs only: no worktree writes, readers must not wait for the network
     fetch(repo, token)?;
+    // The gate covers commit + reset/merge: a read in between would see a
+    // truncated file.
+    let _gate = gate.write().map_err(|e| e.to_string())?;
+    // Committed under the lock so a write that slips in before the reset is
+    // not discarded by reset(Hard).
+    commit_pending(repo, None)?;
     let (Some(local), Some(remote)) = branch_oids(repo) else {
         return status_of(repo);
     };
@@ -558,10 +567,11 @@ pub fn push_blocking(
     path: &Path,
     message: Option<String>,
     token: Option<String>,
+    gate: std::sync::Arc<std::sync::RwLock<()>>,
 ) -> Result<GitStatus, GitError> {
     let repo = open_repo(path)?;
     commit_pending(&repo, message.as_deref())?;
-    let status = pull_repo(&repo, token.clone())?;
+    let status = pull_repo(&repo, token.clone(), &gate)?;
     if !status.conflicts.is_empty() {
         return Ok(status);
     }
@@ -755,8 +765,10 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
         )));
     }
     let clone_target = target.clone();
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
     tokio::task::spawn_blocking(move || {
         let token = auth::token().ok();
+        let _gate = gate.write().map_err(|e| e.to_string())?;
         let mut builder = RepoBuilder::new();
         let mut opts = FetchOptions::new();
         opts.remote_callbacks(callbacks(token));
@@ -772,11 +784,12 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
 #[tauri::command]
 pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
     let status = tokio::task::spawn_blocking(move || {
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
         let repo = open_repo(&path)?;
-        pull_repo(&repo, token)
+        pull_repo(&repo, token, &gate)
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
@@ -791,13 +804,14 @@ pub async fn git_push(
     pull: Option<bool>,
 ) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
     let status = tokio::task::spawn_blocking(move || {
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
         if pull == Some(false) {
             push_only_blocking(&path, message, token)
         } else {
-            push_blocking(&path, message, token)
+            push_blocking(&path, message, token, gate)
         }
     })
         .await
@@ -951,7 +965,11 @@ pub async fn git_resolve_conflict(
     resolution: Resolution,
 ) -> Result<(), GitError> {
     let root = repo_dir(&app)?;
-    tokio::task::spawn_blocking(move || resolve_conflict(&root, &path, resolution))
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
+    tokio::task::spawn_blocking(move || {
+        let _gate = gate.write().map_err(|e| e.to_string())?;
+        resolve_conflict(&root, &path, resolution)
+    })
         .await
         .map_err(|e| format!("git task: {e}"))?
 }
@@ -1019,7 +1037,7 @@ mod tests {
         commit_file(&b, "b.txt", "2");
         push_current(&b);
 
-        let status = pull_repo(&a, None).unwrap();
+        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert!(status.conflicts.is_empty());
         assert_eq!(status.behind, 0);
         assert_eq!(
@@ -1045,7 +1063,7 @@ mod tests {
         push_current(&b);
 
         commit_file(&a, "c.txt", "3");
-        let status = pull_repo(&a, None).unwrap();
+        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert!(status.conflicts.is_empty());
         assert_eq!(status.behind, 0);
         assert!(a_path.join("b.txt").exists());
@@ -1085,7 +1103,7 @@ mod tests {
         push_current(&b);
 
         commit_file(&a, "note.md", "ours\n");
-        let status = pull_repo(&a, None).unwrap();
+        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert_eq!(status.conflicts.len(), 1);
         assert!(a_path.join(".git/MERGE_HEAD").exists());
 
@@ -1126,7 +1144,7 @@ mod tests {
 
         std::fs::write(a_path.join("a.txt"), "local edit").unwrap();
         commit_pending(&a, None).unwrap();
-        let status = pull_repo(&a, None).unwrap();
+        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert!(status.conflicts.is_empty());
         assert_eq!(
             std::fs::read_to_string(a_path.join("a.txt")).unwrap(),
