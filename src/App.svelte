@@ -3,6 +3,7 @@
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
   import { getCurrentWindow } from '@tauri-apps/api/window'
+  import { ask } from '@tauri-apps/plugin-dialog'
   import Sidebar from './lib/components/Sidebar.svelte'
   import ActivityBar from './lib/components/ActivityBar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
@@ -21,6 +22,7 @@
     applyGitStatus,
     gitStatus,
     isIgnorableSyncError,
+    isNoRepoError,
     type GitStatus,
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
@@ -81,7 +83,7 @@
       repoReady = true
     } catch (e) {
       const message = String(e)
-      if (isIgnorableSyncError(message)) gitStatus.configured = false
+      if (isNoRepoError(message)) gitStatus.configured = false
       else gitStatus.error = message
     }
     if (!repoReady) return
@@ -120,7 +122,14 @@
       unlistens.push(fn)
     })
     void listen('app-closing', async () => {
-      await flushPendingSave()
+      const saved = await flushPendingSave()
+      if (!saved) {
+        const exit = await ask('Some changes could not be saved. Exit anyway?', {
+          title: 'Unsaved changes',
+          kind: 'warning',
+        }).catch(() => false)
+        if (!exit) return
+      }
       clearTimeout(saveTimer)
       if (pendingConfig) await saveConfig(pendingConfig).catch(() => {})
       await invoke('app_exit').catch(() => {})
@@ -133,7 +142,7 @@
         .then(applyGitStatus)
         .catch((e) => {
           const message = String(e)
-          if (isIgnorableSyncError(message)) gitStatus.configured = false
+          if (isNoRepoError(message)) gitStatus.configured = false
           else pushToast(message)
         })
     }

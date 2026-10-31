@@ -43,9 +43,14 @@ export function markPushed(status: GitStatus) {
   gitStatus.lastPush = new Date()
 }
 
+/// A missing repository is the only state that means "not configured yet".
+export function isNoRepoError(message: string) {
+  return message.includes('NOT_FOUND')
+}
+
 /// Expected states (no token yet, no clone yet) must not surface as sync errors.
 export function isIgnorableSyncError(message: string) {
-  return message.includes('not authenticated') || message.includes('no repository cloned')
+  return message.includes('not authenticated') || isNoRepoError(message)
 }
 
 /// Single push path for the editor, git panel and conflict dialog.

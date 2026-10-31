@@ -4,6 +4,7 @@
   import { ui, type FileNode } from '../stores/ui.svelte'
   import { tabs, openTab, activateTab, discardUnder, retarget } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
+  import { isNoRepoError } from '../stores/git.svelte'
 
   type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'rename' | 'delete'
 
@@ -54,7 +55,7 @@
     } catch (e) {
       ui.fileTree = []
       const message = String(e)
-      noRepo = message.includes('no repository cloned')
+      noRepo = isNoRepoError(message)
       error = noRepo ? null : message
     } finally {
       loading = false

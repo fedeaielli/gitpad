@@ -82,11 +82,11 @@
   const isMarkdown = $derived(activeTab()?.language === 'markdown')
   const previewVisible = $derived(ui.previewMode !== 'off' && isMarkdown)
 
-  async function savePending() {
+  async function savePending(): Promise<boolean> {
     const id = pendingId
     pendingId = ''
     const tab = tabs.tabs.find((t) => t.id === id)
-    if (!tab) return
+    if (!tab) return true
     const content = tab.content
     inFlight.add(tab.path)
     try {
@@ -95,21 +95,23 @@
       if (tab.content === content) tab.modified = false
       saveError = null
       armPush()
+      return true
     } catch (e) {
       // Keep it pending so the next flush retries instead of losing the buffer.
       if (!pendingId) pendingId = id
       tab.modified = true
       saveError = `save failed: ${String(e)}`
+      return false
     } finally {
       inFlight.delete(tab.path)
     }
   }
 
   /// Exit path: no debounce left, so write every tab that is still dirty.
-  async function flushAll() {
+  async function flushAll(): Promise<boolean> {
     persist.cancel()
     const attempted = pendingId
-    await savePending()
+    let ok = await savePending()
     for (const tab of tabs.tabs) {
       if (!tab.modified || tab.id === attempted) continue
       const content = tab.content
@@ -122,11 +124,13 @@
       } catch (e) {
         tab.modified = true
         saveError = `save failed: ${String(e)}`
+        ok = false
         break
       } finally {
         inFlight.delete(tab.path)
       }
     }
+    return ok
   }
 
   function armPush() {
