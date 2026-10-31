@@ -113,6 +113,7 @@
   }
 
   async function remoteSync() {
+    if (gitStatus.conflicts.length > 0) return
     const hasToken = await invoke<boolean>('auth_has_token').catch((e) => {
       const message = errorMessage(e)
       if (!isIgnorableSyncError(message)) gitStatus.error = message

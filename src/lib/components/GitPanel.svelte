@@ -84,9 +84,26 @@
   {/if}
 
   <div class="row">
-    <button disabled={gitStatus.syncing} onclick={() => pullOnly()}>Pull</button>
-    <button disabled={gitStatus.syncing} onclick={() => pushOnly()}>Push</button>
-    <button class="primary" disabled={gitStatus.syncing} onclick={() => syncNow(null)}>
+    <button
+      disabled={gitStatus.syncing || gitStatus.conflicts.length > 0}
+      title={gitStatus.conflicts.length > 0 ? 'Resolve the conflicts first' : undefined}
+      onclick={() => pullOnly()}
+    >
+      Pull
+    </button>
+    <button
+      disabled={gitStatus.syncing || gitStatus.conflicts.length > 0}
+      title={gitStatus.conflicts.length > 0 ? 'Resolve the conflicts first' : undefined}
+      onclick={() => pushOnly()}
+    >
+      Push
+    </button>
+    <button
+      class="primary"
+      disabled={gitStatus.syncing || gitStatus.conflicts.length > 0}
+      title={gitStatus.conflicts.length > 0 ? 'Resolve the conflicts first' : undefined}
+      onclick={() => syncNow(null)}
+    >
       {gitStatus.syncing ? 'Syncing…' : 'Sync'}
     </button>
     <button onclick={() => (showClone = !showClone)}>Clone</button>
