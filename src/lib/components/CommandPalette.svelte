@@ -174,10 +174,14 @@
       return
     }
     try {
-      results = await invoke<SearchResult[]>('search_global', { query })
+      const found = await invoke<SearchResult[]>('search_global', { query })
+      // A slower search for an older query must not overwrite the current one.
+      if (text.trim() !== query) return
+      results = found
       error = null
       selected = 0
     } catch (e) {
+      if (text.trim() !== query) return
       results = []
       error = String(e)
     }
