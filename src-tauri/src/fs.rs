@@ -1,5 +1,6 @@
 use crate::git;
 use serde::Serialize;
+use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use tauri::{AppHandle, Manager};
 
@@ -126,6 +127,44 @@ fn commit_gate(app: &AppHandle) -> std::sync::Arc<std::sync::Mutex<()>> {
     app.state::<crate::AppState>().commit_gate.clone()
 }
 
+/// Replace `target` with one rename: a crash leaves either the old or the new
+/// file, never a truncated one. `tmp` must be on the same filesystem.
+pub(crate) fn write_atomic(target: &Path, tmp: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let result = (|| -> std::io::Result<()> {
+        let mut file = std::fs::File::create(tmp)?;
+        file.write_all(bytes)?;
+        file.sync_all()?;
+        if let Ok(metadata) = std::fs::metadata(target) {
+            std::fs::set_permissions(tmp, metadata.permissions())?;
+        }
+        drop(file);
+        std::fs::rename(tmp, target).map_err(|e| {
+            if e.kind() == std::io::ErrorKind::CrossesDevices {
+                std::io::Error::new(
+                    e.kind(),
+                    format!(
+                        "rename {} -> {}: {e} (temp and target must share a filesystem)",
+                        tmp.display(),
+                        target.display()
+                    ),
+                )
+            } else {
+                e
+            }
+        })?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(tmp);
+    } else if let Some(dir) = target.parent() {
+        // Best effort: the rename is already durable enough to be atomic.
+        if let Ok(dir) = std::fs::File::open(dir) {
+            let _ = dir.sync_all();
+        }
+    }
+    result
+}
+
 /// Write the file and commit it while holding the commit gate: two autosaves
 /// cannot race on `.git/index.lock`.
 fn write_and_commit(
@@ -135,8 +174,21 @@ fn write_and_commit(
     commit_gate: &std::sync::Mutex<()>,
 ) -> Result<(), String> {
     let _commit = commit_gate.lock().unwrap_or_else(|e| e.into_inner());
-    std::fs::write(root.join(rel), content)
-        .map_err(|e| format!("write {}: {e}", rel.display()))?;
+    // The temp lives in .git: same filesystem as the worktree, and invisible to
+    // build_tree, search and commit_pending.
+    let git_dir = root.join(".git");
+    if !git_dir.is_dir() {
+        return Err(format!(
+            "cannot save atomically: {} is not a directory",
+            git_dir.display()
+        ));
+    }
+    write_atomic(
+        &root.join(rel),
+        &git_dir.join("gitpad-save.tmp"),
+        content.as_bytes(),
+    )
+    .map_err(|e| format!("write {}: {e}", rel.display()))?;
     let message = format!("gitpad: update {} {}", rel.display(), git::iso8601_now());
     git::commit_paths(root, &[rel.to_path_buf()], &message).map_err(|e| e.to_string())
 }
@@ -618,6 +670,95 @@ mod tests {
         std::fs::write(&path, "hello").unwrap();
 
         assert_eq!(read_text(&path, "note.md").unwrap(), "hello");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn write_atomic_replaces_content_and_leaves_no_temp() {
+        let dir = std::env::temp_dir().join(format!("gitpad-atomic-ok-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("note.md");
+        let tmp = dir.join("save.tmp");
+        std::fs::write(&target, "old").unwrap();
+
+        write_atomic(&target, &tmp, b"new").unwrap();
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "new");
+        assert!(!tmp.exists());
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_keeps_existing_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = std::env::temp_dir().join(format!("gitpad-atomic-mode-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("secret.md");
+        std::fs::write(&target, "old").unwrap();
+        std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o600)).unwrap();
+
+        write_atomic(&target, &dir.join("save.tmp"), b"new").unwrap();
+        let mode = std::fs::metadata(&target).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn write_atomic_failure_keeps_the_old_content() {
+        use std::os::unix::fs::PermissionsExt;
+
+        // Root ignores directory permissions, so the failure cannot be provoked.
+        if std::process::Command::new("id")
+            .arg("-u")
+            .output()
+            .map(|out| out.stdout.starts_with(b"0"))
+            .unwrap_or(false)
+        {
+            return;
+        }
+
+        let dir = std::env::temp_dir().join(format!("gitpad-atomic-fail-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let ro = dir.join("ro");
+        std::fs::create_dir_all(&ro).unwrap();
+        let target = ro.join("note.md");
+        let tmp = dir.join("save.tmp");
+        std::fs::write(&target, "old").unwrap();
+        std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o500)).unwrap();
+
+        assert!(write_atomic(&target, &tmp, b"new").is_err());
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "old");
+        assert!(!tmp.exists());
+
+        std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn autosave_temp_stays_out_of_git_and_the_file_tree() {
+        let dir = std::env::temp_dir().join(format!("gitpad-atomic-git-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let root = dir.join("repo");
+        std::fs::create_dir_all(&root).unwrap();
+        git2::Repository::init(&root).unwrap();
+
+        let gate = std::sync::Mutex::new(());
+        write_and_commit(&root, std::path::Path::new("note.md"), "new", &gate).unwrap();
+
+        assert!(!root.join(".git/gitpad-save.tmp").exists());
+        let repo = git2::Repository::open(&root).unwrap();
+        let mut opts = git2::StatusOptions::new();
+        opts.include_untracked(true).recurse_untracked_dirs(true);
+        assert!(repo.statuses(Some(&mut opts)).unwrap().is_empty());
+        let tree = build_tree(&root, &root).unwrap();
+        assert!(tree.iter().all(|entry| entry.name != "gitpad-save.tmp"));
 
         let _ = std::fs::remove_dir_all(&dir);
     }
