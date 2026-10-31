@@ -180,6 +180,9 @@
   function applyActive() {
     const tab = activeTab()
     const path = tab?.path ?? ''
+    // onMount re-runs this once Monaco exists; setting currentPath here would
+    // make that call return early and leave the first tab without a model.
+    if (!editor) return
     if (path === currentPath) return
     if (editor && currentPath) viewStates.set(currentPath, editor.saveViewState())
     if (pendingId && pendingId !== path) {
@@ -187,7 +190,6 @@
       void savePending()
     }
     currentPath = path
-    if (!editor) return
     if (!tab) {
       editor.setModel(null)
       return
