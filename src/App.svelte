@@ -21,6 +21,7 @@
   import {
     applyGitStatus,
     gitStatus,
+    errorMessage,
     isIgnorableSyncError,
     isNoRepoError,
     type GitStatus,
@@ -52,7 +53,7 @@
     if (!configLoaded) return
     pendingConfig = config
     clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => void saveConfig(config).catch((e) => pushToast(`save settings: ${String(e)}`)), 300)
+    saveTimer = setTimeout(() => void saveConfig(config).catch((e) => pushToast(`save settings: ${errorMessage(e)}`)), 300)
   })
 
   // Settings > Supported extensions override the built-in language map.
@@ -82,7 +83,7 @@
       applyGitStatus(await invoke<GitStatus>('git_status'))
       repoReady = true
     } catch (e) {
-      const message = String(e)
+      const message = errorMessage(e)
       if (isNoRepoError(message)) gitStatus.configured = false
       else gitStatus.error = message
     }
@@ -97,7 +98,7 @@
     try {
       applyGitStatus(await invoke<GitStatus>('git_pull'))
     } catch (e) {
-      const message = String(e)
+      const message = errorMessage(e)
       if (!isIgnorableSyncError(message)) gitStatus.error = message
     }
   }
@@ -141,7 +142,7 @@
       void invoke<GitStatus>('git_status')
         .then(applyGitStatus)
         .catch((e) => {
-          const message = String(e)
+          const message = errorMessage(e)
           if (isNoRepoError(message)) gitStatus.configured = false
           else pushToast(message)
         })
@@ -151,7 +152,7 @@
     const showTimer = setTimeout(() => void getCurrentWindow().show().catch(() => {}), 1500)
     void (async () => {
       const config = await loadConfig().catch((e) => {
-        pushToast(`load settings: ${String(e)}`)
+        pushToast(`load settings: ${errorMessage(e)}`)
         return null
       })
       if (config) {

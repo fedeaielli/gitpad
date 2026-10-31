@@ -4,7 +4,7 @@
   import { ui, type FileNode } from '../stores/ui.svelte'
   import { tabs, openTab, activateTab, discardUnder, retarget } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
-  import { isNoRepoError } from '../stores/git.svelte'
+  import { errorMessage, isNoRepoError } from '../stores/git.svelte'
 
   type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'rename' | 'delete'
 
@@ -54,7 +54,7 @@
       noRepo = false
     } catch (e) {
       ui.fileTree = []
-      const message = String(e)
+      const message = errorMessage(e)
       noRepo = isNoRepoError(message)
       error = noRepo ? null : message
     } finally {
@@ -76,7 +76,7 @@
       const content = await invoke<string>('fs_read_file', { path: node.path })
       openTab({ id: node.path, path: node.path, content, modified: false, language: languageFor(node.path) })
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     }
   }
 
@@ -111,7 +111,7 @@
         await openFile({ name: path.split('/').pop() ?? path, path, type: 'file' })
       }
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     }
   }
 
@@ -146,7 +146,7 @@
       menu = null
       await loadTree()
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     }
   }
 
@@ -160,7 +160,7 @@
       menu = null
       await loadTree()
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     }
   }
 </script>

@@ -109,10 +109,10 @@ fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
 }
 
 #[tauri::command]
-pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, String> {
+pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
     let label = path;
-    tokio::task::spawn_blocking(move || {
+    let content = tokio::task::spawn_blocking(move || {
         std::fs::read_to_string(root.join(rel)).map_err(|e| {
             if e.kind() == std::io::ErrorKind::InvalidData {
                 format!("{label} is not UTF-8 text")
@@ -122,7 +122,8 @@ pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, String
         })
     })
     .await
-    .map_err(|e| format!("read task: {e}"))?
+    .map_err(|e| format!("read task: {e}"))??;
+    Ok(content)
 }
 
 #[tauri::command]
@@ -130,7 +131,7 @@ pub async fn fs_write_file(
     app: AppHandle,
     path: String,
     content: String,
-) -> Result<(), String> {
+) -> Result<(), git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
     std::fs::write(root.join(&rel), content).map_err(|e| format!("write {path}: {e}"))?;
     let message = format!("gitpad: update {} {}", rel.display(), git::iso8601_now());
@@ -143,7 +144,7 @@ pub async fn fs_write_file(
 }
 
 #[tauri::command]
-pub async fn fs_create_dir(app: AppHandle, path: String) -> Result<(), String> {
+pub async fn fs_create_dir(app: AppHandle, path: String) -> Result<(), git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
     let label = path;
     tokio::task::spawn_blocking(move || -> Result<(), String> {
@@ -166,7 +167,7 @@ pub async fn fs_create_dir(app: AppHandle, path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), String> {
+pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
     if rel.as_os_str().is_empty() {
         return Err("refusing to delete the repository root".into());
@@ -207,7 +208,7 @@ fn rename_in(root: &Path, from: &str, to: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), String> {
+pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), git::GitError> {
     let root = git::repo_dir(&app)?;
     let root_task = root.clone();
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
@@ -316,7 +317,7 @@ pub async fn fs_import(
     app: AppHandle,
     source: String,
     dest_dir: Option<String>,
-) -> Result<String, String> {
+) -> Result<String, git::GitError> {
     let root = git::repo_dir(&app)?;
     let dest_rel = match dest_dir.as_deref() {
         Some(dir) => resolve_in(&root, dir)?,
@@ -340,15 +341,16 @@ pub async fn fs_import(
 }
 
 #[tauri::command]
-pub async fn fs_list_dir(app: AppHandle, path: Option<String>) -> Result<Vec<FileEntry>, String> {
+pub async fn fs_list_dir(app: AppHandle, path: Option<String>) -> Result<Vec<FileEntry>, git::GitError> {
     let root = git::repo_dir(&app)?;
     let base = match path {
         Some(path) => root.join(resolve(&app, &path)?.1),
         None => root.clone(),
     };
-    tokio::task::spawn_blocking(move || build_tree(&root, &base))
+    let entries = tokio::task::spawn_blocking(move || build_tree(&root, &base))
         .await
-        .map_err(|e| format!("list task: {e}"))?
+        .map_err(|e| format!("list task: {e}"))??;
+    Ok(entries)
 }
 
 #[cfg(test)]

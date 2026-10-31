@@ -51,11 +51,12 @@ pub fn search_in(root: &Path, query: &str) -> Result<Vec<SearchResult>, String> 
 }
 
 #[tauri::command]
-pub async fn search_global(app: AppHandle, query: String) -> Result<Vec<SearchResult>, String> {
+pub async fn search_global(app: AppHandle, query: String) -> Result<Vec<SearchResult>, git::GitError> {
     let root = git::repo_dir(&app)?;
-    tokio::task::spawn_blocking(move || search_in(&root, &query))
+    let results = tokio::task::spawn_blocking(move || search_in(&root, &query))
         .await
-        .map_err(|e| format!("search task: {e}"))?
+        .map_err(|e| format!("search task: {e}"))??;
+    Ok(results)
 }
 
 #[cfg(test)]

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import * as monaco from 'monaco-editor'
-  import { gitStatus, syncNow } from '../stores/git.svelte'
+  import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
   import { tabs, openTab } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
@@ -62,7 +62,7 @@
       diff?.setModel({ original: oursModel, modified: theirsModel })
       error = null
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     }
   }
 
@@ -75,7 +75,7 @@
       selected = files[0] ?? ''
       error = null
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     } finally {
       busy = false
     }
@@ -94,7 +94,7 @@
       // The editor needs the full window; conflicts stay listed in the status bar.
       ui.conflictsHidden = true
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     }
   }
 
@@ -105,7 +105,7 @@
       if (!(await syncNow(null))) throw new Error(gitStatus.error ?? 'push failed')
       ui.conflictsHidden = false
     } catch (e) {
-      error = String(e)
+      error = errorMessage(e)
     } finally {
       busy = false
     }

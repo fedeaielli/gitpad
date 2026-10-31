@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
-  import { gitStatus, applyGitStatus, syncNow, type GitStatus } from '../stores/git.svelte'
+  import { errorMessage, gitStatus, applyGitStatus, syncNow, type GitStatus } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
 
   let commitMessage = $state('')
@@ -24,7 +24,7 @@
       showClone = false
       applyGitStatus(await invoke<GitStatus>('git_status'))
     } catch (e) {
-      gitStatus.error = String(e)
+      gitStatus.error = errorMessage(e)
     } finally {
       cloning = false
     }

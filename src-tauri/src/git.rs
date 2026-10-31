@@ -38,34 +38,73 @@ pub enum Resolution {
     AcceptTheirs,
 }
 
-/// Repo directory missing: the app is simply not configured yet.
-pub const NOT_FOUND: &str = "NOT_FOUND: no repository cloned";
+/// Errors cross the Tauri boundary as `{ "code": ..., "message": ... }`.
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "code", content = "message", rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum GitError {
+    NotFound(String),
+    IoError(String),
+    Other(String),
+}
+
+impl GitError {
+    pub fn not_found() -> Self {
+        Self::NotFound("no repository cloned".into())
+    }
+}
+
+impl std::fmt::Display for GitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NotFound(m) | Self::IoError(m) | Self::Other(m) => f.write_str(m),
+        }
+    }
+}
+
+// Lets `?` widen plain String errors produced by helpers and escaping messages.
+impl From<String> for GitError {
+    fn from(value: String) -> Self {
+        Self::Other(value)
+    }
+}
+
+impl From<GitError> for String {
+    fn from(value: GitError) -> Self {
+        value.to_string()
+    }
+}
+
+impl From<&str> for GitError {
+    fn from(value: &str) -> Self {
+        Self::Other(value.to_string())
+    }
+}
 
 /// A missing repository is an expected state; anything else is a real IO problem.
-fn open_err(e: git2::Error) -> String {
+fn open_err(e: git2::Error) -> GitError {
     match e.code() {
-        git2::ErrorCode::NotFound => NOT_FOUND.to_string(),
-        _ => format!("IO_ERROR: {e}"),
+        git2::ErrorCode::NotFound => GitError::not_found(),
+        _ => GitError::IoError(e.to_string()),
     }
 }
 
-pub fn open_repo(path: &Path) -> Result<Repository, String> {
+pub fn open_repo(path: &Path) -> Result<Repository, GitError> {
     match std::fs::metadata(path.join(".git")) {
         Ok(_) => Repository::open(path).map_err(open_err),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(NOT_FOUND.to_string()),
-        Err(e) => Err(format!("IO_ERROR: {}: {e}", path.display())),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(GitError::not_found()),
+        Err(e) => Err(GitError::IoError(format!("{}: {e}", path.display()))),
     }
 }
 
-fn git_err(e: git2::Error) -> String {
-    format!("git: {}", e.message())
+fn git_err(e: git2::Error) -> GitError {
+    GitError::Other(format!("git: {}", e.message()))
 }
 
-fn signature() -> Result<Signature<'static>, String> {
+fn signature() -> Result<Signature<'static>, GitError> {
     Signature::now("GitPad", "gitpad@localhost").map_err(git_err)
 }
 
-fn repos_root(app: &AppHandle) -> Result<PathBuf, String> {
+fn repos_root(app: &AppHandle) -> Result<PathBuf, GitError> {
     let dir = app
         .path()
         .app_data_dir()
@@ -76,26 +115,24 @@ fn repos_root(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 /// The clone lives in app_data_dir/repos/<repo name>, so the name is discovered, never hardcoded.
-pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, String> {
+pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
     let root = repos_root(app)?;
     let mut dirs: Vec<PathBuf> = std::fs::read_dir(&root)
-        .map_err(|e| format!("IO_ERROR: read repos dir: {e}"))?
+        .map_err(|e| GitError::IoError(format!("read repos dir: {e}")))?
         .filter_map(Result::ok)
         .map(|e| e.path())
         .filter(|p| p.is_dir() && p.join(".git").exists())
         .collect();
     dirs.sort();
-    dirs.into_iter()
-        .next()
-        .ok_or_else(|| "no repository cloned".to_string())
+    dirs.into_iter().next().ok_or_else(GitError::not_found)
 }
 
-fn repo_name_from_url(url: &str) -> Result<String, String> {
+fn repo_name_from_url(url: &str) -> Result<String, GitError> {
     let trimmed = url.trim().trim_end_matches('/');
     let name = trimmed.rsplit('/').next().unwrap_or_default();
     let name = name.strip_suffix(".git").unwrap_or(name);
     if name.is_empty() {
-        return Err(format!("invalid clone url: {url}"));
+        return Err(format!("invalid clone url: {url}").into());
     }
     Ok(name.to_string())
 }
@@ -109,7 +146,7 @@ fn callbacks(token: Option<String>) -> git2::RemoteCallbacks<'static> {
     cbs
 }
 
-fn fetch(repo: &Repository, token: Option<String>) -> Result<(), String> {
+fn fetch(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
     let mut remote = repo.find_remote("origin").map_err(git_err)?;
     let mut opts = FetchOptions::new();
     opts.remote_callbacks(callbacks(token));
@@ -118,11 +155,11 @@ fn fetch(repo: &Repository, token: Option<String>) -> Result<(), String> {
         .map_err(git_err)
 }
 
-fn current_branch(repo: &Repository) -> Result<String, String> {
+fn current_branch(repo: &Repository) -> Result<String, GitError> {
     let head = repo.head().map_err(git_err)?;
     head.shorthand()
         .map(str::to_string)
-        .ok_or_else(|| "detached HEAD".to_string())
+        .ok_or_else(|| GitError::Other("detached HEAD".into()))
 }
 
 fn branch_oids(repo: &Repository) -> (Option<Oid>, Option<Oid>) {
@@ -136,7 +173,7 @@ fn branch_oids(repo: &Repository) -> (Option<Oid>, Option<Oid>) {
     (local, remote)
 }
 
-fn status_of(repo: &Repository) -> Result<GitStatus, String> {
+fn status_of(repo: &Repository) -> Result<GitStatus, GitError> {
     let mut opts = StatusOptions::new();
     opts.include_untracked(true)
         .recurse_untracked_dirs(true)
@@ -190,7 +227,7 @@ fn merge_parents(repo: &Repository) -> Vec<git2::Commit<'_>> {
 }
 
 /// Commit on HEAD, keeping the merge parent, then clear MERGE_HEAD.
-fn commit_head(repo: &Repository, tree: &git2::Tree, message: &str) -> Result<(), String> {
+fn commit_head(repo: &Repository, tree: &git2::Tree, message: &str) -> Result<(), GitError> {
     let sig = signature()?;
     let head = repo.head().ok().and_then(|h| h.peel_to_commit().ok());
     let mut parents: Vec<git2::Commit> = head.into_iter().collect();
@@ -204,7 +241,7 @@ fn commit_head(repo: &Repository, tree: &git2::Tree, message: &str) -> Result<()
     Ok(())
 }
 
-fn commit_pending(repo: &Repository, message: Option<&str>) -> Result<(), String> {
+fn commit_pending(repo: &Repository, message: Option<&str>) -> Result<(), GitError> {
     let mut index = repo.index().map_err(git_err)?;
     index
         .add_all(["*"], IndexAddOption::DEFAULT, None)
@@ -230,7 +267,7 @@ fn commit_pending(repo: &Repository, message: Option<&str>) -> Result<(), String
 }
 
 /// Stage + commit specific paths (used by fs_write_file for the per-file autosave commit).
-pub fn commit_paths(root: &Path, paths: &[PathBuf], message: &str) -> Result<(), String> {
+pub fn commit_paths(root: &Path, paths: &[PathBuf], message: &str) -> Result<(), GitError> {
     let repo = open_repo(root)?;
     let mut index = repo.index().map_err(git_err)?;
     for path in paths {
@@ -252,12 +289,12 @@ pub fn commit_paths(root: &Path, paths: &[PathBuf], message: &str) -> Result<(),
 }
 
 /// Stage everything (including deletions/renames) and commit with `prefix + ISO8601`.
-pub fn commit_all(root: &Path, prefix: &str) -> Result<(), String> {
+pub fn commit_all(root: &Path, prefix: &str) -> Result<(), GitError> {
     let repo = open_repo(root)?;
     commit_pending(&repo, Some(&format!("{prefix} {}", iso8601_now())))
 }
 
-fn pull_repo(repo: &Repository, token: Option<String>) -> Result<GitStatus, String> {
+fn pull_repo(repo: &Repository, token: Option<String>) -> Result<GitStatus, GitError> {
     // always commit before pull — reset(Hard) is used below
     commit_pending(repo, None)?;
     fetch(repo, token)?;
@@ -300,7 +337,7 @@ pub fn push_blocking(
     path: &Path,
     message: Option<String>,
     token: Option<String>,
-) -> Result<GitStatus, String> {
+) -> Result<GitStatus, GitError> {
     let repo = open_repo(path)?;
     commit_pending(&repo, message.as_deref())?;
     let status = pull_repo(&repo, token.clone())?;
@@ -318,7 +355,7 @@ pub fn push_blocking(
     status_of(&repo)
 }
 
-fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(), String> {
+fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(), GitError> {
     let repo = open_repo(root)?;
     let mut index = repo.index().map_err(git_err)?;
     let target = {
@@ -365,7 +402,7 @@ fn blob_text(repo: &Repository, oid: Oid) -> String {
 }
 
 /// Both sides of a conflicted path, read from index stages 2 (ours) and 3 (theirs).
-fn conflict_versions(root: &Path, path: &str) -> Result<ConflictVersions, String> {
+fn conflict_versions(root: &Path, path: &str) -> Result<ConflictVersions, GitError> {
     let repo = open_repo(root)?;
     let index = repo.index().map_err(git_err)?;
     if index.has_conflicts() {
@@ -394,10 +431,10 @@ fn conflict_versions(root: &Path, path: &str) -> Result<ConflictVersions, String
             });
         }
     }
-    Err(format!("no conflict for {path}"))
+    Err(format!("no conflict for {path}").into())
 }
 
-fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), String> {
+fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), GitError> {
     app.emit("sync-status", status)
         .map_err(|e| format!("emit: {e}"))?;
     if !status.conflicts.is_empty() {
@@ -407,7 +444,7 @@ fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), String> {
     Ok(())
 }
 
-pub fn emit_current_status(app: &AppHandle) -> Result<(), String> {
+pub fn emit_current_status(app: &AppHandle) -> Result<(), GitError> {
     let repo = open_repo(&repo_dir(app)?)?;
     emit_status(app, &status_of(&repo)?)
 }
@@ -446,17 +483,17 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
 }
 
 #[tauri::command]
-pub async fn git_clone(app: AppHandle, url: String) -> Result<(), String> {
+pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
     let name = repo_name_from_url(&url)?;
     let target = repos_root(&app)?.join(name);
     if target.join(".git").exists() {
         return Ok(());
     }
     if let Ok(existing) = repo_dir(&app) {
-        return Err(format!(
+        return Err(GitError::Other(format!(
             "a repository is already cloned at {}; remove it before cloning another",
             existing.display()
-        ));
+        )));
     }
     let token = auth::token().ok();
     tokio::task::spawn_blocking(move || {
@@ -471,7 +508,7 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn git_pull(app: AppHandle) -> Result<GitStatus, String> {
+pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     let token = auth::token().ok();
     let status = tokio::task::spawn_blocking(move || {
@@ -485,7 +522,7 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, String> {
 }
 
 #[tauri::command]
-pub async fn git_push(app: AppHandle, message: Option<String>) -> Result<GitStatus, String> {
+pub async fn git_push(app: AppHandle, message: Option<String>) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     let token = auth::token().ok();
     let status = tokio::task::spawn_blocking(move || push_blocking(&path, message, token))
@@ -496,7 +533,7 @@ pub async fn git_push(app: AppHandle, message: Option<String>) -> Result<GitStat
 }
 
 #[tauri::command]
-pub async fn git_status(app: AppHandle) -> Result<GitStatus, String> {
+pub async fn git_status(app: AppHandle) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || {
         let repo = open_repo(&path)?;
@@ -507,7 +544,7 @@ pub async fn git_status(app: AppHandle) -> Result<GitStatus, String> {
 }
 
 #[tauri::command]
-pub async fn git_conflicts(app: AppHandle) -> Result<Vec<ConflictFile>, String> {
+pub async fn git_conflicts(app: AppHandle) -> Result<Vec<ConflictFile>, GitError> {
     let path = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || {
         let repo = open_repo(&path)?;
@@ -522,7 +559,7 @@ pub async fn git_resolve_conflict(
     app: AppHandle,
     path: String,
     resolution: Resolution,
-) -> Result<(), String> {
+) -> Result<(), GitError> {
     let root = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || resolve_conflict(&root, &path, resolution))
         .await
@@ -533,7 +570,7 @@ pub async fn git_resolve_conflict(
 pub async fn git_conflict_versions(
     app: AppHandle,
     path: String,
-) -> Result<ConflictVersions, String> {
+) -> Result<ConflictVersions, GitError> {
     let root = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || conflict_versions(&root, &path))
         .await
@@ -715,20 +752,33 @@ mod tests {
         fn err(path: &Path) -> String {
             match open_repo(path) {
                 Ok(_) => String::new(),
-                Err(e) => e,
+                Err(e) => {
+                    let value = serde_json::to_value(&e).unwrap();
+                    value["code"].as_str().unwrap_or_default().to_string()
+                }
             }
         }
 
         let root = tmp("open-err");
         std::fs::create_dir_all(root.join("empty")).unwrap();
-        assert!(err(&root.join("empty")).starts_with("NOT_FOUND"));
+        assert_eq!(err(&root.join("empty")), "NOT_FOUND");
 
         let locked = root.join("locked");
         std::fs::create_dir_all(locked.join(".git")).unwrap();
         std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
-        assert!(err(&locked).starts_with("IO_ERROR"));
+        assert_eq!(err(&locked), "IO_ERROR");
         std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
         let _ = std::fs::remove_dir_all(&root);
     }
 
+
+    #[test]
+    fn git_error_serializes_with_code_and_message() {
+        let value = serde_json::to_value(GitError::NotFound("no repository cloned".into())).unwrap();
+        assert_eq!(value["code"], "NOT_FOUND");
+        assert_eq!(value["message"], "no repository cloned");
+        let io = serde_json::to_value(GitError::IoError("denied".into())).unwrap();
+        assert_eq!(io["code"], "IO_ERROR");
+        assert_eq!(io["message"], "denied");
+    }
 }

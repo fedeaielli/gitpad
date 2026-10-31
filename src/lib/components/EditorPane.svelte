@@ -25,10 +25,7 @@
   import { ui } from '../stores/ui.svelte'
   import { getEditor, registerFlush, setEditorInstance } from '../editor/bridge'
   import { monacoTheme } from '../utils/themes'
-  import {
-    gitStatus,
-    syncNow,
-  } from '../stores/git.svelte'
+  import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
   import { initVimMode } from 'monaco-vim'
   import { EmacsExtension } from 'monaco-emacs'
@@ -100,7 +97,7 @@
       // Keep it pending so the next flush retries instead of losing the buffer.
       if (!pendingId) pendingId = id
       tab.modified = true
-      saveError = `save failed: ${String(e)}`
+      saveError = `save failed: ${errorMessage(e)}`
       return false
     } finally {
       inFlight.delete(tab.path)
@@ -123,7 +120,7 @@
         saveError = null
       } catch (e) {
         tab.modified = true
-        saveError = `save failed: ${String(e)}`
+        saveError = `save failed: ${errorMessage(e)}`
         ok = false
         break
       } finally {
@@ -195,7 +192,7 @@
         model.getValue() !== saved.get(path)
       ) {
         void invoke('fs_write_file', { path, content: model.getValue() }).catch((e) => {
-          saveError = `save failed: ${String(e)}`
+          saveError = `save failed: ${errorMessage(e)}`
         })
       }
       discarded.delete(path)
