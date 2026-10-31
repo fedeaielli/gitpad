@@ -134,6 +134,11 @@ pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
     Ok(found)
 }
 
+/// Warm the clone path cache off the main thread; a missing repo is fine.
+pub fn prime_repo_path(app: &AppHandle) {
+    let _ = repo_dir(app);
+}
+
 fn remember_repo(app: &AppHandle, path: PathBuf) {
     *app.state::<crate::AppState>()
         .repo_path

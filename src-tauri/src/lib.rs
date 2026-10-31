@@ -63,6 +63,10 @@ pub fn run() {
                 http,
                 repo_path: std::sync::Mutex::new(None),
             });
+            // Warm the clone path once, off the main thread, so no command
+            // pays for the directory scan on the hot path.
+            let prime = app.handle().clone();
+            tauri::async_runtime::spawn_blocking(move || git::prime_repo_path(&prime));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
