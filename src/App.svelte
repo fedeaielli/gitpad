@@ -107,8 +107,12 @@
   }
 
   async function remoteSync() {
-    const token = await invoke<string | null>('auth_get', { key: 'github_token' }).catch(() => null)
-    if (!token) return
+    const hasToken = await invoke<boolean>('auth_has_token').catch((e) => {
+      const message = errorMessage(e)
+      if (!isIgnorableSyncError(message)) gitStatus.error = message
+      return false
+    })
+    if (!hasToken) return
     try {
       applyGitStatus(await invoke<GitStatus>('git_pull'))
     } catch (e) {
