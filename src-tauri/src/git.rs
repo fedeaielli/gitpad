@@ -548,30 +548,6 @@ fn changed_paths(repo: &Repository, before: Option<Oid>) -> Result<Vec<FileChang
         .collect())
 }
 
-/// Paths left with conflict markers in the worktree by a merge.
-fn conflict_paths(repo: &Repository) -> Result<Vec<String>, GitError> {
-    let index = repo.index().map_err(git_err)?;
-    if !index.has_conflicts() {
-        return Ok(Vec::new());
-    }
-    let mut paths: Vec<String> = Vec::new();
-    for entry in index.conflicts().map_err(git_err)? {
-        let entry = entry.map_err(git_err)?;
-        let path = entry
-            .our
-            .as_ref()
-            .or(entry.their.as_ref())
-            .or(entry.ancestor.as_ref())
-            .map(|e| String::from_utf8_lossy(&e.path).to_string());
-        if let Some(path) = path {
-            if !paths.contains(&path) {
-                paths.push(path);
-            }
-        }
-    }
-    Ok(paths)
-}
-
 fn pull_repo_with(
     repo: &Repository,
     token: Option<String>,
@@ -602,17 +578,11 @@ fn pull_repo_with(
             .map_err(git_err)?;
         let mut index = repo.index().map_err(git_err)?;
         if index.has_conflicts() {
-            // HEAD did not move, but the worktree now holds conflict markers.
-            let mut changes = changed_paths(repo, before)?;
-            for path in conflict_paths(repo)? {
-                if !changes.iter().any(|change| change.path == path) {
-                    changes.push(FileChange {
-                        path,
-                        status: "M".into(),
-                    });
-                }
-            }
-            return Ok((status_of(repo)?, changes));
+            // HEAD did not move, but the merge rewrote the worktree: report
+            // every changed path, conflicts included.
+            let status = status_of(repo)?;
+            let changes = status.changes.clone();
+            return Ok((status, changes));
         }
         let tree_id = index.write_tree().map_err(git_err)?;
         let tree = repo.find_tree(tree_id).map_err(git_err)?;
@@ -1577,4 +1547,59 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+    #[test]
+    fn conflicted_merge_reports_every_rewritten_path() {
+        let root = tmp("conflict-changes");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.md", "a1");
+        commit_file(&a, "b.md", "b1");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "a.md", "a2");
+        commit_file(&b, "b.md", "theirs");
+        push_current(&b);
+
+        commit_file(&a, "b.md", "ours");
+        let (status, changes) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+
+        assert_eq!(status.conflicts.len(), 1);
+        assert!(changes.iter().any(|change| change.path == "a.md"));
+        assert!(changes.iter().any(|change| change.path == "b.md"));
+        assert_eq!(std::fs::read_to_string(a_path.join("a.md")).unwrap(), "a2");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn remote_rename_arrives_as_delete_and_add() {
+        let root = tmp("rename-changes");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "old.txt", "x");
+        push_current(&a);
+
+        let b_path = root.join("b");
+        let b = Repository::clone(remote_path.to_str().unwrap(), &b_path).unwrap();
+        std::fs::rename(b_path.join("old.txt"), b_path.join("new.txt")).unwrap();
+        commit_all(&b_path, "gitpad: rename").unwrap();
+        push_current(&b);
+
+        let (status, changes) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+
+        assert!(status.conflicts.is_empty());
+        assert!(changes
+            .iter()
+            .any(|change| change.path == "old.txt" && change.status == "D"));
+        assert!(changes
+            .iter()
+            .any(|change| change.path == "new.txt" && change.status == "A"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }
