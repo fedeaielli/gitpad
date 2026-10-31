@@ -44,7 +44,7 @@ async fn shutdown(app: tauri::AppHandle) {
             tokio::task::spawn_blocking(move || {
                 // Keyring reads are blocking: keep them off the async runtime.
                 let token = auth::token().ok();
-                git::push_only_blocking(&path, None, token)
+                git::push_only_blocking(&path, None, token, None)
             }),
         )
         .await;
@@ -62,7 +62,7 @@ fn terminate(app: tauri::AppHandle) {
         // here: this thread is outside the async runtime.
         let (done, wait) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
-            let _ = done.send(git::push_only_blocking(&path, None, token));
+            let _ = done.send(git::push_only_blocking(&path, None, token, None));
         });
         let _ = wait.recv_timeout(Duration::from_secs(5));
     }
