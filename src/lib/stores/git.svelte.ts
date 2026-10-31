@@ -83,6 +83,10 @@ let runId = 0
 
 /// Pull, push or full sync share the same guard, spinner and error handling.
 async function run(operation: () => Promise<GitStatus>, mark = false) {
+  if (gitStatus.conflicts.length > 0) {
+    gitStatus.error = 'resolve the conflicts first'
+    return false
+  }
   if (gitStatus.syncing || !gitStatus.configured) return false
   const id = ++runId
   gitStatus.syncing = true

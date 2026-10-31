@@ -189,7 +189,7 @@
 
   function armPush() {
     clearTimeout(pushTimer)
-    if (!ui.autoSync) return
+    if (!ui.autoSync || gitStatus.conflicts.length > 0) return
     pushTimer = setTimeout(() => void syncNow(null), ui.pushIdleMs)
   }
 
@@ -294,7 +294,9 @@
       await savePending()
     }
     // Avoid pushing just because the window lost focus.
-    if (ui.autoSync && (hadEdits || gitStatus.ahead > 0)) await syncNow(null)
+    if (ui.autoSync && gitStatus.conflicts.length === 0 && (hadEdits || gitStatus.ahead > 0)) {
+      await syncNow(null)
+    }
   }
 
   function isMissing(e: unknown) {

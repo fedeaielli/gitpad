@@ -57,6 +57,27 @@ describe('syncNow', () => {
     expect(invoke).not.toHaveBeenCalled()
   })
 
+  it('refuses to sync while conflicts are open', async () => {
+    git.gitStatus.configured = true
+    git.gitStatus.conflicts = [{ path: 'note.md' }]
+
+    expect(await git.syncNow(null)).toBe(false)
+    expect(invoke).not.toHaveBeenCalled()
+    expect(git.gitStatus.error).toBe('resolve the conflicts first')
+    expect(git.gitStatus.syncing).toBe(false)
+  })
+
+  it('syncs again once the conflicts are resolved', async () => {
+    git.gitStatus.configured = true
+    git.gitStatus.conflicts = [{ path: 'note.md' }]
+    expect(await git.syncNow(null)).toBe(false)
+
+    git.gitStatus.conflicts = []
+    vi.mocked(invoke).mockResolvedValue(status)
+    expect(await git.syncNow(null)).toBe(true)
+    expect(invoke).toHaveBeenCalledTimes(1)
+  })
+
   it('pushes, marks the status and clears the flag', async () => {
     git.gitStatus.configured = true
     vi.mocked(invoke).mockResolvedValue(status)
