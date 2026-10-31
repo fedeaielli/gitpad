@@ -18,6 +18,10 @@ pub struct AppState {
     /// Guards the worktree against git2 rewrites (pull, reset, merge). Take it
     /// only inside `spawn_blocking`, never across an `await` on the async runtime.
     pub repo_gate: std::sync::Arc<std::sync::RwLock<()>>,
+    /// Serializes autosave commits against each other. Take it only after
+    /// `repo_gate.read()` and only inside `spawn_blocking`, never across an
+    /// `await`: the order is always repo_gate.read() -> commit_gate.lock().
+    pub commit_gate: std::sync::Arc<std::sync::Mutex<()>>,
 }
 
 static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
@@ -104,6 +108,7 @@ pub fn run() {
                 http,
                 repo_path: std::sync::Mutex::new(None),
                 repo_gate: std::sync::Arc::new(std::sync::RwLock::new(())),
+                commit_gate: std::sync::Arc::new(std::sync::Mutex::new(())),
             });
             // Warm the clone path once, off the main thread, so no command
             // pays for the directory scan on the hot path.
