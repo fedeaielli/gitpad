@@ -1,12 +1,7 @@
 <script lang="ts">
   import FileTree from './FileTree.svelte'
   import GitPanel from './GitPanel.svelte'
-  import { tabs } from '../stores/tabs.svelte'
-  import { ui, cyclePreview } from '../stores/ui.svelte'
-
-  const isMarkdown = $derived(
-    tabs.tabs.find((t) => t.id === tabs.activeTabId)?.language === 'markdown',
-  )
+  import { ui } from '../stores/ui.svelte'
 
   const SORTS = ['name', 'folders', 'modified'] as const
 
@@ -75,9 +70,6 @@
         <button title="Sort by {ui.sortMode} (click to change)" onclick={cycleSort}>⇅</button>
         <button title="Collapse all folders" onclick={() => (ui.expanded = [])}>⊟</button>
       </div>
-      <button class="preview" onclick={cyclePreview} disabled={!isMarkdown}>
-        Preview: {ui.previewMode}
-      </button>
     {/if}
   </div>
   <div class="scroll">
@@ -164,7 +156,7 @@
   }
   .actions {
     display: flex;
-    gap: 2px;
+    gap: 4px;
     margin-left: auto;
   }
   .actions button {
@@ -172,9 +164,9 @@
     border-radius: 3px;
     background: transparent;
     color: var(--muted);
-    font-size: 12px;
-    line-height: 18px;
-    padding: 0 3px;
+    font-size: 15px;
+    line-height: 22px;
+    padding: 0 5px;
   }
   .actions button:hover {
     color: var(--text);
@@ -182,20 +174,6 @@
   }
   .actions button[aria-pressed='true'] {
     color: var(--accent);
-  }
-  .preview {
-    padding: 2px 6px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    color: var(--muted);
-    font-size: 10px;
-  }
-  .preview:hover:not(:disabled) {
-    color: var(--text);
-  }
-  .preview:disabled {
-    opacity: 0.4;
-    cursor: default;
   }
   .scroll {
     flex: 1;
