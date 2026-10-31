@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, tick } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import { ask } from '@tauri-apps/plugin-dialog'
   import * as monaco from 'monaco-editor'
-  import { closeIfClean, tabs } from '../stores/tabs.svelte'
+  import { closeIfClean, discarded, openTab, tabs } from '../stores/tabs.svelte'
+  import { languageFor } from '../utils/langmap'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
   import { monacoTheme } from '../utils/themes'
@@ -95,17 +96,33 @@
   }
 
   async function restore(commit: CommitEntry) {
-    if (!closeIfClean(path)) {
+    // Snapshot: closing the tab clears the derived path.
+    const target = path
+    if (tabs.tabs.find((t) => t.path === target)?.modified) {
       error = 'save or close the open file first'
       return
     }
-    if (!(await ask(`Restore ${path} from ${commit.shortHash}?`, { title: 'Restore file' }))) return
+    if (!(await ask(`Restore ${target} from ${commit.shortHash}?`, { title: 'Restore file' }))) return
     busy = true
     error = null
     try {
-      applyGitStatus(await invoke<GitStatus>('git_restore_file', { hash: commit.hash, path }))
+      applyGitStatus(
+        await invoke<GitStatus>('git_restore_file', { hash: commit.hash, path: target }),
+      )
+      if (!closeIfClean(target)) return
+      // Let EditorPane drop the stale model before the tab comes back.
+      await tick()
+      const content = await invoke<string>('fs_read_file', { path: target })
+      openTab({
+        id: target,
+        path: target,
+        content,
+        modified: false,
+        language: languageFor(target),
+      })
+      discarded.delete(target)
       ui.treeVersion += 1
-      await load(path)
+      await load(target)
     } catch (e) {
       error = errorMessage(e)
     } finally {

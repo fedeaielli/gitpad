@@ -22,7 +22,7 @@
   import htmlWorker from 'monaco-editor/language/html/html.worker?worker'
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
   import { tabs, discarded } from '../stores/tabs.svelte'
-  import { ui, cyclePreview } from '../stores/ui.svelte'
+  import { ui } from '../stores/ui.svelte'
   import { getEditor, registerFlush, setEditorInstance } from '../editor/bridge'
   import { monacoTheme } from '../utils/themes'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
@@ -285,28 +285,6 @@
 </script>
 
 <div class="pane">
-  {#if activeTab()}
-    <div class="editor-bar">
-      <button
-        class="bar-icon"
-        class:active={ui.timelineOpen}
-        title="History for this file"
-        aria-label="File history"
-        aria-pressed={ui.timelineOpen}
-        onclick={() => (ui.timelineOpen = !ui.timelineOpen)}
-      >
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <circle cx="8" cy="8" r="5.6" />
-          <path d="M8 5v3.2l2.2 1.3" />
-        </svg>
-      </button>
-      {#if isMarkdown}
-        <button class="preview-toggle" onclick={cyclePreview} title="Cycle preview (Ctrl+Shift+P)">
-          Preview · {previewMode}
-        </button>
-      {/if}
-    </div>
-  {/if}
   <div class="content">
     <div class="editor-wrap" class:hidden={previewMode === 'full'}>
       <div class="editor" bind:this={host}></div>
@@ -336,49 +314,6 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-  }
-  .editor-bar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 26px;
-    padding: 0 8px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-panel);
-  }
-  .bar-icon {
-    display: flex;
-    padding: 2px;
-    border-radius: 3px;
-    color: var(--muted);
-  }
-  .bar-icon:hover {
-    color: var(--text);
-    background: var(--bg-raised);
-  }
-  .bar-icon.active {
-    color: var(--accent);
-  }
-  .bar-icon svg {
-    width: 13px;
-    height: 13px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.2;
-  }
-  .preview-toggle {
-    padding: 1px 8px;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--muted);
-    font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .preview-toggle:hover {
-    color: var(--text);
-    border-color: var(--accent);
   }
   .content {
     display: flex;
