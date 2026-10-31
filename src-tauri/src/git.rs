@@ -52,7 +52,17 @@ pub struct CommitEntry {
     pub files_changed: usize,
 }
 
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FileDiff {
+    pub original: String,
+    pub modified: String,
+}
+
 const LOG_LIMIT: usize = 100;
+const FILE_LOG_LIMIT: usize = 50;
+/// A file untouched for thousands of commits would make the walk unbounded.
+const FILE_LOG_SCAN: usize = 1000;
 
 #[derive(Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -225,6 +235,17 @@ fn commit_tree_diff<'r>(repo: &'r Repository, commit: &Commit<'_>) -> Result<Dif
         .map_err(git_err)
 }
 
+fn entry_of(hash: String, commit: &Commit<'_>, files_changed: usize) -> CommitEntry {
+    CommitEntry {
+        short_hash: hash[..7].to_string(),
+        hash,
+        message: commit.summary().unwrap_or("(no message)").to_string(),
+        author: commit.author().name().unwrap_or("unknown").to_string(),
+        timestamp: commit.time().seconds().max(0) as u64,
+        files_changed,
+    }
+}
+
 fn log_entries(repo: &Repository) -> Result<Vec<CommitEntry>, GitError> {
     let mut walk = repo.revwalk().map_err(git_err)?;
     walk.set_sorting(Sort::TOPOLOGICAL | Sort::TIME)
@@ -234,17 +255,60 @@ fn log_entries(repo: &Repository) -> Result<Vec<CommitEntry>, GitError> {
     for oid in walk.take(LOG_LIMIT) {
         let oid = oid.map_err(git_err)?;
         let commit = repo.find_commit(oid).map_err(git_err)?;
-        let hash = oid.to_string();
-        entries.push(CommitEntry {
-            short_hash: hash[..7].to_string(),
-            hash,
-            message: commit.summary().unwrap_or("(no message)").to_string(),
-            author: commit.author().name().unwrap_or("unknown").to_string(),
-            timestamp: commit.time().seconds().max(0) as u64,
-            files_changed: commit_tree_diff(repo, &commit)?.deltas().len(),
-        });
+        let files_changed = commit_tree_diff(repo, &commit)?.deltas().len();
+        entries.push(entry_of(oid.to_string(), &commit, files_changed));
     }
     Ok(entries)
+}
+
+fn file_log(repo: &Repository, rel: &Path) -> Result<Vec<CommitEntry>, GitError> {
+    let mut walk = repo.revwalk().map_err(git_err)?;
+    walk.set_sorting(Sort::TOPOLOGICAL | Sort::TIME)
+        .map_err(git_err)?;
+    walk.push_head().map_err(git_err)?;
+    let mut entries = Vec::new();
+    // shortcut: only the newest FILE_LOG_SCAN commits are inspected.
+    for oid in walk.take(FILE_LOG_SCAN) {
+        let oid = oid.map_err(git_err)?;
+        let commit = repo.find_commit(oid).map_err(git_err)?;
+        let diff = commit_tree_diff(repo, &commit)?;
+        let touched = diff
+            .deltas()
+            .any(|d| d.new_file().path() == Some(rel) || d.old_file().path() == Some(rel));
+        if !touched {
+            continue;
+        }
+        let files_changed = diff.deltas().len();
+        entries.push(entry_of(oid.to_string(), &commit, files_changed));
+        if entries.len() >= FILE_LOG_LIMIT {
+            break;
+        }
+    }
+    Ok(entries)
+}
+
+fn content_at(repo: &Repository, tree: &git2::Tree<'_>, rel: &Path) -> String {
+    tree.get_path(rel)
+        .ok()
+        .and_then(|entry| entry.to_object(repo).ok())
+        .and_then(|object| {
+            object
+                .as_blob()
+                .map(|b| String::from_utf8_lossy(b.content()).to_string())
+        })
+        .unwrap_or_default()
+}
+
+fn file_diff(repo: &Repository, hash: &str, rel: &Path) -> Result<FileDiff, GitError> {
+    let oid = Oid::from_str(hash)
+        .map_err(|e| GitError::Other(format!("bad commit {hash}: {e}")))?;
+    let commit = repo.find_commit(oid).map_err(git_err)?;
+    let modified = content_at(repo, &commit.tree().map_err(git_err)?, rel);
+    let original = match commit.parent(0) {
+        Ok(parent) => content_at(repo, &parent.tree().map_err(git_err)?, rel),
+        Err(_) => String::new(), // root commit: nothing before it
+    };
+    Ok(FileDiff { original, modified })
 }
 
 fn delta_code(delta: git2::Delta) -> &'static str {
@@ -829,6 +893,28 @@ pub async fn git_revert_commit(app: AppHandle, hash: String) -> Result<GitStatus
 }
 
 #[tauri::command]
+pub async fn git_file_log(app: AppHandle, path: String) -> Result<Vec<CommitEntry>, GitError> {
+    let root = repo_dir(&app)?;
+    let rel = safe_rel_path(&path)?;
+    tokio::task::spawn_blocking(move || file_log(&open_repo(&root)?, &rel))
+        .await
+        .map_err(|e| format!("git task: {e}"))?
+}
+
+#[tauri::command]
+pub async fn git_file_diff(
+    app: AppHandle,
+    hash: String,
+    path: String,
+) -> Result<FileDiff, GitError> {
+    let root = repo_dir(&app)?;
+    let rel = safe_rel_path(&path)?;
+    tokio::task::spawn_blocking(move || file_diff(&open_repo(&root)?, &hash, &rel))
+        .await
+        .map_err(|e| format!("git task: {e}"))?
+}
+
+#[tauri::command]
 pub async fn git_status(app: AppHandle) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || {
@@ -1082,6 +1168,43 @@ mod tests {
         assert_eq!(entries[0].files_changed, 1);
         assert!(entries[0].timestamp > 0);
         assert_eq!(entries[1].files_changed, 1);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn file_log_only_lists_touching_commits() {
+        let root = tmp("filelog");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "note.md", "one");
+        let first = repo.head().unwrap().target().unwrap().to_string();
+        commit_file(&repo, "other.txt", "two");
+
+        let entries = file_log(&repo, Path::new("note.md")).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].hash, first);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn file_diff_returns_parent_and_commit_versions() {
+        let root = tmp("filediff");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "note.md", "one");
+        let first = repo.head().unwrap().target().unwrap().to_string();
+        commit_file(&repo, "note.md", "two");
+        let head = repo.head().unwrap().target().unwrap().to_string();
+
+        let diff = file_diff(&repo, &head, Path::new("note.md")).unwrap();
+        assert_eq!(diff.original, "one");
+        assert_eq!(diff.modified, "two");
+
+        let root_diff = file_diff(&repo, &first, Path::new("note.md")).unwrap();
+        assert_eq!(root_diff.original, "");
+        assert_eq!(root_diff.modified, "one");
+
+        let missing = file_diff(&repo, &head, Path::new("nope.txt")).unwrap();
+        assert_eq!(missing.original, "");
+        assert_eq!(missing.modified, "");
         let _ = std::fs::remove_dir_all(&root);
     }
 

@@ -33,6 +33,9 @@ export const ui = $state({
   sidebarOpen: true,
   activeView: 'files' as 'files' | 'git' | 'history',
   previewMode: 'off' as 'off' | 'split' | 'full',
+  timelineOpen: false,
+  /// Height of the per-file history panel in px.
+  timelineHeight: 200,
   commandPaletteOpen: false,
   settingsOpen: false,
   fileTree: [] as FileNode[],

@@ -14,6 +14,7 @@
   import CommandPalette from './lib/components/CommandPalette.svelte'
   import Settings from './lib/components/Settings.svelte'
   import Toasts from './lib/components/Toasts.svelte'
+  import TitleBar from './lib/components/TitleBar.svelte'
   import { pushToast } from './lib/stores/toasts.svelte'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
@@ -197,12 +198,14 @@
 
 <svelte:window onkeydowncapture={onKeydown} />
 
-{#if !configLoaded}
-  <!-- wait for config.json so an onboarded user doesn't see the wizard flash -->
-{:else if !ui.onboardingComplete && !onboardingSkipped}
-  <Onboarding onskip={() => (onboardingSkipped = true)} />
-{:else}
-  <div class="app">
+<div class="shell">
+  <TitleBar />
+  {#if !configLoaded}
+    <!-- wait for config.json so an onboarded user doesn't see the wizard flash -->
+  {:else if !ui.onboardingComplete && !onboardingSkipped}
+    <Onboarding onskip={() => (onboardingSkipped = true)} />
+  {:else}
+    <div class="app">
     <main class="body">
       <ActivityBar />
       {#if ui.sidebarOpen}
@@ -216,8 +219,9 @@
       </section>
     </main>
     <StatusBar />
-  </div>
-{/if}
+    </div>
+  {/if}
+</div>
 
 {#if ui.commandPaletteOpen}
   <CommandPalette />
@@ -297,10 +301,37 @@
     color: inherit;
     font: inherit;
   }
-  .app {
+  /* Thin scrollbars: the thumb only shows while the area is hovered. */
+  :global(::-webkit-scrollbar) {
+    width: 6px;
+    height: 6px;
+  }
+  :global(::-webkit-scrollbar-track) {
+    background: transparent;
+  }
+  :global(::-webkit-scrollbar-thumb) {
+    background: transparent;
+    border-radius: 3px;
+  }
+  :global(:hover::-webkit-scrollbar-thumb) {
+    background: var(--border);
+  }
+  :global(:hover::-webkit-scrollbar-thumb:hover) {
+    background: var(--muted);
+  }
+  :global(::-webkit-scrollbar-corner) {
+    background: transparent;
+  }
+  .shell {
     display: flex;
     flex-direction: column;
     height: 100vh;
+  }
+  .app {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
   }
   .body {
     display: flex;
