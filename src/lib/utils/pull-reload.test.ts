@@ -32,6 +32,20 @@ describe('planPullReload', () => {
     expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
   })
 
+  it('reloads a resolved path unless the tab has edits', () => {
+    const changes = [{ path: 'note.md', status: 'M' }]
+    expect(planPullReload(changes, [tab('note.md')], notBusy)).toEqual({
+      reload: ['note.md'],
+      close: [],
+      stale: [],
+    })
+    expect(planPullReload(changes, [tab('note.md', true)], notBusy)).toEqual({
+      reload: [],
+      close: [],
+      stale: ['note.md'],
+    })
+  })
+
   it('marks tabs with a save in flight stale', () => {
     const plan = planPullReload([{ path: 'a.md', status: 'M' }], [tab('a.md')], (path) => path === 'a.md')
     expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
