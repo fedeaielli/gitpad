@@ -4,8 +4,16 @@ export interface ConflictFile {
   path: string
 }
 
+export interface FileChange {
+  path: string
+  /** "M", "A" (untracked/staged new) or "D". */
+  status: string
+}
+
 export interface GitStatus {
   synced: boolean
+  branch: string
+  changes: FileChange[]
   modifiedFiles: string[]
   conflicts: ConflictFile[]
   ahead: number
@@ -16,6 +24,8 @@ export interface GitStatus {
 export const gitStatus = $state({
   synced: true,
   syncing: false,
+  branch: '',
+  changes: [] as FileChange[],
   modifiedFiles: [] as string[],
   ahead: 0,
   behind: 0,
@@ -29,6 +39,8 @@ export const gitStatus = $state({
 
 export function applyGitStatus(status: GitStatus) {
   gitStatus.synced = status.synced
+  gitStatus.branch = status.branch
+  gitStatus.changes = status.changes
   gitStatus.modifiedFiles = status.modifiedFiles
   gitStatus.ahead = status.ahead
   gitStatus.behind = status.behind
@@ -62,13 +74,15 @@ export function isIgnorableSyncError(error: unknown) {
   return errorMessage(error).includes('not authenticated') || isNoRepoError(error)
 }
 
-/// Single push path for the editor, git panel and conflict dialog.
-export async function syncNow(message: string | null) {
+/// Pull, push or full sync share the same guard, spinner and error handling.
+async function run(operation: () => Promise<GitStatus>, mark = false) {
   if (gitStatus.syncing || !gitStatus.configured) return false
   gitStatus.syncing = true
   gitStatus.error = null
   try {
-    markPushed(await invoke<GitStatus>('git_push', { message }))
+    const status = await operation()
+    if (mark) markPushed(status)
+    else applyGitStatus(status)
     return true
   } catch (e) {
     const text = errorMessage(e)
@@ -77,4 +91,19 @@ export async function syncNow(message: string | null) {
   } finally {
     gitStatus.syncing = false
   }
+}
+
+/// Fetch + fast-forward/merge only.
+export function pullOnly() {
+  return run(() => invoke<GitStatus>('git_pull'))
+}
+
+/// Commit + push, skipping the pull (the push-only button).
+export function pushOnly(message: string | null = null) {
+  return run(() => invoke<GitStatus>('git_push', { message, pull: false }), true)
+}
+
+/// Single push path for the editor, git panel and conflict dialog.
+export function syncNow(message: string | null) {
+  return run(() => invoke<GitStatus>('git_push', { message }), true)
 }

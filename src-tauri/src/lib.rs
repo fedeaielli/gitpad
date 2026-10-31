@@ -5,6 +5,7 @@ mod git;
 mod github;
 mod search;
 
+use nix::sys::signal::{pthread_sigmask, SigSet, SigmaskHow, Signal};
 use reqwest::Client;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -37,6 +38,25 @@ async fn shutdown(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+/// SIGTERM: commit what is on disk and push before dying. `push_blocking`
+/// commits pending changes first, so this is the whole shutdown path.
+fn terminate(app: tauri::AppHandle) {
+    if let Ok(path) = git::repo_dir(&app) {
+        let token = auth::token().ok();
+        let _ = git::push_blocking(&path, None, token);
+    }
+    app.exit(0);
+}
+
+/// SIGTERM is blocked in every thread so a dedicated thread can wait for it:
+/// signal handlers may only touch async-signal-safe code, git2 is not.
+fn block_sigterm() -> nix::Result<SigSet> {
+    let mut set = SigSet::empty();
+    set.add(Signal::SIGTERM);
+    pthread_sigmask(SigmaskHow::SIG_BLOCK, Some(&set), None)?;
+    Ok(set)
+}
+
 /// Called by the frontend once pending edits are flushed.
 #[tauri::command]
 async fn app_exit(app: tauri::AppHandle) {
@@ -51,10 +71,12 @@ fn app_closing_ack() {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Must happen before Tauri spawns threads: they inherit the mask.
+    let sigterm = block_sigterm().ok();
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
-        .setup(|app| {
+        .setup(move |app| {
             let http = Client::builder()
                 .user_agent("GitPad")
                 .timeout(Duration::from_secs(15))
@@ -67,6 +89,14 @@ pub fn run() {
             // pays for the directory scan on the hot path.
             let prime = app.handle().clone();
             tauri::async_runtime::spawn_blocking(move || git::prime_repo_path(&prime));
+            if let Some(set) = sigterm {
+                let term = app.handle().clone();
+                std::thread::spawn(move || {
+                    if set.wait().is_ok() {
+                        terminate(term);
+                    }
+                });
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -79,10 +109,12 @@ pub fn run() {
             fs::fs_delete,
             fs::fs_rename,
             fs::fs_list_dir,
+            fs::reveal_in_filemanager,
             fs::fs_import,
             git::git_clone,
             git::git_pull,
             git::git_push,
+            git::git_discard_file,
             git::git_status,
             git::git_conflicts,
             git::git_resolve_conflict,

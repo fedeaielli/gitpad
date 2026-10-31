@@ -9,6 +9,8 @@ let git: GitModule
 
 const status = {
   synced: true,
+  branch: 'main',
+  changes: [] as { path: string; status: string }[],
   modifiedFiles: [] as string[],
   conflicts: [],
   ahead: 0,

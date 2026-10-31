@@ -85,6 +85,10 @@ to create, rename or delete.
   but an already open tab is not reloaded.
 - The markdown preview does not render remote images (CSP blocks them).
 - The file tree watch is focus-based, not inotify-based.
+- `SIGTERM` (logout, `systemctl stop`, `kill`) commits and pushes the files
+  already written to disk before exiting. `SIGKILL` (`kill -9`) and crashes
+  cannot be caught: nothing is committed, so the last edits stay local until
+  the next start.
 
 ## Testing
 

@@ -6,6 +6,7 @@ export interface Config {
   previewMode: string
   fontSize: number
   fontFamily: string
+  sidebarWidth: number
   autoSync: boolean
   saveDebounceMs: number
   pushIdleMs: number

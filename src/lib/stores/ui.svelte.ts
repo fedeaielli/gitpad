@@ -25,6 +25,8 @@ export interface FileNode {
   path: string
   type: 'file' | 'dir'
   children?: FileNode[]
+  /** Seconds since the epoch, from the backend; used by the "modified" sort. */
+  modified?: number
 }
 
 export const ui = $state({
@@ -36,10 +38,15 @@ export const ui = $state({
   fileTree: [] as FileNode[],
   /** Bumped after clone/rename so the tree reloads without prop drilling. */
   treeVersion: 0,
+  showHidden: false,
+  sortMode: 'name' as 'name' | 'folders' | 'modified',
+  /// Expanded folders live here so they survive tree reloads and view switches.
+  expanded: [] as string[],
   conflictsHidden: false,
   editorTheme: 'gitpad-dark',
   fontSize: 13,
   fontFamily: 'ui-monospace, monospace',
+  sidebarWidth: 240,
   autoSync: true,
   saveDebounceMs: 2000,
   pushIdleMs: 30_000,

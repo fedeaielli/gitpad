@@ -22,8 +22,18 @@ pub struct ConflictVersions {
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct FileChange {
+    pub path: String,
+    /// Porcelain-style code: "M", "A" (untracked or staged new) or "D".
+    pub status: String,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct GitStatus {
     pub synced: bool,
+    pub branch: String,
+    pub changes: Vec<FileChange>,
     pub modified_files: Vec<String>,
     pub conflicts: Vec<ConflictFile>,
     pub ahead: usize,
@@ -192,16 +202,33 @@ fn branch_oids(repo: &Repository) -> (Option<Oid>, Option<Oid>) {
     (local, remote)
 }
 
+fn change_code(status: git2::Status) -> &'static str {
+    if status.is_wt_new() || status.is_index_new() {
+        "A"
+    } else if status.is_wt_deleted() || status.is_index_deleted() {
+        "D"
+    } else {
+        "M"
+    }
+}
+
 fn status_of(repo: &Repository) -> Result<GitStatus, GitError> {
     let mut opts = StatusOptions::new();
     opts.include_untracked(true)
         .recurse_untracked_dirs(true)
         .exclude_submodules(true);
     let statuses = repo.statuses(Some(&mut opts)).map_err(git_err)?;
-    let modified_files: Vec<String> = statuses
+    let changes: Vec<FileChange> = statuses
         .iter()
-        .filter_map(|e| e.path().map(str::to_string))
+        .filter_map(|entry| {
+            let path = entry.path()?.to_string();
+            Some(FileChange {
+                path,
+                status: change_code(entry.status()).to_string(),
+            })
+        })
         .collect();
+    let modified_files: Vec<String> = changes.iter().map(|c| c.path.clone()).collect();
 
     let index = repo.index().map_err(git_err)?;
     let mut conflicts = Vec::new();
@@ -224,8 +251,11 @@ fn status_of(repo: &Repository) -> Result<GitStatus, GitError> {
         (Some(local), Some(remote)) => repo.graph_ahead_behind(local, remote).map_err(git_err)?,
         _ => (0, 0),
     };
+    let branch = current_branch(repo).unwrap_or_else(|_| "HEAD".into());
     Ok(GitStatus {
         synced: ahead == 0 && behind == 0 && modified_files.is_empty() && conflicts.is_empty(),
+        branch,
+        changes,
         modified_files,
         conflicts,
         ahead,
@@ -363,7 +393,24 @@ pub fn push_blocking(
     if !status.conflicts.is_empty() {
         return Ok(status);
     }
-    let branch = current_branch(&repo)?;
+    push_refs(&repo, token)?;
+    status_of(&repo)
+}
+
+/// Commit and push without pulling first (used by the push-only button).
+pub fn push_only_blocking(
+    path: &Path,
+    message: Option<String>,
+    token: Option<String>,
+) -> Result<GitStatus, GitError> {
+    let repo = open_repo(path)?;
+    commit_pending(&repo, message.as_deref())?;
+    push_refs(&repo, token)?;
+    status_of(&repo)
+}
+
+fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
+    let branch = current_branch(repo)?;
     let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
     let mut remote = repo.find_remote("origin").map_err(git_err)?;
     let mut opts = PushOptions::new();
@@ -371,7 +418,7 @@ pub fn push_blocking(
     remote
         .push(&[refspec.as_str()], Some(&mut opts))
         .map_err(|e| format!("git push: {}", e.message()))?;
-    status_of(&repo)
+    Ok(())
 }
 
 fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(), GitError> {
@@ -558,15 +605,70 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
 }
 
 #[tauri::command]
-pub async fn git_push(app: AppHandle, message: Option<String>) -> Result<GitStatus, GitError> {
+pub async fn git_push(
+    app: AppHandle,
+    message: Option<String>,
+    pull: Option<bool>,
+) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     let status = tokio::task::spawn_blocking(move || {
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
-        push_blocking(&path, message, token)
+        if pull == Some(false) {
+            push_only_blocking(&path, message, token)
+        } else {
+            push_blocking(&path, message, token)
+        }
     })
         .await
         .map_err(|e| format!("git task: {e}"))??;
+    emit_status(&app, &status)?;
+    Ok(status)
+}
+
+/// Relative paths only: a discard must stay inside the repository.
+fn safe_rel_path(path: &str) -> Result<PathBuf, GitError> {
+    let candidate = Path::new(path);
+    if candidate.is_absolute()
+        || candidate
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(GitError::Other(format!("path outside repository: {path}")));
+    }
+    Ok(candidate.to_path_buf())
+}
+
+fn discard_file(repo: &Repository, rel: &Path) -> Result<(), GitError> {
+    let tracked = repo
+        .index()
+        .map_err(git_err)?
+        .get_path(rel, 0)
+        .is_some();
+    if tracked {
+        let mut checkout = CheckoutBuilder::new();
+        checkout.path(rel).force();
+        repo.checkout_head(Some(&mut checkout)).map_err(git_err)
+    } else {
+        let workdir = repo
+            .workdir()
+            .ok_or_else(|| GitError::IoError("bare repository".into()))?;
+        std::fs::remove_file(workdir.join(rel))
+            .map_err(|e| GitError::IoError(format!("remove {}: {e}", rel.display())))
+    }
+}
+
+#[tauri::command]
+pub async fn git_discard_file(app: AppHandle, path: String) -> Result<GitStatus, GitError> {
+    let root = repo_dir(&app)?;
+    let rel = safe_rel_path(&path)?;
+    let status = tokio::task::spawn_blocking(move || {
+        let repo = open_repo(&root)?;
+        discard_file(&repo, &rel)?;
+        status_of(&repo)
+    })
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
     emit_status(&app, &status)?;
     Ok(status)
 }
@@ -810,6 +912,31 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+
+    #[test]
+    fn status_of_reports_branch_and_changes() {
+        let root = tmp("status-changes");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "keep.md", "keep");
+        commit_file(&repo, "gone.md", "gone");
+        std::fs::write(root.join("keep.md"), "edited").unwrap();
+        std::fs::write(root.join("new.md"), "new").unwrap();
+        std::fs::remove_file(root.join("gone.md")).unwrap();
+
+        let status = status_of(&repo).unwrap();
+        let changes: Vec<(String, String)> = status
+            .changes
+            .iter()
+            .map(|c| (c.path.clone(), c.status.clone()))
+            .collect();
+        assert!(changes.contains(&("keep.md".into(), "M".into())));
+        assert!(changes.contains(&("new.md".into(), "A".into())));
+        assert!(changes.contains(&("gone.md".into(), "D".into())));
+        assert_eq!(status.modified_files.len(), 3);
+        assert!(!status.branch.is_empty());
+        assert!(!status.synced);
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn git_error_serializes_with_code_and_message() {

@@ -11,6 +11,7 @@ pub struct Config {
     pub preview_mode: String,
     pub font_size: u32,
     pub font_family: String,
+    pub sidebar_width: u32,
     pub auto_sync: bool,
     pub save_debounce_ms: u32,
     pub push_idle_ms: u32,
@@ -41,6 +42,7 @@ impl Default for Config {
             preview_mode: "off".into(),
             font_size: 13,
             font_family: "ui-monospace, monospace".into(),
+            sidebar_width: 240,
             auto_sync: true,
             save_debounce_ms: 2000,
             push_idle_ms: 30_000,
@@ -112,6 +114,7 @@ mod tests {
             preview_mode: "split".into(),
             font_size: 16,
             font_family: "monospace".into(),
+            sidebar_width: 300,
             auto_sync: false,
             save_debounce_ms: 1500,
             push_idle_ms: 60_000,
@@ -124,6 +127,7 @@ mod tests {
         assert_eq!(loaded.theme, "vs");
         assert_eq!(loaded.preview_mode, "split");
         assert_eq!(loaded.font_size, 16);
+        assert_eq!(loaded.sidebar_width, 300);
         assert!(!loaded.auto_sync);
         assert_eq!(loaded.keybindings, "vim");
         assert_eq!(loaded.extensions.len(), 1);
