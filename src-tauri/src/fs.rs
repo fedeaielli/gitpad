@@ -257,23 +257,32 @@ pub async fn fs_write_file(
 pub async fn fs_create_dir(app: AppHandle, path: String) -> Result<(), git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
     let label = path;
-    tokio::task::spawn_blocking(move || -> Result<(), String> {
-        let abs = root.join(rel);
-        std::fs::create_dir_all(&abs).map_err(|e| format!("create dir {label}: {e}"))?;
-        let empty = std::fs::read_dir(&abs)
-            .map_err(|e| format!("create dir {label}: {e}"))?
-            .next()
-            .is_none();
-        if empty {
-            std::fs::write(abs.join(".gitkeep"), "")
-                .map_err(|e| format!("create dir {label}: {e}"))?;
-        }
-        Ok(())
-    })
-    .await
-    .map_err(|e| format!("create dir task: {e}"))??;
+    let gate = repo_gate(&app);
+    tokio::task::spawn_blocking(move || create_dir_in(&root, &rel, &label, &gate))
+        .await
+        .map_err(|e| format!("create dir task: {e}"))??;
     let app_status = app.clone();
     let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
+    Ok(())
+}
+
+fn create_dir_in(
+    root: &Path,
+    rel: &Path,
+    label: &str,
+    gate: &std::sync::RwLock<()>,
+) -> Result<(), String> {
+    let _gate = gate.write().map_err(|e| e.to_string())?;
+    let abs = root.join(rel);
+    std::fs::create_dir_all(&abs).map_err(|e| format!("create dir {label}: {e}"))?;
+    let empty = std::fs::read_dir(&abs)
+        .map_err(|e| format!("create dir {label}: {e}"))?
+        .next()
+        .is_none();
+    if empty {
+        std::fs::write(abs.join(".gitkeep"), "")
+            .map_err(|e| format!("create dir {label}: {e}"))?;
+    }
     Ok(())
 }
 
@@ -440,22 +449,36 @@ pub async fn fs_import(
         Some(dir) => resolve_in(&root, dir)?,
         None => PathBuf::new(),
     };
+    let gate = repo_gate(&app);
     let root_task = root.clone();
     let src = PathBuf::from(&source);
-    let rel = tauri::async_runtime::spawn_blocking(move || -> Result<PathBuf, String> {
-        let name = import_into(&src, &root_task.join(&dest_rel))?;
-        let rel = dest_rel.join(name);
-        // The copy already happened: a failed commit is retried by the next push.
-        if let Err(e) = git::commit_all(&root_task, &format!("gitpad: import {}", rel.display())) {
-            eprintln!("gitpad: commit after import failed: {e}");
-        }
-        Ok(rel)
+    let rel = tauri::async_runtime::spawn_blocking(move || {
+        import_locked(&root_task, &src, &dest_rel, &gate)
     })
     .await
     .map_err(|e| e.to_string())??;
     let app_status = app.clone();
     let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
     Ok(rel.to_string_lossy().to_string())
+}
+
+fn import_locked(
+    root: &Path,
+    src: &Path,
+    dest_rel: &Path,
+    gate: &std::sync::RwLock<()>,
+) -> Result<PathBuf, String> {
+    // The gate covers the whole copy and its commit: waiting for the autosave
+    // is better than committing a half-copied tree. The buffer stays in the
+    // webview until this returns.
+    let _gate = gate.write().map_err(|e| e.to_string())?;
+    let name = import_into(src, &root.join(dest_rel))?;
+    let rel = dest_rel.join(name);
+    // The copy already happened: a failed commit is retried by the next push.
+    if let Err(e) = git::commit_all(root, &format!("gitpad: import {}", rel.display())) {
+        eprintln!("gitpad: commit after import failed: {e}");
+    }
+    Ok(rel)
 }
 
 #[tauri::command]
@@ -617,6 +640,38 @@ mod tests {
         );
         assert!(!root.join("target/notes/.git").exists());
         assert!(import_into(&root.join("target/notes"), &root.join("target/notes/sub")).is_err());
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn create_dir_holds_and_releases_the_gate() {
+        let root = std::env::temp_dir().join(format!("gitpad-mkdir-gate-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let gate = std::sync::RwLock::new(());
+
+        create_dir_in(&root, Path::new("notes"), "notes", &gate).unwrap();
+        assert!(root.join("notes/.gitkeep").is_file());
+        assert!(gate.try_write().is_ok());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn import_holds_and_releases_the_gate() {
+        let base = std::env::temp_dir().join(format!("gitpad-import-gate-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let root = base.join("repo");
+        std::fs::create_dir_all(&root).unwrap();
+        git2::Repository::init(&root).unwrap();
+        std::fs::write(base.join("a.md"), "one").unwrap();
+        let gate = std::sync::RwLock::new(());
+
+        let rel = import_locked(&root, &base.join("a.md"), Path::new(""), &gate).unwrap();
+        assert_eq!(rel, PathBuf::from("a.md"));
+        assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");
+        assert!(gate.try_write().is_ok());
 
         let _ = std::fs::remove_dir_all(&base);
     }
