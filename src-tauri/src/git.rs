@@ -515,11 +515,68 @@ pub fn commit_all(root: &Path, prefix: &str) -> Result<(), GitError> {
     commit_pending(&repo, Some(&format!("{prefix} {}", iso8601_now())))
 }
 
+/// Paths whose content a pull changed, so open tabs reload instead of
+/// overwriting the new version at the next autosave.
+fn changed_paths(repo: &Repository, before: Option<Oid>) -> Result<Vec<FileChange>, GitError> {
+    let after = repo.head().ok().and_then(|head| head.target());
+    let Some(after) = after else {
+        return Ok(Vec::new());
+    };
+    if before == Some(after) {
+        return Ok(Vec::new());
+    }
+    let after_tree = repo.find_commit(after).map_err(git_err)?.tree().map_err(git_err)?;
+    let before_tree = match before {
+        Some(oid) => Some(repo.find_commit(oid).map_err(git_err)?.tree().map_err(git_err)?),
+        None => None,
+    };
+    let diff = repo
+        .diff_tree_to_tree(before_tree.as_ref(), Some(&after_tree), None)
+        .map_err(git_err)?;
+    Ok(diff
+        .deltas()
+        .filter_map(|delta| {
+            let path = delta
+                .new_file()
+                .path()
+                .or_else(|| delta.old_file().path())?;
+            Some(FileChange {
+                path: path.to_string_lossy().to_string(),
+                status: delta_code(delta.status()).to_string(),
+            })
+        })
+        .collect())
+}
+
+/// Paths left with conflict markers in the worktree by a merge.
+fn conflict_paths(repo: &Repository) -> Result<Vec<String>, GitError> {
+    let index = repo.index().map_err(git_err)?;
+    if !index.has_conflicts() {
+        return Ok(Vec::new());
+    }
+    let mut paths: Vec<String> = Vec::new();
+    for entry in index.conflicts().map_err(git_err)? {
+        let entry = entry.map_err(git_err)?;
+        let path = entry
+            .our
+            .as_ref()
+            .or(entry.their.as_ref())
+            .or(entry.ancestor.as_ref())
+            .map(|e| String::from_utf8_lossy(&e.path).to_string());
+        if let Some(path) = path {
+            if !paths.contains(&path) {
+                paths.push(path);
+            }
+        }
+    }
+    Ok(paths)
+}
+
 fn pull_repo(
     repo: &Repository,
     token: Option<String>,
     gate: &std::sync::RwLock<()>,
-) -> Result<GitStatus, GitError> {
+) -> Result<(GitStatus, Vec<FileChange>), GitError> {
     // refs only: no worktree writes, readers must not wait for the network
     fetch(repo, token)?;
     // The gate covers commit + reset/merge: a read in between would see a
@@ -528,8 +585,9 @@ fn pull_repo(
     // Committed under the lock so a write that slips in before the reset is
     // not discarded by reset(Hard).
     commit_pending(repo, None)?;
+    let before = repo.head().ok().and_then(|head| head.target());
     let (Some(local), Some(remote)) = branch_oids(repo) else {
-        return status_of(repo);
+        return Ok((status_of(repo)?, Vec::new()));
     };
     let annotated = repo.find_annotated_commit(remote).map_err(git_err)?;
     let (analysis, _) = repo.merge_analysis(&[&annotated]).map_err(git_err)?;
@@ -543,7 +601,17 @@ fn pull_repo(
             .map_err(git_err)?;
         let mut index = repo.index().map_err(git_err)?;
         if index.has_conflicts() {
-            return status_of(repo);
+            // HEAD did not move, but the worktree now holds conflict markers.
+            let mut changes = changed_paths(repo, before)?;
+            for path in conflict_paths(repo)? {
+                if !changes.iter().any(|change| change.path == path) {
+                    changes.push(FileChange {
+                        path,
+                        status: "M".into(),
+                    });
+                }
+            }
+            return Ok((status_of(repo)?, changes));
         }
         let tree_id = index.write_tree().map_err(git_err)?;
         let tree = repo.find_tree(tree_id).map_err(git_err)?;
@@ -560,7 +628,9 @@ fn pull_repo(
         )
         .map_err(git_err)?;
     }
-    status_of(repo)
+    let status = status_of(repo)?;
+    let changes = changed_paths(repo, before)?;
+    Ok((status, changes))
 }
 
 pub fn push_blocking(
@@ -568,15 +638,15 @@ pub fn push_blocking(
     message: Option<String>,
     token: Option<String>,
     gate: std::sync::Arc<std::sync::RwLock<()>>,
-) -> Result<GitStatus, GitError> {
+) -> Result<(GitStatus, Vec<FileChange>), GitError> {
     let repo = open_repo(path)?;
     commit_pending(&repo, message.as_deref())?;
-    let status = pull_repo(&repo, token.clone(), &gate)?;
+    let (status, changes) = pull_repo(&repo, token.clone(), &gate)?;
     if !status.conflicts.is_empty() {
-        return Ok(status);
+        return Ok((status, changes));
     }
     push_refs(&repo, token)?;
-    status_of(&repo)
+    Ok((status_of(&repo)?, changes))
 }
 
 /// Commit and push without pulling first (used by the push-only button).
@@ -785,7 +855,7 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
 pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     let gate = app.state::<crate::AppState>().repo_gate.clone();
-    let status = tokio::task::spawn_blocking(move || {
+    let (status, changes) = tokio::task::spawn_blocking(move || {
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
         let repo = open_repo(&path)?;
@@ -794,6 +864,9 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
     .await
     .map_err(|e| format!("git task: {e}"))??;
     emit_status(&app, &status)?;
+    if !changes.is_empty() {
+        let _ = app.emit("pull-changed", &changes);
+    }
     Ok(status)
 }
 
@@ -805,18 +878,21 @@ pub async fn git_push(
 ) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     let gate = app.state::<crate::AppState>().repo_gate.clone();
-    let status = tokio::task::spawn_blocking(move || {
+    let (status, changes) = tokio::task::spawn_blocking(move || {
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
         if pull == Some(false) {
-            push_only_blocking(&path, message, token)
+            push_only_blocking(&path, message, token).map(|status| (status, Vec::new()))
         } else {
             push_blocking(&path, message, token, gate)
         }
     })
-        .await
-        .map_err(|e| format!("git task: {e}"))??;
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
     emit_status(&app, &status)?;
+    if !changes.is_empty() {
+        let _ = app.emit("pull-changed", &changes);
+    }
     Ok(status)
 }
 
@@ -1037,7 +1113,7 @@ mod tests {
         commit_file(&b, "b.txt", "2");
         push_current(&b);
 
-        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        let (status, _) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert!(status.conflicts.is_empty());
         assert_eq!(status.behind, 0);
         assert_eq!(
@@ -1063,7 +1139,7 @@ mod tests {
         push_current(&b);
 
         commit_file(&a, "c.txt", "3");
-        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        let (status, _) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert!(status.conflicts.is_empty());
         assert_eq!(status.behind, 0);
         assert!(a_path.join("b.txt").exists());
@@ -1103,7 +1179,7 @@ mod tests {
         push_current(&b);
 
         commit_file(&a, "note.md", "ours\n");
-        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        let (status, _) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert_eq!(status.conflicts.len(), 1);
         assert!(a_path.join(".git/MERGE_HEAD").exists());
 
@@ -1144,7 +1220,7 @@ mod tests {
 
         std::fs::write(a_path.join("a.txt"), "local edit").unwrap();
         commit_pending(&a, None).unwrap();
-        let status = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        let (status, _) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
         assert!(status.conflicts.is_empty());
         assert_eq!(
             std::fs::read_to_string(a_path.join("a.txt")).unwrap(),
@@ -1341,5 +1417,55 @@ mod tests {
         let io = serde_json::to_value(GitError::IoError("denied".into())).unwrap();
         assert_eq!(io["code"], "IO_ERROR");
         assert_eq!(io["message"], "denied");
+    }
+
+    #[test]
+    fn fast_forward_pull_reports_changed_paths() {
+        let root = tmp("ff-changes");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "a.txt", "2");
+        push_current(&b);
+
+        let (status, changes) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        assert!(status.conflicts.is_empty());
+        assert!(changes
+            .iter()
+            .any(|change| change.path == "a.txt" && change.status == "M"));
+        assert_eq!(std::fs::read_to_string(a_path.join("a.txt")).unwrap(), "2");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn pull_reports_deleted_paths() {
+        let root = tmp("ff-deleted");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "1");
+        push_current(&a);
+
+        let b_path = root.join("b");
+        let b = Repository::clone(remote_path.to_str().unwrap(), &b_path).unwrap();
+        std::fs::remove_file(b_path.join("a.txt")).unwrap();
+        commit_all(&b_path, "gitpad: delete a.txt").unwrap();
+        push_current(&b);
+
+        let (status, changes) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        assert!(status.conflicts.is_empty());
+        assert!(changes
+            .iter()
+            .any(|change| change.path == "a.txt" && change.status == "D"));
+        assert!(!a_path.join("a.txt").exists());
+        let _ = std::fs::remove_dir_all(&root);
     }
 }
