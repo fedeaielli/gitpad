@@ -8,6 +8,8 @@ export interface Tab {
   language: string
   /// Last content known to be on disk; guards against writing an empty buffer.
   savedContent?: string
+  /// A pull rewrote this file while the tab had unsaved edits: never autosave.
+  staleUpstream?: boolean
 }
 
 export const tabs = $state({
