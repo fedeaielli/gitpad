@@ -91,19 +91,25 @@
     return Math.min(max, Math.max(min, Math.round(value)))
   }
 
+  let booted = false
+
   async function boot() {
-    let repoReady = false
     try {
-      applyGitStatus(await invoke<GitStatus>('git_status'))
-      repoReady = true
-    } catch (e) {
-      const message = errorMessage(e)
-      if (isNoRepoError(message)) gitStatus.configured = false
-      else gitStatus.error = message
+      let repoReady = false
+      try {
+        applyGitStatus(await invoke<GitStatus>('git_status'))
+        repoReady = true
+      } catch (e) {
+        const message = errorMessage(e)
+        if (isNoRepoError(message)) gitStatus.configured = false
+        else gitStatus.error = message
+      }
+      if (!repoReady) return
+      // Network work waits for first paint; the local status is enough to render.
+      setTimeout(() => void remoteSync(), 1200)
+    } finally {
+      booted = true
     }
-    if (!repoReady) return
-    // Network work waits for first paint; the local status is enough to render.
-    setTimeout(() => void remoteSync(), 1200)
   }
 
   async function remoteSync() {
@@ -160,6 +166,8 @@
       unlistens.push(fn)
     })
     const onFocus = () => {
+      // The focus fired by the first show() would duplicate boot()'s work.
+      if (!booted) return
       ui.treeVersion += 1
       void invoke<GitStatus>('git_status')
         .then(applyGitStatus)
