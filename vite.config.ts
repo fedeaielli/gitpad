@@ -13,7 +13,7 @@ export default defineConfig({
     alias: [
       // Same ESM build our own import resolves to; without it the CJS require in
       // monaco-emacs picks monaco-editor's AMD bundle.
-      { find: /^monaco-editor$/, replacement: monaco('editor.main.js') },
+      { find: /^monaco-editor$/, replacement: monaco('editor.api.js') },
       {
         find: 'monaco-editor/esm/vs/editor/editor.api',
         replacement: monaco('editor.api.js'),
