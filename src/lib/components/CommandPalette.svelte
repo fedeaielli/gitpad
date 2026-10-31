@@ -5,7 +5,7 @@
   import { tabs, openTab } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { debounce } from '../utils/debounce'
-  import { markPushed, type GitStatus } from '../stores/git.svelte'
+  import { gitStatus, syncNow } from '../stores/git.svelte'
   import { revealLine } from '../editor/bridge'
 
   interface SearchResult {
@@ -103,11 +103,11 @@
     ui.commandPaletteOpen = false
   }
 
-  async function push() {
+  async function sync() {
     busy = true
     try {
-      markPushed(await invoke<GitStatus>('git_push', { message: null }))
-      close()
+      if (await syncNow(null)) close()
+      else error = gitStatus.error ?? 'sync failed'
     } catch (e) {
       error = String(e)
     } finally {
@@ -121,7 +121,7 @@
   }
 
   async function run(id: string) {
-    if (id === 'sync') return void push()
+    if (id === 'sync') return void sync()
     if (id === 'preview') {
       cyclePreview()
       return close()
