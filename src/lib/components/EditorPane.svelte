@@ -273,7 +273,7 @@
   })
 
   async function onBlur() {
-    const hadEdits = pendingId !== null || tabs.tabs.some((t) => t.modified)
+    const hadEdits = pendingId !== '' || tabs.tabs.some((t) => t.modified)
     if (pendingId) {
       persist.cancel()
       await savePending()
