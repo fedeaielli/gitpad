@@ -28,12 +28,15 @@ async fn shutdown(app: tauri::AppHandle) {
         return;
     }
     if let Ok(path) = git::repo_dir(&app) {
-        let token = auth::token().ok();
         // Push only: fetching at exit just delays closing, and a rejected push
         // (remote moved) leaves the local commit for the next sync.
         let _ = tokio::time::timeout(
             Duration::from_secs(3),
-            tokio::task::spawn_blocking(move || git::push_only_blocking(&path, None, token)),
+            tokio::task::spawn_blocking(move || {
+                // Keyring reads are blocking: keep them off the async runtime.
+                let token = auth::token().ok();
+                git::push_only_blocking(&path, None, token)
+            }),
         )
         .await;
     }
