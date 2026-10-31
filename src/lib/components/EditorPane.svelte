@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
-  import loader from '@monaco-editor/loader'
   import * as monaco from 'monaco-editor'
   // editor.main registers every grammar; load only the languages langmap.ts maps.
   import 'monaco-editor/languages/definitions/markdown/register.js'
@@ -28,9 +27,7 @@
   import { monacoTheme } from '../utils/themes'
   import {
     gitStatus,
-    isIgnorableSyncError,
-    markPushed,
-    type GitStatus,
+    syncNow,
   } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
   import { initVimMode } from 'monaco-vim'
@@ -46,7 +43,6 @@
       return new editorWorker()
     },
   }
-  loader.config({ monaco })
 
   monaco.editor.defineTheme('gitpad-dark', {
     base: 'vs-dark',
@@ -100,6 +96,8 @@
       saveError = null
       armPush()
     } catch (e) {
+      // Keep it pending so the next flush retries instead of losing the buffer.
+      if (!pendingId) pendingId = id
       tab.modified = true
       saveError = `save failed: ${String(e)}`
     } finally {
@@ -107,23 +105,34 @@
     }
   }
 
+  /// Exit path: no debounce left, so write every tab that is still dirty.
+  async function flushAll() {
+    persist.cancel()
+    const attempted = pendingId
+    await savePending()
+    for (const tab of tabs.tabs) {
+      if (!tab.modified || tab.id === attempted) continue
+      const content = tab.content
+      inFlight.add(tab.path)
+      try {
+        await invoke('fs_write_file', { path: tab.path, content })
+        saved.set(tab.path, content)
+        if (tab.content === content) tab.modified = false
+        saveError = null
+      } catch (e) {
+        tab.modified = true
+        saveError = `save failed: ${String(e)}`
+        break
+      } finally {
+        inFlight.delete(tab.path)
+      }
+    }
+  }
+
   function armPush() {
     clearTimeout(pushTimer)
     if (!ui.autoSync) return
-    pushTimer = setTimeout(() => void push(), ui.pushIdleMs)
-  }
-
-  async function push() {
-    if (gitStatus.syncing || !gitStatus.configured) return
-    gitStatus.syncing = true
-    try {
-      markPushed(await invoke<GitStatus>('git_push', { message: null }))
-    } catch (e) {
-      const message = String(e)
-      if (!isIgnorableSyncError(message)) gitStatus.error = message
-    } finally {
-      gitStatus.syncing = false
-    }
+    pushTimer = setTimeout(() => void syncNow(null), ui.pushIdleMs)
   }
 
   function onEdit() {
@@ -224,7 +233,7 @@
       await savePending()
     }
     // Avoid pushing just because the window lost focus.
-    if (ui.autoSync && (hadEdits || gitStatus.ahead > 0)) await push()
+    if (ui.autoSync && (hadEdits || gitStatus.ahead > 0)) await syncNow(null)
   }
 
   onMount(() => {
@@ -251,10 +260,7 @@
       },
     })
     window.addEventListener('blur', onBlur)
-    registerFlush(async () => {
-      persist.cancel()
-      await savePending()
-    })
+    registerFlush(flushAll)
     applyActive()
 
     return () => {

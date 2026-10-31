@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import * as monaco from 'monaco-editor'
-  import { gitStatus, markPushed, type GitStatus } from '../stores/git.svelte'
+  import { gitStatus, syncNow } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
   import { tabs, openTab } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
@@ -102,7 +102,7 @@
     if (files.length > 0 || busy) return
     busy = true
     try {
-      markPushed(await invoke<GitStatus>('git_push', { message: null }))
+      if (!(await syncNow(null))) throw new Error(gitStatus.error ?? 'push failed')
       ui.conflictsHidden = false
     } catch (e) {
       error = String(e)

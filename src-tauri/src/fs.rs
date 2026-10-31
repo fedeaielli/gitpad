@@ -109,15 +109,20 @@ fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
 }
 
 #[tauri::command]
-pub fn fs_read_file(app: AppHandle, path: String) -> Result<String, String> {
+pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, String> {
     let (root, rel) = resolve(&app, &path)?;
-    std::fs::read_to_string(root.join(rel)).map_err(|e| {
-        if e.kind() == std::io::ErrorKind::InvalidData {
-            format!("{path} is not UTF-8 text")
-        } else {
-            format!("read {path}: {e}")
-        }
+    let label = path;
+    tokio::task::spawn_blocking(move || {
+        std::fs::read_to_string(root.join(rel)).map_err(|e| {
+            if e.kind() == std::io::ErrorKind::InvalidData {
+                format!("{label} is not UTF-8 text")
+            } else {
+                format!("read {label}: {e}")
+            }
+        })
     })
+    .await
+    .map_err(|e| format!("read task: {e}"))?
 }
 
 #[tauri::command]
@@ -138,17 +143,24 @@ pub async fn fs_write_file(
 }
 
 #[tauri::command]
-pub fn fs_create_dir(app: AppHandle, path: String) -> Result<(), String> {
+pub async fn fs_create_dir(app: AppHandle, path: String) -> Result<(), String> {
     let (root, rel) = resolve(&app, &path)?;
-    let abs = root.join(rel);
-    std::fs::create_dir_all(&abs).map_err(|e| format!("create dir {path}: {e}"))?;
-    let empty = std::fs::read_dir(&abs)
-        .map_err(|e| format!("create dir {path}: {e}"))?
-        .next()
-        .is_none();
-    if empty {
-        std::fs::write(abs.join(".gitkeep"), "").map_err(|e| format!("create dir {path}: {e}"))?;
-    }
+    let label = path;
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let abs = root.join(rel);
+        std::fs::create_dir_all(&abs).map_err(|e| format!("create dir {label}: {e}"))?;
+        let empty = std::fs::read_dir(&abs)
+            .map_err(|e| format!("create dir {label}: {e}"))?
+            .next()
+            .is_none();
+        if empty {
+            std::fs::write(abs.join(".gitkeep"), "")
+                .map_err(|e| format!("create dir {label}: {e}"))?;
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("create dir task: {e}"))??;
     let _ = git::emit_current_status(&app);
     Ok(())
 }
@@ -328,13 +340,15 @@ pub async fn fs_import(
 }
 
 #[tauri::command]
-pub fn fs_list_dir(app: AppHandle, path: Option<String>) -> Result<Vec<FileEntry>, String> {
+pub async fn fs_list_dir(app: AppHandle, path: Option<String>) -> Result<Vec<FileEntry>, String> {
     let root = git::repo_dir(&app)?;
     let base = match path {
         Some(path) => root.join(resolve(&app, &path)?.1),
         None => root.clone(),
     };
-    build_tree(&root, &base)
+    tokio::task::spawn_blocking(move || build_tree(&root, &base))
+        .await
+        .map_err(|e| format!("list task: {e}"))?
 }
 
 #[cfg(test)]

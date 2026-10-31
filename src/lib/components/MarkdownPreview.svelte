@@ -30,9 +30,28 @@
   let applyingToPreview = false
   let applyingToEditor = false
 
-  const html = $derived.by(() => {
+  const raw = $derived.by(() => {
     const tab = tabs.tabs.find((t) => t.id === tabs.activeTabId)
-    return tab ? DOMPurify.sanitize(marked.parse(tab.content) as string) : ''
+    return tab ? { id: tab.id, content: tab.content } : null
+  })
+  let html = $state('')
+  let renderedTab = ''
+
+  // Render immediately on tab switch, debounce while typing.
+  $effect(() => {
+    const source = raw
+    if (!source) {
+      html = ''
+      return
+    }
+    const render = () => (html = DOMPurify.sanitize(marked.parse(source.content) as string))
+    if (renderedTab !== source.id) {
+      renderedTab = source.id
+      render()
+      return
+    }
+    const timer = setTimeout(render, 150)
+    return () => clearTimeout(timer)
   })
 
   function syncFromEditor() {

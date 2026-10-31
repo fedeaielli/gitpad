@@ -38,4 +38,6 @@ export function applyTheme(theme: string) {
 
 export function registerThemeStyles(map: Record<string, { markdown: string; code: string }>) {
   Object.assign(STYLES, map)
+  // The lazy preview chunk registers after the first applyTheme call.
+  applyTheme(document.documentElement.dataset.theme ?? 'gitpad-dark')
 }
