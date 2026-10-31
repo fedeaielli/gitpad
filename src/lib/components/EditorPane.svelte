@@ -21,9 +21,11 @@
   import cssWorker from 'monaco-editor/language/css/css.worker?worker'
   import htmlWorker from 'monaco-editor/language/html/html.worker?worker'
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
-  import { tabs, discarded } from '../stores/tabs.svelte'
+  import { tabs, discarded, closeTab } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
-  import { getEditor, registerFlush, setEditorInstance } from '../editor/bridge'
+  import { getEditor, registerFlush, registerReload, setEditorInstance } from '../editor/bridge'
+  import { planPullReload, type UpstreamChange } from '../utils/pull-reload'
+  import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
@@ -63,6 +65,8 @@
   let saveError = $state<string | null>(null)
   let pendingId = ''
   let currentPath = ''
+  // setValue() fires onDidChangeModelContent: ignore those while reloading.
+  let applyingExternal = false
 
   const models = new Map<string, monaco.editor.ITextModel>()
   const saved = new Map<string, string>()
@@ -164,6 +168,7 @@
   }
 
   function onEdit() {
+    if (applyingExternal) return
     const tab = activeTab()
     const model = editor?.getModel()
     if (!tab || !model) return
@@ -266,6 +271,75 @@
     if (ui.autoSync && (hadEdits || gitStatus.ahead > 0)) await syncNow(null)
   }
 
+  function isMissing(e: unknown) {
+    return !!e && typeof e === 'object' && (e as { code?: unknown }).code === 'NOT_FOUND'
+  }
+
+  function closeRemoved(path: string) {
+    const tab = tabs.tabs.find((candidate) => candidate.path === path)
+    if (!tab) return
+    discarded.add(tab.path)
+    closeTab(tab.id)
+    pushToast(`${path} removed upstream`, 'info')
+  }
+
+  function markStale(path: string) {
+    const tab = tabs.tabs.find((candidate) => candidate.path === path)
+    if (!tab || tab.staleUpstream) return
+    tab.staleUpstream = true
+    tab.modified = true
+    pushToast(`${path} changed upstream — autosave paused for this tab, copy your text and reopen it`)
+  }
+
+  async function reloadTab(path: string) {
+    const tab = tabs.tabs.find((candidate) => candidate.path === path)
+    if (!tab || tab.modified) return markStale(path)
+    const before = tab.content
+    let content: string
+    try {
+      content = await invoke<string>('fs_read_file', { path })
+    } catch (e) {
+      if (isMissing(e)) closeRemoved(path)
+      else markStale(path)
+      return
+    }
+    // The user may have typed during the read.
+    if (tab.modified || tab.content !== before || inFlight.has(path) || pendingId === tab.id) {
+      markStale(path)
+      return
+    }
+    if (content === tab.content) return
+    tab.content = content
+    tab.savedContent = content
+    tab.modified = false
+    saved.set(path, content)
+    const model = models.get(path)
+    if (!model) return
+    applyingExternal = true
+    try {
+      if (editor?.getModel() === model) {
+        const state = editor.saveViewState()
+        model.setValue(content)
+        if (state) editor.restoreViewState(state)
+      } else {
+        model.setValue(content)
+      }
+    } finally {
+      applyingExternal = false
+    }
+  }
+
+  async function applyPullChanges(changes: UpstreamChange[]) {
+    const plan = planPullReload(
+      changes,
+      tabs.tabs,
+      (path) => inFlight.has(path) || pendingId === path,
+    )
+    for (const path of plan.close) closeRemoved(path)
+    for (const path of plan.stale) markStale(path)
+    for (const path of plan.reload) await reloadTab(path)
+  }
+
   onMount(() => {
     editor = monaco.editor.create(host, {
       theme: monacoTheme(ui.editorTheme),
@@ -292,10 +366,12 @@
     })
     window.addEventListener('blur', onBlur)
     registerFlush(flushAll)
+    registerReload(applyPullChanges)
     applyActive()
 
     return () => {
       registerFlush(null)
+      registerReload(null)
       setEditor(null)
       window.removeEventListener('blur', onBlur)
       contentSub.dispose()
