@@ -1,7 +1,7 @@
-# Maintainer: Federico Aielli <fedeaielli@users.noreply.github.com>
-# Needs a v$pkgver tag on the remote; replace sha256sums 'SKIP' before submitting to the AUR.
+# Maintainer: https://github.com/fedeaielli
+# The v$pkgver tag must exist on the remote.
 pkgname=gitpad
-pkgver=0.1.0
+pkgver=0.1.3
 pkgrel=1
 pkgdesc="Markdown notes in a Git repository you own"
 arch=('x86_64')
@@ -10,7 +10,7 @@ license=('custom')
 depends=('webkit2gtk-4.1' 'gtk3' 'libsoup3' 'openssl' 'libsecret' 'libgit2' 'hicolor-icon-theme')
 makedepends=('rust' 'nodejs' 'npm')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('59ab932deff419f28e7bd4fa0dc6db3f209c624ba05970170fca9131b2aa8d6d')
 
 prepare() {
   cd "$pkgname-$pkgver"
