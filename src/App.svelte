@@ -27,11 +27,18 @@
     type GitStatus,
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
+  import { tabs } from './lib/stores/tabs.svelte'
 
   let configLoaded = $state(false)
   // Monaco is heavy: load it after the shell paints.
   let EditorPane = $state<Component | null>(null)
   let ConflictModal = $state<Component | null>(null)
+
+  // Warm the editor chunk only when there is something to edit.
+  $effect(() => {
+    if (tabs.tabs.length === 0 || EditorPane) return
+    void import('./lib/components/EditorPane.svelte').then((m) => (EditorPane = m.default))
+  })
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let pendingConfig: Config | null = null
   let onboardingSkipped = $state(false)
@@ -117,7 +124,6 @@
   }
 
   onMount(() => {
-    void import('./lib/components/EditorPane.svelte').then((m) => (EditorPane = m.default))
     const unlistens: Array<() => void> = []
     void listen<GitStatus>('sync-status', (e) => applyGitStatus(e.payload)).then((fn) => {
       unlistens.push(fn)

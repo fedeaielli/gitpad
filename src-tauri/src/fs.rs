@@ -139,7 +139,8 @@ pub async fn fs_write_file(
         .await
         .map_err(|e| format!("git task: {e}"))??;
     // Autosave flow: refresh ahead/behind so the status bar shows "queued".
-    let _ = git::emit_current_status(&app);
+    let app_status = app.clone();
+    let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
     Ok(())
 }
 
@@ -162,7 +163,8 @@ pub async fn fs_create_dir(app: AppHandle, path: String) -> Result<(), git::GitE
     })
     .await
     .map_err(|e| format!("create dir task: {e}"))??;
-    let _ = git::emit_current_status(&app);
+    let app_status = app.clone();
+    let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
     Ok(())
 }
 
@@ -191,7 +193,8 @@ pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), git::GitError
     })
     .await
     .map_err(|e| e.to_string())??;
-    let _ = git::emit_current_status(&app);
+    let app_status = app.clone();
+    let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
     Ok(())
 }
 
@@ -221,7 +224,8 @@ pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), g
     })
     .await
     .map_err(|e| e.to_string())??;
-    let _ = git::emit_current_status(&app);
+    let app_status = app.clone();
+    let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
     Ok(())
 }
 
@@ -336,7 +340,8 @@ pub async fn fs_import(
     })
     .await
     .map_err(|e| e.to_string())??;
-    let _ = git::emit_current_status(&app);
+    let app_status = app.clone();
+    let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
     Ok(rel.to_string_lossy().to_string())
 }
 
