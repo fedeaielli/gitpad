@@ -21,7 +21,7 @@
   import cssWorker from 'monaco-editor/language/css/css.worker?worker'
   import htmlWorker from 'monaco-editor/language/html/html.worker?worker'
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
-  import { tabs, discarded, closeTab } from '../stores/tabs.svelte'
+  import { tabs, discarded, closeTab, type Tab } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
   import { getEditor, registerFlush, registerReload, setEditorInstance } from '../editor/bridge'
   import { planPullReload, type UpstreamChange } from '../utils/pull-reload'
@@ -70,7 +70,7 @@
 
   const models = new Map<string, monaco.editor.ITextModel>()
   const saved = new Map<string, string>()
-  const inFlight = new Set<string>()
+  const inFlight = new Map<string, Promise<boolean>>()
   const viewStates = new Map<string, monaco.editor.ICodeEditorViewState | null>()
 
   const persist = debounce(() => void savePending(), () => ui.saveDebounceMs)
@@ -86,6 +86,29 @@
   // Preview is a markdown-only view: other tabs always render the editor alone.
   const previewMode = $derived<'off' | 'split' | 'full'>(isMarkdown ? ui.previewMode : 'off')
   const previewVisible = $derived(previewMode !== 'off')
+
+  /// Write one tab and track it so flushAll can wait for a debounce save.
+  function writeTab(tab: Tab, content: string): Promise<boolean> {
+    const write = (async () => {
+      try {
+        await invoke('fs_write_file', { path: tab.path, content })
+        saved.set(tab.path, content)
+        tab.savedContent = content
+        if (tab.content === content) tab.modified = false
+        saveError = null
+        return true
+      } catch (e) {
+        tab.modified = true
+        saveError = `save failed: ${errorMessage(e)}`
+        return false
+      }
+    })()
+    inFlight.set(tab.path, write)
+    void write.finally(() => {
+      if (inFlight.get(tab.path) === write) inFlight.delete(tab.path)
+    })
+    return write
+  }
 
   async function savePending(): Promise<boolean> {
     const id = pendingId
@@ -107,30 +130,19 @@
       saveError = 'refusing to save an empty file — reopen the tab'
       return false
     }
-    const content = tab.content
-    inFlight.add(tab.path)
-    try {
-      await invoke('fs_write_file', { path: tab.path, content })
-      saved.set(tab.path, content)
-      tab.savedContent = content
-      if (tab.content === content) tab.modified = false
-      saveError = null
-      armPush()
-      return true
-    } catch (e) {
-      // Keep it pending so the next flush retries instead of losing the buffer.
-      if (!pendingId) pendingId = id
-      tab.modified = true
-      saveError = `save failed: ${errorMessage(e)}`
-      return false
-    } finally {
-      inFlight.delete(tab.path)
-    }
+    const ok = await writeTab(tab, tab.content)
+    if (ok) armPush()
+    // Keep it pending so the next flush retries instead of losing the buffer.
+    else if (!pendingId) pendingId = id
+    return ok
   }
 
   /// Exit path: no debounce left, so write every tab that is still dirty.
   async function flushAll(): Promise<boolean> {
     persist.cancel()
+    // A save started by the debounce may still be writing: wait for it so the
+    // loop below sees the flag it sets instead of writing the same file twice.
+    await Promise.allSettled([...inFlight.values()])
     const attempted = pendingId
     let ok = await savePending()
     for (const tab of tabs.tabs) {
@@ -152,21 +164,9 @@
         ok = false
         break
       }
-      const content = tab.content
-      inFlight.add(tab.path)
-      try {
-        await invoke('fs_write_file', { path: tab.path, content })
-        saved.set(tab.path, content)
-        tab.savedContent = content
-        if (tab.content === content) tab.modified = false
-        saveError = null
-      } catch (e) {
-        tab.modified = true
-        saveError = `save failed: ${errorMessage(e)}`
+      if (!(await writeTab(tab, tab.content))) {
         ok = false
         break
-      } finally {
-        inFlight.delete(tab.path)
       }
     }
     return ok
