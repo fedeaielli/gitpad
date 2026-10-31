@@ -141,6 +141,31 @@ fn write_and_commit(
     git::commit_paths(root, &[rel.to_path_buf()], &message).map_err(|e| e.to_string())
 }
 
+const MAX_OPEN_BYTES: u64 = 5 * 1024 * 1024;
+
+fn read_error(label: &str, e: std::io::Error) -> git::GitError {
+    match e.kind() {
+        std::io::ErrorKind::NotFound => git::GitError::NotFound(format!("read {label}: {e}")),
+        std::io::ErrorKind::InvalidData => {
+            git::GitError::Other(format!("{label} is not UTF-8 text"))
+        }
+        _ => git::GitError::Other(format!("read {label}: {e}")),
+    }
+}
+
+/// Read a text file for the editor, refusing huge buffers and keeping NOT_FOUND
+/// so the frontend can close the tab instead of marking it stale.
+fn read_text(abs: &Path, label: &str) -> Result<String, git::GitError> {
+    let metadata = std::fs::metadata(abs).map_err(|e| read_error(label, e))?;
+    if metadata.len() > MAX_OPEN_BYTES {
+        let mb = metadata.len() as f64 / (1024.0 * 1024.0);
+        return Err(git::GitError::Other(format!(
+            "{label}: file too large to open: {mb:.1} MB, limit 5 MB"
+        )));
+    }
+    std::fs::read_to_string(abs).map_err(|e| read_error(label, e))
+}
+
 #[tauri::command]
 pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
@@ -148,13 +173,7 @@ pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, git::G
     let gate = repo_gate(&app);
     let content = tokio::task::spawn_blocking(move || {
         let _gate = gate.read().map_err(|e| e.to_string())?;
-        std::fs::read_to_string(root.join(rel)).map_err(|e| {
-            if e.kind() == std::io::ErrorKind::InvalidData {
-                format!("{label} is not UTF-8 text")
-            } else {
-                format!("read {label}: {e}")
-            }
-        })
+        read_text(&root.join(rel), &label)
     })
     .await
     .map_err(|e| format!("read task: {e}"))??;
@@ -548,6 +567,59 @@ mod tests {
         assert!(import_into(&root.join("target/notes"), &root.join("target/notes/sub")).is_err());
 
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn read_text_reports_missing_files_as_not_found() {
+        let dir = std::env::temp_dir().join(format!("gitpad-read-missing-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+
+        let err = read_text(&dir.join("nope.md"), "nope.md").unwrap_err();
+        assert!(matches!(err, git::GitError::NotFound(_)));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_text_refuses_files_over_the_limit() {
+        let dir = std::env::temp_dir().join(format!("gitpad-read-large-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("big.log");
+        std::fs::write(&path, vec![b'a'; 6 * 1024 * 1024]).unwrap();
+
+        let err = read_text(&path, "big.log").unwrap_err();
+        assert!(err.to_string().contains("limit 5 MB"), "{err}");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_text_keeps_the_not_utf8_error() {
+        let dir = std::env::temp_dir().join(format!("gitpad-read-binary-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("binary.bin");
+        std::fs::write(&path, [0xff, 0xfe]).unwrap();
+
+        let err = read_text(&path, "binary.bin").unwrap_err();
+        assert!(err.to_string().contains("not UTF-8"), "{err}");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_text_returns_normal_files() {
+        let dir = std::env::temp_dir().join(format!("gitpad-read-ok-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("note.md");
+        std::fs::write(&path, "hello").unwrap();
+
+        assert_eq!(read_text(&path, "note.md").unwrap(), "hello");
+
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
