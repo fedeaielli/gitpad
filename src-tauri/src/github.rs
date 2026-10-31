@@ -5,8 +5,11 @@ use tauri::{AppHandle, Emitter, State};
 const API: &str = "https://api.github.com";
 const OAUTH: &str = "https://github.com/login";
 const DEFAULT_REPO_NAME: &str = "gitpad_notes";
-/// OAuth App client id (public). Empty until the app is registered.
-const GITHUB_CLIENT_ID: &str = "";
+/// OAuth App client id (public), injected at build time (e.g. GITHUB_CLIENT_ID=... npm run tauri build).
+const GITHUB_CLIENT_ID: &str = match option_env!("GITHUB_CLIENT_ID") {
+    Some(id) => id,
+    None => "",
+};
 const DEVICE_CODE_TTL_SECS: u64 = 900;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -46,6 +49,13 @@ struct DevicePoll {
     error: Option<String>,
 }
 
+/// Keyring reads are blocking; never run them directly on the async runtime.
+async fn token_blocking() -> Result<String, String> {
+    tokio::task::spawn_blocking(auth::token)
+        .await
+        .map_err(|e| format!("keyring task: {e}"))?
+}
+
 async fn user_from_token(http: &reqwest::Client, token: &str) -> Result<UserInfo, String> {
     let res = http
         .get(format!("{API}/user"))
@@ -80,14 +90,19 @@ pub async fn github_validate_token(
 }
 
 #[tauri::command]
+pub fn github_device_flow_available() -> bool {
+    !GITHUB_CLIENT_ID.is_empty()
+}
+
+#[tauri::command]
 pub async fn github_get_user(state: State<'_, AppState>) -> Result<UserInfo, String> {
-    let token = auth::token()?;
+    let token = token_blocking().await?;
     user_from_token(&state.http, &token).await
 }
 
 #[tauri::command]
 pub async fn github_init_repo(state: State<'_, AppState>) -> Result<RepoInfo, String> {
-    let token = auth::token()?;
+    let token = token_blocking().await?;
     let user = user_from_token(&state.http, &token).await?;
     let res = state
         .http

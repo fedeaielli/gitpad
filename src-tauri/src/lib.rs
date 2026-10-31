@@ -12,6 +12,8 @@ use tauri::{Emitter, Manager};
 
 pub struct AppState {
     pub http: Client,
+    /// Cached clone path: every command resolves the same repository.
+    pub repo_path: std::sync::Mutex<Option<std::path::PathBuf>>,
 }
 
 static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
@@ -57,7 +59,10 @@ pub fn run() {
                 .user_agent("GitPad")
                 .timeout(Duration::from_secs(15))
                 .build()?;
-            app.manage(AppState { http });
+            app.manage(AppState {
+                http,
+                repo_path: std::sync::Mutex::new(None),
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -80,6 +85,7 @@ pub fn run() {
             git::git_conflict_versions,
             github::github_validate_token,
             github::github_get_user,
+            github::github_device_flow_available,
             github::github_init_repo,
             github::github_device_flow_start,
             github::github_device_flow_poll,

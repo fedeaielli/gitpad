@@ -10,10 +10,6 @@ export function monacoTheme(theme: string) {
   return MONACO[theme] ?? 'gitpad-dark'
 }
 
-export function isLightTheme(theme: string) {
-  return theme === 'vs'
-}
-
 /// Stylesheet pairs swapped with the theme; both are Vite asset URLs.
 const STYLES: Record<string, { markdown: string; code: string }> = {}
 

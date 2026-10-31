@@ -32,6 +32,7 @@
   let token = $state('')
   let user = $state<UserInfo | null>(null)
   let device = $state<DeviceCode | null>(null)
+  let deviceAvailable = $state(false)
   let repo = $state<RepoInfo | null>(null)
   let busy = $state(false)
   let error = $state<string | null>(null)
@@ -102,6 +103,9 @@
 
   onMount(() => {
     const unlistens: Array<() => void> = []
+    void invoke<boolean>('github_device_flow_available')
+      .catch(() => false)
+      .then((ok) => (deviceAvailable = ok))
     void listen('auth-success', async () => {
       if (step !== 'auth') return
       busy = false
@@ -135,10 +139,12 @@
         <a href="https://github.com/settings/tokens" onclick={(e) => { e.preventDefault(); void openUrl('https://github.com/settings/tokens') }}>Create a token</a>
         <button class="primary" disabled={busy || !token.trim()} onclick={validatePat}>Validate</button>
       </div>
-      <div class="divider">or</div>
-      <button disabled={busy} onclick={startDevice}>
-        {device ? 'Waiting for GitHub…' : 'Login with GitHub'}
-      </button>
+      {#if deviceAvailable}
+        <div class="divider">or</div>
+        <button disabled={busy} onclick={startDevice}>
+          {device ? 'Waiting for GitHub…' : 'Login with GitHub'}
+        </button>
+      {/if}
       {#if device}
         <p class="code">Code: <strong>{device.userCode}</strong></p>
         <p class="muted">Open the page and enter the code. Checking every {device.interval}s.</p>

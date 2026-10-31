@@ -71,8 +71,8 @@ export async function syncNow(message: string | null) {
     markPushed(await invoke<GitStatus>('git_push', { message }))
     return true
   } catch (e) {
-    const text = String(e)
-    if (!isIgnorableSyncError(text)) gitStatus.error = text
+    const text = errorMessage(e)
+    if (!isIgnorableSyncError(e)) gitStatus.error = text
     return false
   } finally {
     gitStatus.syncing = false
