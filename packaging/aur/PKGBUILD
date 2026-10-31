@@ -1,0 +1,27 @@
+# Maintainer: Fede
+pkgname=gitpad
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Markdown notes stored in a Git repository"
+arch=('x86_64')
+url="https://github.com/fedeaielli/gitpad"
+license=('GPL-3.0-only')
+depends=('webkit2gtk-4.1' 'gtk3' 'libappindicator-gtk3')
+makedepends=('rust' 'nodejs' 'npm')
+source=("git+$url.git#tag=v$pkgver")
+sha256sums=('SKIP')
+
+package() {
+  cd "$srcdir/gitpad"
+
+  npm ci
+  npm run tauri build -- --no-bundle
+
+  install -Dm755 src-tauri/target/release/gitpad "$pkgdir/usr/bin/gitpad"
+  install -Dm644 "$srcdir/gitpad/packaging/aur/gitpad.desktop" \
+    "$pkgdir/usr/share/applications/gitpad.desktop"
+  install -Dm644 src-tauri/icons/32x32.png \
+    "$pkgdir/usr/share/icons/hicolor/32x32/apps/gitpad.png"
+  install -Dm644 src-tauri/icons/128x128.png \
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/gitpad.png"
+}

@@ -1,0 +1,17 @@
+pkgbase = gitpad
+	pkgdesc = Markdown notes stored in a Git repository
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/fedeaielli/gitpad
+	arch = x86_64
+	license = GPL-3.0-only
+	makedepends = rust
+	makedepends = nodejs
+	makedepends = npm
+	depends = webkit2gtk-4.1
+	depends = gtk3
+	depends = libappindicator-gtk3
+	source = git+https://github.com/fedeaielli/gitpad.git#tag=v0.1.0
+	sha256sums = SKIP
+
+pkgname = gitpad

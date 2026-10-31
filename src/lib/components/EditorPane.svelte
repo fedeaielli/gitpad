@@ -248,7 +248,7 @@
       renderWhitespace: 'selection',
     })
     setEditor(editor)
-      const contentSub = editor.onDidChangeModelContent(onEdit)
+    const contentSub = editor.onDidChangeModelContent(onEdit)
     const cursorSub = editor.onDidChangeCursorPosition((e) => {
       ui.cursor = { line: e.position.lineNumber, column: e.position.column }
     })
