@@ -1,7 +1,7 @@
 use crate::git;
 use serde::Serialize;
 use std::path::{Component, Path, PathBuf};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -118,11 +118,17 @@ fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
     Ok(entries)
 }
 
+fn repo_gate(app: &AppHandle) -> std::sync::Arc<std::sync::RwLock<()>> {
+    app.state::<crate::AppState>().repo_gate.clone()
+}
+
 #[tauri::command]
 pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
     let label = path;
+    let gate = repo_gate(&app);
     let content = tokio::task::spawn_blocking(move || {
+        let _gate = gate.read().map_err(|e| e.to_string())?;
         std::fs::read_to_string(root.join(rel)).map_err(|e| {
             if e.kind() == std::io::ErrorKind::InvalidData {
                 format!("{label} is not UTF-8 text")
@@ -143,11 +149,16 @@ pub async fn fs_write_file(
     content: String,
 ) -> Result<(), git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
-    std::fs::write(root.join(&rel), content).map_err(|e| format!("write {path}: {e}"))?;
-    let message = format!("gitpad: update {} {}", rel.display(), git::iso8601_now());
-    tokio::task::spawn_blocking(move || git::commit_paths(&root, &[rel], &message))
-        .await
-        .map_err(|e| format!("git task: {e}"))??;
+    let gate = repo_gate(&app);
+    tokio::task::spawn_blocking(move || -> Result<(), String> {
+        let _gate = gate.read().map_err(|e| e.to_string())?;
+        std::fs::write(root.join(&rel), content).map_err(|e| format!("write {path}: {e}"))?;
+        let message = format!("gitpad: update {} {}", rel.display(), git::iso8601_now());
+        git::commit_paths(&root, &[rel], &message).map_err(|e| e.to_string())?;
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
     // Autosave flow: refresh ahead/behind so the status bar shows "queued".
     let app_status = app.clone();
     let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
@@ -186,7 +197,9 @@ pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), git::GitError
     }
     let label = rel.display().to_string();
     let root_task = root.clone();
+    let gate = repo_gate(&app);
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let _gate = gate.write().map_err(|e| e.to_string())?;
         let abs = root_task.join(&rel);
         let metadata =
             std::fs::symlink_metadata(&abs).map_err(|e| format!("delete {label}: {e}"))?;
@@ -224,7 +237,9 @@ fn rename_in(root: &Path, from: &str, to: &str) -> Result<(), String> {
 pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), git::GitError> {
     let root = git::repo_dir(&app)?;
     let root_task = root.clone();
+    let gate = repo_gate(&app);
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let _gate = gate.write().map_err(|e| e.to_string())?;
         rename_in(&root_task, &from, &to)?;
         // The filesystem is the source of truth: a failed commit is retried by the next push.
         if let Err(e) = git::commit_all(&root_task, &format!("gitpad: rename {from}")) {
