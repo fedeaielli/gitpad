@@ -5,6 +5,38 @@ mod git;
 mod github;
 mod search;
 
+#[cfg(test)]
+pub(crate) mod test_util {
+    use std::sync::{mpsc, Arc, RwLock};
+    use std::time::Duration;
+
+    /// Fails unless `op` blocks on the gate and finishes once it is released.
+    pub(crate) fn assert_waits_for_gate<T, F>(op: F)
+    where
+        F: FnOnce(Arc<RwLock<()>>) -> T + Send + 'static,
+        T: Send + 'static,
+    {
+        let gate = Arc::new(RwLock::new(()));
+        let held = gate.write().unwrap();
+        let (tx, rx) = mpsc::channel();
+        let task_gate = gate.clone();
+        let task = std::thread::spawn(move || {
+            let _ = tx.send(op(task_gate));
+        });
+        assert!(
+            rx.recv_timeout(Duration::from_millis(200)).is_err(),
+            "operation did not wait for the gate"
+        );
+        drop(held);
+        assert!(
+            rx.recv_timeout(Duration::from_secs(10)).is_ok(),
+            "operation did not finish after the gate was released"
+        );
+        task.join().unwrap();
+        assert!(gate.try_write().is_ok(), "operation left the gate locked");
+    }
+}
+
 use nix::sys::signal::{pthread_sigmask, SigSet, SigmaskHow, Signal};
 use reqwest::Client;
 use std::sync::atomic::{AtomicBool, Ordering};

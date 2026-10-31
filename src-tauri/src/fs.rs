@@ -506,6 +506,7 @@ pub async fn fs_list_dir(app: AppHandle, path: Option<String>) -> Result<Vec<Fil
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_util::assert_waits_for_gate;
 
     /// Path jail, exercised against a real temp root.
     #[test]
@@ -672,6 +673,40 @@ mod tests {
         assert_eq!(rel, PathBuf::from("a.md"));
         assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");
         assert!(gate.try_write().is_ok());
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn create_dir_waits_for_a_held_gate() {
+        let root = std::env::temp_dir().join(format!("gitpad-mkdir-wait-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        let root_task = root.clone();
+
+        assert_waits_for_gate(move |gate| {
+            create_dir_in(&root_task, Path::new("notes"), "notes", &gate).is_ok()
+        });
+        assert!(root.join("notes/.gitkeep").is_file());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn import_waits_for_a_held_gate() {
+        let base = std::env::temp_dir().join(format!("gitpad-import-wait-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let root = base.join("repo");
+        std::fs::create_dir_all(&root).unwrap();
+        git2::Repository::init(&root).unwrap();
+        std::fs::write(base.join("a.md"), "one").unwrap();
+        let root_task = root.clone();
+        let src_task = base.join("a.md");
+
+        assert_waits_for_gate(move |gate| {
+            import_locked(&root_task, &src_task, Path::new(""), &gate).is_ok()
+        });
+        assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");
 
         let _ = std::fs::remove_dir_all(&base);
     }
