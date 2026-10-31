@@ -576,6 +576,14 @@ pub fn push_only_blocking(
     token: Option<String>,
 ) -> Result<GitStatus, GitError> {
     let repo = open_repo(path)?;
+    let (local, remote) = branch_oids(&repo);
+    if let (Some(local), Some(remote)) = (local, remote) {
+        // Nothing to commit and nothing to send: skip the network round-trip.
+        let status = status_of(&repo)?;
+        if local == remote && status.changes.is_empty() {
+            return Ok(status);
+        }
+    }
     commit_pending(&repo, message.as_deref())?;
     push_refs(&repo, token)?;
     status_of(&repo)
