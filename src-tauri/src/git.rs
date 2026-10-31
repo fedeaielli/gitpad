@@ -38,6 +38,25 @@ pub enum Resolution {
     AcceptTheirs,
 }
 
+/// Repo directory missing: the app is simply not configured yet.
+pub const NOT_FOUND: &str = "NOT_FOUND: no repository cloned";
+
+/// A missing repository is an expected state; anything else is a real IO problem.
+fn open_err(e: git2::Error) -> String {
+    match e.code() {
+        git2::ErrorCode::NotFound => NOT_FOUND.to_string(),
+        _ => format!("IO_ERROR: {e}"),
+    }
+}
+
+pub fn open_repo(path: &Path) -> Result<Repository, String> {
+    match std::fs::metadata(path.join(".git")) {
+        Ok(_) => Repository::open(path).map_err(open_err),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(NOT_FOUND.to_string()),
+        Err(e) => Err(format!("IO_ERROR: {}: {e}", path.display())),
+    }
+}
+
 fn git_err(e: git2::Error) -> String {
     format!("git: {}", e.message())
 }
@@ -60,7 +79,7 @@ fn repos_root(app: &AppHandle) -> Result<PathBuf, String> {
 pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let root = repos_root(app)?;
     let mut dirs: Vec<PathBuf> = std::fs::read_dir(&root)
-        .map_err(|e| format!("read repos dir: {e}"))?
+        .map_err(|e| format!("IO_ERROR: read repos dir: {e}"))?
         .filter_map(Result::ok)
         .map(|e| e.path())
         .filter(|p| p.is_dir() && p.join(".git").exists())
@@ -212,7 +231,7 @@ fn commit_pending(repo: &Repository, message: Option<&str>) -> Result<(), String
 
 /// Stage + commit specific paths (used by fs_write_file for the per-file autosave commit).
 pub fn commit_paths(root: &Path, paths: &[PathBuf], message: &str) -> Result<(), String> {
-    let repo = Repository::open(root).map_err(git_err)?;
+    let repo = open_repo(root)?;
     let mut index = repo.index().map_err(git_err)?;
     for path in paths {
         index.add_path(path).map_err(git_err)?;
@@ -234,7 +253,7 @@ pub fn commit_paths(root: &Path, paths: &[PathBuf], message: &str) -> Result<(),
 
 /// Stage everything (including deletions/renames) and commit with `prefix + ISO8601`.
 pub fn commit_all(root: &Path, prefix: &str) -> Result<(), String> {
-    let repo = Repository::open(root).map_err(git_err)?;
+    let repo = open_repo(root)?;
     commit_pending(&repo, Some(&format!("{prefix} {}", iso8601_now())))
 }
 
@@ -282,7 +301,7 @@ pub fn push_blocking(
     message: Option<String>,
     token: Option<String>,
 ) -> Result<GitStatus, String> {
-    let repo = Repository::open(path).map_err(git_err)?;
+    let repo = open_repo(path)?;
     commit_pending(&repo, message.as_deref())?;
     let status = pull_repo(&repo, token.clone())?;
     if !status.conflicts.is_empty() {
@@ -300,7 +319,7 @@ pub fn push_blocking(
 }
 
 fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(), String> {
-    let repo = Repository::open(root).map_err(git_err)?;
+    let repo = open_repo(root)?;
     let mut index = repo.index().map_err(git_err)?;
     let target = {
         let mut found = None;
@@ -347,7 +366,7 @@ fn blob_text(repo: &Repository, oid: Oid) -> String {
 
 /// Both sides of a conflicted path, read from index stages 2 (ours) and 3 (theirs).
 fn conflict_versions(root: &Path, path: &str) -> Result<ConflictVersions, String> {
-    let repo = Repository::open(root).map_err(git_err)?;
+    let repo = open_repo(root)?;
     let index = repo.index().map_err(git_err)?;
     if index.has_conflicts() {
         for entry in index.conflicts().map_err(git_err)? {
@@ -389,7 +408,7 @@ fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), String> {
 }
 
 pub fn emit_current_status(app: &AppHandle) -> Result<(), String> {
-    let repo = Repository::open(repo_dir(app)?).map_err(git_err)?;
+    let repo = open_repo(&repo_dir(app)?)?;
     emit_status(app, &status_of(&repo)?)
 }
 
@@ -456,7 +475,7 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, String> {
     let path = repo_dir(&app)?;
     let token = auth::token().ok();
     let status = tokio::task::spawn_blocking(move || {
-        let repo = Repository::open(&path).map_err(git_err)?;
+        let repo = open_repo(&path)?;
         pull_repo(&repo, token)
     })
     .await
@@ -480,7 +499,7 @@ pub async fn git_push(app: AppHandle, message: Option<String>) -> Result<GitStat
 pub async fn git_status(app: AppHandle) -> Result<GitStatus, String> {
     let path = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || {
-        let repo = Repository::open(&path).map_err(git_err)?;
+        let repo = open_repo(&path)?;
         status_of(&repo)
     })
     .await
@@ -491,7 +510,7 @@ pub async fn git_status(app: AppHandle) -> Result<GitStatus, String> {
 pub async fn git_conflicts(app: AppHandle) -> Result<Vec<ConflictFile>, String> {
     let path = repo_dir(&app)?;
     tokio::task::spawn_blocking(move || {
-        let repo = Repository::open(&path).map_err(git_err)?;
+        let repo = open_repo(&path)?;
         Ok(status_of(&repo)?.conflicts)
     })
     .await
@@ -689,4 +708,27 @@ mod tests {
         assert_eq!(std::fs::read_to_string(a_path.join("b.txt")).unwrap(), "2");
         let _ = std::fs::remove_dir_all(&root);
     }
+    #[test]
+    fn open_repo_distinguishes_missing_from_io() {
+        use std::os::unix::fs::PermissionsExt;
+
+        fn err(path: &Path) -> String {
+            match open_repo(path) {
+                Ok(_) => String::new(),
+                Err(e) => e,
+            }
+        }
+
+        let root = tmp("open-err");
+        std::fs::create_dir_all(root.join("empty")).unwrap();
+        assert!(err(&root.join("empty")).starts_with("NOT_FOUND"));
+
+        let locked = root.join("locked");
+        std::fs::create_dir_all(locked.join(".git")).unwrap();
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
+        assert!(err(&locked).starts_with("IO_ERROR"));
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
 }

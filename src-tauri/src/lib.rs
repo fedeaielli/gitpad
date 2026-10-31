@@ -83,12 +83,6 @@ pub fn run() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.emit("app-closing", ());
-                let app = window.app_handle().clone();
-                // Frontend flushes pending edits then calls app_exit; this is the fallback.
-                tauri::async_runtime::spawn(async move {
-                    tokio::time::sleep(Duration::from_secs(2)).await;
-                    shutdown(app).await;
-                });
             }
         })
         .run(tauri::generate_context!());
