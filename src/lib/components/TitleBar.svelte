@@ -5,6 +5,11 @@
 </script>
 
 <header class="titlebar" data-tauri-drag-region>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <span class="title" data-tauri-drag-region ondblclick={() => void appWindow.toggleMaximize()}>
+    GitPad
+  </span>
+  <div class="spacer" data-tauri-drag-region></div>
   <div class="lights">
     <button class="dot" aria-label="Close" title="Close" onclick={() => void appWindow.close()}>
       <svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="6" fill="#ff5f57" /></svg>
@@ -21,11 +26,6 @@
       <svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="6" fill="#28c840" /></svg>
     </button>
   </div>
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <span class="title" data-tauri-drag-region ondblclick={() => void appWindow.toggleMaximize()}>
-    GitPad
-  </span>
-  <div class="spacer" data-tauri-drag-region></div>
 </header>
 
 <style>
