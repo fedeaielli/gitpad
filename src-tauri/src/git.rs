@@ -691,7 +691,9 @@ fn resolve_conflict(root: &Path, path: &str, resolution: Resolution) -> Result<(
     match target {
         Some(oid) => {
             let blob = repo.find_blob(oid).map_err(git_err)?;
-            std::fs::write(&abs, blob.content()).map_err(|e| format!("write {path}: {e}"))?;
+            let tmp = repo.path().join("gitpad-resolve.tmp");
+            crate::fs::write_atomic(&abs, &tmp, blob.content())
+                .map_err(|e| format!("write {path}: {e}"))?;
             index.add_path(Path::new(path)).map_err(git_err)?;
         }
         None => {
