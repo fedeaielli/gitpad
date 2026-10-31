@@ -97,6 +97,11 @@
       tab.modified = false
       return true
     }
+    if (decision === 'stale') {
+      tab.modified = true
+      saveError = 'file changed upstream — autosave paused'
+      return false
+    }
     if (decision === 'refuse') {
       tab.modified = true
       saveError = 'refusing to save an empty file — reopen the tab'
@@ -134,6 +139,12 @@
       if (decision === 'skip') {
         tab.modified = false
         continue
+      }
+      if (decision === 'stale') {
+        tab.modified = true
+        saveError = 'file changed upstream — autosave paused'
+        ok = false
+        break
       }
       if (decision === 'refuse') {
         tab.modified = true

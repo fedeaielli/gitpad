@@ -30,4 +30,10 @@ describe('saveDecision', () => {
   it('writes when the user types into a new empty file', () => {
     expect(saveDecision({ content: 'hello', savedContent: '' })).toBe('write')
   })
+
+  it('never writes a tab a pull made stale, whatever the content', () => {
+    expect(saveDecision({ content: 'edited', savedContent: 'old', staleUpstream: true })).toBe('stale')
+    expect(saveDecision({ content: 'same', savedContent: 'same', staleUpstream: true })).toBe('stale')
+    expect(saveDecision({ content: '', savedContent: 'old', staleUpstream: true })).toBe('stale')
+  })
 })
