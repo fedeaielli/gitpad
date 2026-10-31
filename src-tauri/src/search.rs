@@ -1,10 +1,13 @@
 use crate::git;
 use ignore::WalkBuilder;
 use serde::Serialize;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use tauri::AppHandle;
 
 const MAX_RESULTS: usize = 200;
+const MAX_FILE_BYTES: u64 = 2 * 1024 * 1024;
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -24,7 +27,13 @@ pub fn search_in(root: &Path, query: &str) -> Result<Vec<SearchResult>, String> 
         if !entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
             continue;
         }
-        let Ok(content) = std::fs::read_to_string(entry.path()) else {
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+        if metadata.len() > MAX_FILE_BYTES {
+            continue;
+        }
+        let Ok(handle) = File::open(entry.path()) else {
             continue;
         };
         let file = entry
@@ -33,7 +42,11 @@ pub fn search_in(root: &Path, query: &str) -> Result<Vec<SearchResult>, String> 
             .map_err(|_| "path outside repository".to_string())?
             .to_string_lossy()
             .to_string();
-        for (index, line) in content.lines().enumerate() {
+        for (index, line) in BufReader::new(handle).lines().enumerate() {
+            // Non-UTF-8 files are skipped silently.
+            let Ok(line) = line else {
+                break;
+            };
             if let Some(column) = line.find(query) {
                 results.push(SearchResult {
                     file: file.clone(),

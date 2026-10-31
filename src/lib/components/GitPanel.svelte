@@ -39,7 +39,7 @@
     <button onclick={() => (showClone = !showClone)}>Clone</button>
   </div>
 
-  {#if showClone}
+  {#if showClone && !gitStatus.configured}
     <form
       class="row"
       onsubmit={(e) => {

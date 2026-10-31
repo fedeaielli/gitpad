@@ -116,6 +116,11 @@ fn repos_root(app: &AppHandle) -> Result<PathBuf, GitError> {
 
 /// The clone lives in app_data_dir/repos/<repo name>, so the name is discovered, never hardcoded.
 pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
+    let cache = &app.state::<crate::AppState>().repo_path;
+    let mut cached = cache.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(path) = cached.as_ref().filter(|p| p.join(".git").exists()) {
+        return Ok(path.clone());
+    }
     let root = repos_root(app)?;
     let mut dirs: Vec<PathBuf> = std::fs::read_dir(&root)
         .map_err(|e| GitError::IoError(format!("read repos dir: {e}")))?
@@ -124,7 +129,16 @@ pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
         .filter(|p| p.is_dir() && p.join(".git").exists())
         .collect();
     dirs.sort();
-    dirs.into_iter().next().ok_or_else(GitError::not_found)
+    let found = dirs.into_iter().next().ok_or_else(GitError::not_found)?;
+    *cached = Some(found.clone());
+    Ok(found)
+}
+
+fn remember_repo(app: &AppHandle, path: PathBuf) {
+    *app.state::<crate::AppState>()
+        .repo_path
+        .lock()
+        .unwrap_or_else(|e| e.into_inner()) = Some(path);
 }
 
 fn repo_name_from_url(url: &str) -> Result<String, GitError> {
@@ -444,7 +458,19 @@ fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), GitError> {
     Ok(())
 }
 
+/// Autosave fires on every keystroke; the status bar only needs a few
+/// updates per second, so coalesce emits into one per 250 ms.
+static LAST_EMIT: std::sync::Mutex<Option<std::time::Instant>> = std::sync::Mutex::new(None);
+const EMIT_INTERVAL: std::time::Duration = std::time::Duration::from_millis(250);
+
 pub fn emit_current_status(app: &AppHandle) -> Result<(), GitError> {
+    {
+        let mut last = LAST_EMIT.lock().unwrap_or_else(|e| e.into_inner());
+        if (*last).is_some_and(|t| t.elapsed() < EMIT_INTERVAL) {
+            return Ok(());
+        }
+        *last = Some(std::time::Instant::now());
+    }
     let repo = open_repo(&repo_dir(app)?)?;
     emit_status(app, &status_of(&repo)?)
 }
@@ -487,6 +513,7 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
     let name = repo_name_from_url(&url)?;
     let target = repos_root(&app)?.join(name);
     if target.join(".git").exists() {
+        remember_repo(&app, target.clone());
         return Ok(());
     }
     if let Ok(existing) = repo_dir(&app) {
@@ -495,23 +522,27 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
             existing.display()
         )));
     }
-    let token = auth::token().ok();
+    let clone_target = target.clone();
     tokio::task::spawn_blocking(move || {
+        let token = auth::token().ok();
         let mut builder = RepoBuilder::new();
         let mut opts = FetchOptions::new();
         opts.remote_callbacks(callbacks(token));
         builder.fetch_options(opts);
-        builder.clone(&url, &target).map(|_| ()).map_err(git_err)
+        builder.clone(&url, &clone_target).map(|_| ()).map_err(git_err)
     })
     .await
-    .map_err(|e| format!("git task: {e}"))?
+    .map_err(|e| format!("git task: {e}"))??;
+    remember_repo(&app, target);
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
-    let token = auth::token().ok();
     let status = tokio::task::spawn_blocking(move || {
+        // Keyring reads are blocking: keep them off the async runtime.
+        let token = auth::token().ok();
         let repo = open_repo(&path)?;
         pull_repo(&repo, token)
     })
@@ -524,8 +555,11 @@ pub async fn git_pull(app: AppHandle) -> Result<GitStatus, GitError> {
 #[tauri::command]
 pub async fn git_push(app: AppHandle, message: Option<String>) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
-    let token = auth::token().ok();
-    let status = tokio::task::spawn_blocking(move || push_blocking(&path, message, token))
+    let status = tokio::task::spawn_blocking(move || {
+        // Keyring reads are blocking: keep them off the async runtime.
+        let token = auth::token().ok();
+        push_blocking(&path, message, token)
+    })
         .await
         .map_err(|e| format!("git task: {e}"))??;
     emit_status(&app, &status)?;
