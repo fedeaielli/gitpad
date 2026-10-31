@@ -122,6 +122,25 @@ fn repo_gate(app: &AppHandle) -> std::sync::Arc<std::sync::RwLock<()>> {
     app.state::<crate::AppState>().repo_gate.clone()
 }
 
+fn commit_gate(app: &AppHandle) -> std::sync::Arc<std::sync::Mutex<()>> {
+    app.state::<crate::AppState>().commit_gate.clone()
+}
+
+/// Write the file and commit it while holding the commit gate: two autosaves
+/// cannot race on `.git/index.lock`.
+fn write_and_commit(
+    root: &std::path::Path,
+    rel: &std::path::Path,
+    content: &str,
+    commit_gate: &std::sync::Mutex<()>,
+) -> Result<(), String> {
+    let _commit = commit_gate.lock().unwrap_or_else(|e| e.into_inner());
+    std::fs::write(root.join(rel), content)
+        .map_err(|e| format!("write {}: {e}", rel.display()))?;
+    let message = format!("gitpad: update {} {}", rel.display(), git::iso8601_now());
+    git::commit_paths(root, &[rel.to_path_buf()], &message).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
@@ -150,12 +169,10 @@ pub async fn fs_write_file(
 ) -> Result<(), git::GitError> {
     let (root, rel) = resolve(&app, &path)?;
     let gate = repo_gate(&app);
+    let commit_gate = commit_gate(&app);
     tokio::task::spawn_blocking(move || -> Result<(), String> {
         let _gate = gate.read().map_err(|e| e.to_string())?;
-        std::fs::write(root.join(&rel), content).map_err(|e| format!("write {path}: {e}"))?;
-        let message = format!("gitpad: update {} {}", rel.display(), git::iso8601_now());
-        git::commit_paths(&root, &[rel], &message).map_err(|e| e.to_string())?;
-        Ok(())
+        write_and_commit(&root, &rel, &content, &commit_gate)
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
@@ -530,6 +547,41 @@ mod tests {
         assert!(!root.join("target/notes/.git").exists());
         assert!(import_into(&root.join("target/notes"), &root.join("target/notes/sub")).is_err());
 
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn concurrent_autosaves_commit_both_files() {
+        let base = std::env::temp_dir().join(format!("gitpad-concurrent-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let root = base.join("repo");
+        std::fs::create_dir_all(&root).unwrap();
+        git2::Repository::init(&root).unwrap();
+
+        let commit_gate = std::sync::Mutex::new(());
+        let rounds = 20;
+        for round in 0..rounds {
+            let a = format!("a{round}.md");
+            let b = format!("b{round}.md");
+            std::thread::scope(|scope| {
+                let gate = &commit_gate;
+                let root = &root;
+                let a = scope.spawn(|| {
+                    write_and_commit(root, std::path::Path::new(&a), "a", gate)
+                });
+                let b = scope.spawn(|| {
+                    write_and_commit(root, std::path::Path::new(&b), "b", gate)
+                });
+                assert!(a.join().unwrap().is_ok());
+                assert!(b.join().unwrap().is_ok());
+            });
+        }
+
+        assert!(!root.join(".git/index.lock").exists());
+        let repo = git2::Repository::open(&root).unwrap();
+        let mut walk = repo.revwalk().unwrap();
+        walk.push_head().unwrap();
+        assert_eq!(walk.count(), rounds * 2);
         let _ = std::fs::remove_dir_all(&base);
     }
 }
