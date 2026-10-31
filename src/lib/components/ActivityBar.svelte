@@ -27,7 +27,7 @@
   })
 
   // Clicking the active view folds the panel, like VS Code.
-  function select(view: 'files' | 'git') {
+  function select(view: 'files' | 'git' | 'history') {
     if (ui.activeView === view && ui.sidebarOpen) {
       ui.sidebarOpen = false
       return
@@ -67,6 +67,18 @@
     {#if changed > 0}
       <span class="count">{changed}</span>
     {/if}
+  </button>
+  <button
+    class="item"
+    class:active={ui.activeView === 'history' && ui.sidebarOpen}
+    title="History"
+    aria-label="History"
+    onclick={() => select('history')}
+  >
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="8" cy="8" r="5.6" />
+      <path d="M8 5v3.2l2.2 1.3" />
+    </svg>
   </button>
 
   <div class="spacer"></div>

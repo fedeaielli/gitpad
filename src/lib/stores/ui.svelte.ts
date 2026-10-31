@@ -31,7 +31,7 @@ export interface FileNode {
 
 export const ui = $state({
   sidebarOpen: true,
-  activeView: 'files' as 'files' | 'git',
+  activeView: 'files' as 'files' | 'git' | 'history',
   previewMode: 'off' as 'off' | 'split' | 'full',
   commandPaletteOpen: false,
   settingsOpen: false,
