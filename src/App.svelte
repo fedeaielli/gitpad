@@ -35,10 +35,14 @@
   let EditorPane = $state<Component | null>(null)
   let ConflictModal = $state<Component | null>(null)
 
-  // Warm the editor chunk only when there is something to edit.
+  // Preload the editor chunk while the browser is idle: opening a tab does the
+  // same import, so a race just resolves to the same module.
   $effect(() => {
-    if (tabs.tabs.length === 0 || EditorPane) return
-    void import('./lib/components/EditorPane.svelte').then((m) => (EditorPane = m.default))
+    if (EditorPane) return
+    const idle = window.requestIdleCallback?.bind(window) ?? ((fn: () => void) => setTimeout(fn, 800))
+    idle(() =>
+      void import('./lib/components/EditorPane.svelte').then((m) => (EditorPane = m.default)),
+    )
   })
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let pendingConfig: Config | null = null
