@@ -139,6 +139,8 @@
       unlistens.push(fn)
     })
     void listen('app-closing', async () => {
+      // Ack first: proves this webview is alive, so the 5 s watchdog stands down.
+      void invoke('app_closing_ack').catch(() => {})
       const saved = await flushPendingSave()
       if (!saved) {
         const exit = await ask('Some changes could not be saved. Exit anyway?', {
