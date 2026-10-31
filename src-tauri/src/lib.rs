@@ -81,6 +81,8 @@ async fn app_exit(app: tauri::AppHandle) {
 }
 
 /// First thing the frontend does on `app-closing`: proves the webview is alive.
+/// A hang after the ack no longer trips the watchdog; accepted, because the
+/// flush only writes locally and the exit push has its own timeout.
 #[tauri::command]
 fn app_closing_ack() {
     CLOSE_ACK.store(true, Ordering::SeqCst);
