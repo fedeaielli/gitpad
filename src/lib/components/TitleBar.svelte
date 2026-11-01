@@ -22,8 +22,8 @@
   <button
     type="button"
     class="search"
-    aria-label="Search files"
-    title="Search files (Ctrl+P)"
+    aria-label="Search files, or type > for commands (Ctrl+P)"
+    title="Search files (Ctrl+P) — type > for commands"
     onclick={() => (ui.commandPaletteOpen = true)}
   >
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -31,6 +31,7 @@
       <path d="M10.2 10.2 13.5 13.5" />
     </svg>
     <span class="label">Search files</span>
+    <span class="chip">&gt; commands</span>
     <kbd>Ctrl+P</kbd>
   </button>
   <div class="spacer" data-tauri-drag-region></div>
@@ -88,7 +89,7 @@
     border: 1px solid var(--border);
     border-radius: 3px;
     background: var(--bg-raised);
-    color: var(--muted);
+    color: var(--text);
     font-size: 12px;
     text-align: left;
   }
@@ -115,10 +116,18 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* The label is the only primary text; the chip and the key are secondary (>= 3:1). */
+  .search .chip,
   .search kbd {
-    font: inherit;
+    flex: 0 0 auto;
+    color: var(--muted);
     font-size: 10px;
-    opacity: 0.7;
+    white-space: nowrap;
+  }
+  .search .chip {
+    padding: 0 4px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
   }
   /* Narrow windows: icon only, so it cannot collide with the title or controls. */
   @media (max-width: 560px) {
@@ -129,6 +138,7 @@
       padding: 0;
     }
     .search .label,
+    .search .chip,
     .search kbd {
       display: none;
     }
