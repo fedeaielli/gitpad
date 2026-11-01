@@ -57,9 +57,7 @@
     flex: 0 0 var(--h-statusbar);
     align-items: center;
     gap: 14px;
-    margin: 0 var(--sp-1) var(--sp-1);
     padding: 0 10px;
-    border-radius: var(--r-lg);
     background: var(--surface-1);
     color: var(--muted);
     font-size: 11px;

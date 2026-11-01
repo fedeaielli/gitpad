@@ -131,9 +131,9 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    margin: var(--sp-1);
+    margin: var(--sp-1) 0 var(--sp-1) var(--sp-1);
     padding: 4px;
-    border-radius: var(--r-lg);
+    border-radius: var(--r-lg) 0 0 var(--r-lg);
     background: var(--surface-1);
   }
   .item {
