@@ -107,9 +107,9 @@
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 8px;
-    /* Same 35px baseline as the tab bar so both bottom borders line up. */
+    /* Same height as the tab bar so both bottom borders line up. */
     box-sizing: border-box;
-    min-height: 35px;
+    min-height: var(--h-tabbar);
     padding: 2px 8px;
     border-bottom: 1px solid var(--border);
     color: var(--muted);

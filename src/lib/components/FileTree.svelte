@@ -363,8 +363,8 @@
     background: var(--bg-raised);
   }
   .row.active {
-    background: var(--bg-raised);
-    color: #fff;
+    background: var(--selection);
+    color: var(--text);
   }
   .rename {
     padding: 0 8px;
@@ -441,7 +441,7 @@
   }
   .menu button:hover {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
   .menu .danger {
     color: var(--err);
