@@ -1,9 +1,9 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
-  import { open } from '@tauri-apps/plugin-dialog'
   import { ui, type FileNode } from '../stores/ui.svelte'
-  import { tabs, openTab, activateTab, discardUnder, retarget } from '../stores/tabs.svelte'
-  import { languageFor } from '../utils/langmap'
+  import { tabs, discardUnder, retarget } from '../stores/tabs.svelte'
+  import { openFileInTab } from '../utils/open-file'
+  import { pickAndImport } from '../utils/import'
   import { errorMessage, isNoRepoError } from '../stores/git.svelte'
 
   type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'delete'
@@ -127,13 +127,8 @@
   })
 
   async function openFile(node: FileNode) {
-    if (tabs.tabs.some((t) => t.id === node.path)) {
-      activateTab(node.path)
-      return
-    }
     try {
-      const content = await invoke<string>('fs_read_file', { path: node.path })
-      openTab({ id: node.path, path: node.path, content, modified: false, language: languageFor(node.path) })
+      await openFileInTab(node.path)
     } catch (e) {
       error = errorMessage(e)
     }
@@ -157,13 +152,8 @@
     menu = null
     error = null
     try {
-      const source = await open({
-        multiple: false,
-        directory,
-        title: directory ? 'Import folder' : 'Import file',
-      })
-      if (typeof source !== 'string') return
-      const path = await invoke<string>('fs_import', { source, destDir: base || null })
+      const path = await pickAndImport(directory, base || null)
+      if (!path) return
       if (base && !ui.expanded.includes(base)) ui.expanded = [...ui.expanded, base]
       await loadTree()
       if (!directory) {

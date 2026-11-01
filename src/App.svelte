@@ -129,6 +129,11 @@
     }
   }
 
+  /// In Vim/Emacs the editor keeps Ctrl+N and Ctrl+O while it has focus.
+  function editorOwnsKey(): boolean {
+    return ui.keybindings !== 'vscode' && !!document.activeElement?.closest('.monaco-editor')
+  }
+
   function onKeydown(e: KeyboardEvent) {
     // Ctrl+S is always global: it must never reach the webview's save-page dialog.
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 's') {
@@ -145,13 +150,21 @@
     }
     if (ui.settingsOpen) return
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'n') {
-      // Vim and Emacs own Ctrl+N (completion / next line) while the editor has
-      // focus; everywhere else it opens the "New file" prompt.
-      const inEditor = !!document.activeElement?.closest('.monaco-editor')
-      if (ui.keybindings !== 'vscode' && inEditor) return
+      // Vim and Emacs own Ctrl+N (completion / next line) while the editor has focus.
+      if (editorOwnsKey()) return
       e.preventDefault()
       if (e.repeat) return
       ui.palettePrompt = 'file'
+      ui.commandPaletteOpen = true
+      return
+    }
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'o') {
+      // Vim and Emacs own Ctrl+O (jump back / open line) while the editor has focus.
+      if (editorOwnsKey()) return
+      // Always preventDefault: WebKit would otherwise offer to open a local file.
+      e.preventDefault()
+      if (e.repeat) return
+      ui.paletteQuery = '>import'
       ui.commandPaletteOpen = true
       return
     }

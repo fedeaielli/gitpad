@@ -5,9 +5,12 @@
   import { tabs, openTab } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { debounce } from '../utils/debounce'
-  import { gitStatus, syncNow } from '../stores/git.svelte'
+  import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { saveAndSync } from '../utils/save-and-sync'
   import { newFileError } from '../utils/new-file'
+  import { importSource, pickImportSource } from '../utils/import'
+  import { openFileInTab } from '../utils/open-file'
+  import { pushToast } from '../stores/toasts.svelte'
   import { revealLine } from '../editor/bridge'
 
   interface SearchResult {
@@ -41,6 +44,10 @@
       prompt = ui.palettePrompt
       ui.palettePrompt = null
     }
+    if (ui.paletteQuery !== null) {
+      text = ui.paletteQuery
+      ui.paletteQuery = null
+    }
   })
 
   const commands = $derived([
@@ -50,6 +57,8 @@
     { id: 'theme', label: `Theme: cycle (${ui.editorTheme})` },
     { id: 'new-file', label: 'New file', hint: 'Ctrl+N' },
     { id: 'new-folder', label: 'New folder' },
+    { id: 'import-file', label: 'Import file…', hint: 'Ctrl+O' },
+    { id: 'import-folder', label: 'Import folder…' },
     { id: 'search', label: 'Search in files' },
     { id: 'settings', label: 'Open settings' },
   ])
@@ -166,6 +175,7 @@
       text = ''
       return
     }
+    if (id === 'import-file' || id === 'import-folder') return void importFrom(id === 'import-folder')
     if (id === 'settings') {
       ui.settingsOpen = true
       return close()
@@ -175,6 +185,23 @@
       text = ''
       results = []
       return
+    }
+  }
+
+  /// Imports into the repo root. A subfolder destination stays in the tree's context menu.
+  async function importFrom(directory: boolean) {
+    // Close first: the native dialog needs the focus out of the palette.
+    close()
+    try {
+      const source = await pickImportSource(directory)
+      if (!source) return
+      pushToast('Importing…', 'info')
+      const path = await importSource(source, null)
+      ui.treeVersion += 1
+      if (!directory) await openFileInTab(path)
+      pushToast(`Imported ${path}`, 'success')
+    } catch (e) {
+      pushToast(errorMessage(e), 'error')
     }
   }
 
