@@ -36,8 +36,11 @@
   let busy = $state(false)
   let listEl: HTMLDivElement
   let inputEl: HTMLInputElement
+  // Esc closes the palette by unmounting it; the focus goes back where it was.
+  let previousFocus: HTMLElement | null = null
 
   onMount(() => {
+    previousFocus = document.activeElement as HTMLElement | null
     inputEl?.focus()
     // A global shortcut asked for the prompt: consume it once.
     if (ui.palettePrompt) {
@@ -48,6 +51,7 @@
       text = ui.paletteQuery
       ui.paletteQuery = null
     }
+    return () => previousFocus?.focus()
   })
 
   const commands = $derived([
@@ -355,25 +359,39 @@
     inset: 0;
     z-index: 50;
     display: flex;
+    align-items: flex-start;
     justify-content: center;
-    padding: 8px 8px 0;
+    /* Anchored under the 32px title bar, like the VS Code quick pick. */
+    padding: 40px 16px 0;
   }
   .backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.5);
   }
   .palette {
     position: relative;
     display: flex;
     flex-direction: column;
     width: 620px;
-    max-width: calc(100vw - 64px);
+    max-width: calc(100vw - 32px);
     max-height: 60vh;
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 6px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    animation: drop 150ms ease-out;
+  }
+  @keyframes drop {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .palette {
+      animation: none;
+    }
   }
   input {
     padding: 10px 12px;
@@ -382,7 +400,10 @@
     background: transparent;
     color: var(--text);
     font: inherit;
-    outline: none;
+  }
+  input:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -2px;
   }
   .list {
     overflow: auto;
@@ -398,6 +419,10 @@
   .item.active {
     background: var(--accent);
     color: #fff;
+  }
+  .item:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -2px;
   }
   .label {
     flex: 1;
