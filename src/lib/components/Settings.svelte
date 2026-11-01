@@ -3,6 +3,8 @@
   import { invoke } from '@tauri-apps/api/core'
   import { ui, THEMES, KEYBINDINGS } from '../stores/ui.svelte'
   import { pushToast } from '../stores/toasts.svelte'
+  import { contrast } from '../utils/color'
+  import { surfaceForTheme } from '../utils/themes'
 
   interface UserInfo {
     login: string
@@ -38,7 +40,24 @@
     'java',
   ]
 
+  const ACCENT_PRESETS = [
+    '#0078d4', // blue, the default accent
+    '#8b5cf6', // violet
+    '#10b981', // green
+    '#f38518', // orange
+    '#e5484d', // red
+    '#ec4899', // pink
+    '#06b6d4', // cyan
+    '#d7ba7d', // amber
+  ]
+
   let tab = $state<Tab>('appearance')
+  // The swatches sit on the panel surface, which differs per theme: re-read it when the theme changes.
+  const accentWarning = $derived.by(() => {
+    if (!ui.accent) return false
+    void ui.editorTheme
+    return (contrast(ui.accent, surfaceForTheme()) ?? 99) < 3
+  })
   let user = $state<UserInfo | null>(null)
   let accountError = $state('')
   let newExt = $state('')
@@ -132,6 +151,41 @@
               <option value={theme}>{theme}</option>
             {/each}
           </select>
+        </div>
+        <div class="field">
+          <span>Accent color</span>
+          <div class="accent-picker">
+            {#each ACCENT_PRESETS as color (color)}
+              <button
+                type="button"
+                class="swatch"
+                class:active={ui.accent === color}
+                style="--swatch-color: {color}"
+                aria-label="Accent {color}"
+                aria-pressed={ui.accent === color}
+                onclick={() => (ui.accent = color)}
+              ></button>
+            {/each}
+            <input
+              type="text"
+              class="hex-input"
+              value={ui.accent}
+              placeholder="#0078d4"
+              aria-label="Accent hex value"
+              onchange={(e) => {
+                const v = e.currentTarget.value.trim()
+                if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) ui.accent = v
+              }}
+            />
+            {#if ui.accent}
+              <button type="button" class="reset-accent" onclick={() => (ui.accent = '')}>
+                Reset
+              </button>
+            {/if}
+            {#if accentWarning}
+              <span class="accent-warn">Low contrast with panel background</span>
+            {/if}
+          </div>
         </div>
         <div class="field">
           <span>Font size</span>
@@ -356,6 +410,48 @@
   .note {
     color: var(--muted);
     font-size: 11px;
+  }
+  .accent-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .swatch {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: var(--r-md);
+    background: var(--swatch-color);
+    cursor: pointer;
+  }
+  .swatch.active,
+  .swatch:focus-visible {
+    border-color: var(--text);
+    outline: none;
+  }
+  .hex-input {
+    width: 80px;
+    font-family: monospace;
+    font-size: var(--fs-sm);
+  }
+  .reset-accent {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .reset-accent:hover {
+    color: var(--text);
+  }
+  .accent-warn {
+    flex-basis: 100%;
+    color: var(--warn);
+    font-size: var(--fs-xs);
   }
   .note {
     margin: 12px 0 0;
