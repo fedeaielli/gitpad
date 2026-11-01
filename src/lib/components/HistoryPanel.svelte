@@ -177,7 +177,7 @@
     text-align: left;
   }
   .row code {
-    color: var(--accent);
+    color: var(--accent-fg);
     font-size: 11px;
   }
   .msg {

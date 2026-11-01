@@ -58,7 +58,7 @@
     align-items: center;
     gap: 14px;
     padding: 0 10px;
-    background: var(--surface-2);
+    background: var(--surface-1);
     border-top: 1px solid var(--border);
     color: var(--muted);
     font-size: 11px;

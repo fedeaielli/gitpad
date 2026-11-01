@@ -123,7 +123,7 @@
     background: var(--surface-2);
   }
   .icon.active {
-    color: var(--accent);
+    color: var(--accent-fg);
   }
   .icon svg {
     width: 16px;

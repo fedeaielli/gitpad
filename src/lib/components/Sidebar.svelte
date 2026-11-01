@@ -136,7 +136,7 @@
     background: var(--surface-2);
   }
   .actions button[aria-pressed='true'] {
-    color: var(--accent);
+    color: var(--accent-fg);
   }
   .scroll {
     flex: 1;
