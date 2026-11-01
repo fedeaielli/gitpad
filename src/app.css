@@ -3,14 +3,14 @@
 :root {
   color-scheme: dark;
 
-  /* Surfaces, from the editor outwards. Dark Modern: the sidebar and title bar
-     sit lighter than the editor, the tab bar and depressed areas darker. */
+  /* Surfaces, from the editor outwards. Dark Modern: the floor is darkest, the
+     panels share one lighter tone, modals sit on top. */
   --surface-0: #1f1f1f;
   --surface-1: #252526;
-  --surface-2: #181818;
+  --surface-2: #252526;
   --surface-3: #2d2d30;
   /* The window floor: shows through the gaps between the floating panels. */
-  --surface-base: #141414;
+  --surface-base: #181818;
 
   --text: #cccccc;
   --muted: #8e8e8e;
@@ -37,7 +37,7 @@
   --h-statusbar: 24px;
   --w-activitybar: 48px;
 
-  --sp-1: 4px;
+  --sp-1: 6px;
   --sp-2: 8px;
   --sp-3: 12px;
   --sp-4: 16px;

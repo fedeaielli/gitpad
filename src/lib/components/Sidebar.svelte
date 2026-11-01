@@ -86,7 +86,7 @@
     flex-direction: column;
     min-height: 0;
     margin: var(--sp-1) 0 var(--sp-1) 0;
-    border-radius: 0 var(--r-lg) var(--r-lg) 0;
+    border-radius: var(--r-lg);
     background: var(--surface-1);
   }
   .resize {
