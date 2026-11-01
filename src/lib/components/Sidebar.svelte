@@ -86,7 +86,7 @@
     flex-direction: column;
     min-height: 0;
     background: var(--surface-1);
-    border-right: 1px solid var(--border);
+    box-shadow: inset -1px 0 0 var(--border);
   }
   .resize {
     position: absolute;

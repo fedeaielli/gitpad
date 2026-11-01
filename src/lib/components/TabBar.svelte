@@ -56,8 +56,9 @@
     box-sizing: border-box;
     flex: 0 0 var(--h-tabbar);
     overflow: hidden;
-    background: var(--surface-1);
-    border-bottom: 1px solid var(--border);
+    padding: 4px 4px 0;
+    background: var(--surface-2);
+    box-shadow: inset 0 -1px 0 var(--border);
   }
   .tabs {
     display: flex;
