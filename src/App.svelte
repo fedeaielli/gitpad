@@ -16,6 +16,7 @@
   import Toasts from './lib/components/Toasts.svelte'
   import TitleBar from './lib/components/TitleBar.svelte'
   import { pushToast } from './lib/stores/toasts.svelte'
+  import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
   import { applyTheme } from './lib/utils/themes'
@@ -129,6 +130,14 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    // Ctrl+S is always global: it must never reach the webview's save-page dialog.
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 's') {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.repeat) return
+      void saveAndSync()
+      return
+    }
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') {
       e.preventDefault()
       cyclePreview()

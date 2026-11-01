@@ -23,7 +23,7 @@
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
   import { tabs, discarded, closeTab, type Tab } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
-  import { getEditor, registerFlush, registerReload, setEditorInstance } from '../editor/bridge'
+  import { getEditor, registerFlush, registerReload, registerSaveAll, setEditorInstance } from '../editor/bridge'
   import { planPullReload, type UpstreamChange } from '../utils/pull-reload'
   import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
@@ -144,7 +144,11 @@
   /// Exit path: no debounce left, so write every tab that is still dirty.
   async function flushAll(): Promise<boolean> {
     try {
-      return await withTimeout(flushBody(), FLUSH_WAIT_MS, 'flush')
+      return await withTimeout(
+        flushBody().then((r) => r.ok),
+        FLUSH_WAIT_MS,
+        'flush',
+      )
     } catch {
       // The body is not cancelled: it keeps waiting for the write in flight and
       // only then writes the rest, so nothing races. If the user cancels, the
@@ -154,13 +158,18 @@
     }
   }
 
-  async function flushBody(): Promise<boolean> {
+  async function flushBody(): Promise<{ ok: boolean; wrote: boolean }> {
     persist.cancel()
     // A save started by the debounce may still be writing: wait for it so the
     // loop below sees the flag it sets instead of writing the same file twice.
     await Promise.allSettled([...inFlight.values()])
     const attempted = pendingId
+    // `savePending` reports only success; a dirty tab that came back clean was
+    // written (a skip leaves it clean too, but then there was nothing to write).
+    const pendingTab = tabs.tabs.find((t) => t.id === attempted)
+    const pendingDirty = pendingTab?.modified ?? false
     let ok = await savePending()
+    let wrote = pendingDirty && pendingTab?.modified === false
     for (const tab of tabs.tabs) {
       if (!tab.modified || tab.id === attempted) continue
       const decision = saveDecision(tab)
@@ -184,8 +193,9 @@
         ok = false
         break
       }
+      wrote = true
     }
-    return ok
+    return { ok, wrote }
   }
 
   function armPush() {
@@ -395,11 +405,16 @@
     })
     window.addEventListener('blur', onBlur)
     registerFlush(flushAll)
+    registerSaveAll(async () => {
+      const r = await flushBody()
+      return { ...r, error: r.ok ? null : saveError }
+    })
     registerReload(applyPullChanges)
     applyActive()
 
     return () => {
       registerFlush(null)
+      registerSaveAll(null)
       registerReload(null)
       setEditor(null)
       window.removeEventListener('blur', onBlur)

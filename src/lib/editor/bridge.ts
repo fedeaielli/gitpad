@@ -7,6 +7,8 @@ type Instance = editor.IStandaloneCodeEditor
 let current: Instance | null = null
 let flush: (() => Promise<boolean>) | null = null
 let reload: ((changes: UpstreamChange[]) => Promise<void>) | null = null
+type SaveAllResult = { ok: boolean; wrote: boolean; error: string | null }
+let saveAll: (() => Promise<SaveAllResult>) | null = null
 
 export function setEditorInstance(next: Instance | null) {
   current = next
@@ -23,6 +25,15 @@ export function registerFlush(fn: (() => Promise<boolean>) | null) {
 /// Used by the close handshake in App.svelte before the app exits.
 export async function flushPendingSave() {
   return flush ? await flush() : true
+}
+
+export function registerSaveAll(fn: (() => Promise<SaveAllResult>) | null) {
+  saveAll = fn
+}
+
+/// Ctrl+S: flush every dirty tab now. No-op while the editor chunk is loading.
+export async function saveAllNow(): Promise<SaveAllResult> {
+  return saveAll ? await saveAll() : { ok: true, wrote: false, error: null }
 }
 
 export function registerReload(fn: ((changes: UpstreamChange[]) => Promise<void>) | null) {
