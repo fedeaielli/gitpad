@@ -262,7 +262,7 @@
   .backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--scrim);
   }
   .modal {
     position: relative;
@@ -272,15 +272,16 @@
     height: min(620px, 88vh);
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-panel);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    border-radius: var(--r-lg);
+    background: var(--surface-3);
+    box-shadow: var(--shadow-2);
   }
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px 8px;
+    min-height: 40px;
+    padding: 0 16px;
   }
   h2 {
     margin: 0;
@@ -288,7 +289,12 @@
     font-weight: 600;
   }
   .close {
-    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
     color: var(--muted);
     font-size: 18px;
   }

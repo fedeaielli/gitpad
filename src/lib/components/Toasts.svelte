@@ -23,19 +23,23 @@
   }
   .toast {
     padding: 6px 10px;
-    border: 1px solid var(--border);
+    border: 0;
+    border-left: 2px solid var(--border-strong);
     border-radius: 4px;
-    background: var(--bg-raised);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    background: var(--surface-2);
+    box-shadow: var(--shadow-1);
     color: var(--text);
     text-align: left;
     font-size: 12px;
   }
   .toast.error {
-    border-color: var(--err);
+    border-left-color: var(--err);
     color: var(--err);
   }
+  .toast.info {
+    border-left-color: var(--warn);
+  }
   .toast.success {
-    border-color: var(--accent);
+    border-left-color: var(--ok);
   }
 </style>

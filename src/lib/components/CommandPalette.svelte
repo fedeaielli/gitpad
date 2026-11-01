@@ -367,7 +367,7 @@
   .backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--scrim);
   }
   .palette {
     position: relative;
@@ -378,9 +378,9 @@
     max-height: 60vh;
     background: var(--bg-panel);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    animation: drop 150ms ease-out;
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-2);
+    animation: drop var(--t-fast) ease-out;
   }
   @keyframes drop {
     from {
@@ -418,7 +418,7 @@
   }
   .item.active {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
   .item:focus-visible {
     outline: 1px solid var(--accent);
