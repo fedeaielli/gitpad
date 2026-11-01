@@ -72,6 +72,7 @@
     flex: 0 0 auto;
     max-width: 200px;
     border-right: 1px solid var(--border);
+    border-radius: var(--r-md) var(--r-md) 0 0;
   }
   .tab.active {
     background: var(--surface-0);
@@ -116,7 +117,7 @@
   .icon {
     display: flex;
     padding: 3px;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     color: var(--text);
   }
   .icon:hover {

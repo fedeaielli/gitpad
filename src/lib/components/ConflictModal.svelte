@@ -226,7 +226,7 @@
   }
   .file {
     padding: 4px 8px;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     overflow: hidden;
     text-align: left;
     text-overflow: ellipsis;
@@ -267,7 +267,7 @@
   .done button {
     padding: 4px 10px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
   }
   .actions button:hover:not(:disabled) {

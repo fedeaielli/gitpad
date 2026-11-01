@@ -230,7 +230,7 @@
   kbd {
     padding: 1px 4px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
     font: inherit;
   }
@@ -263,7 +263,7 @@
   button {
     padding: 6px 12px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
   }
   button:hover:not(:disabled) {
