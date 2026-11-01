@@ -641,12 +641,44 @@ pub fn push_blocking(
     }
 }
 
+/// How `push_only_blocking` waits for the worktree gate.
+pub enum GateWait<'a> {
+    /// Wait as long as the operation takes (manual push).
+    Block(&'a std::sync::RwLock<()>),
+    /// Give up after `wait` and skip the commit and push (closing paths).
+    Until(&'a std::sync::RwLock<()>, std::time::Duration),
+}
+
+/// `RwLock::write` has no timeout: poll it until the deadline.
+fn try_write_until<'a>(
+    gate: &'a std::sync::RwLock<()>,
+    wait: std::time::Duration,
+) -> Option<std::sync::RwLockWriteGuard<'a, ()>> {
+    let deadline = std::time::Instant::now() + wait;
+    loop {
+        match gate.try_write() {
+            Ok(guard) => return Some(guard),
+            // A poisoned gate must not keep the app from closing: take it anyway.
+            Err(std::sync::TryLockError::Poisoned(e)) => return Some(e.into_inner()),
+            Err(std::sync::TryLockError::WouldBlock) => {
+                if std::time::Instant::now() >= deadline {
+                    return None;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
+    }
+}
+
 /// Commit and push without pulling first (used by the push-only button).
+/// Returns the current status without committing or pushing when an `Until`
+/// gate never frees up: every autosave is already committed, and the next
+/// start pushes whatever is left.
 pub fn push_only_blocking(
     path: &Path,
     message: Option<String>,
     token: Option<String>,
-    gate: Option<&std::sync::RwLock<()>>,
+    gate: GateWait<'_>,
 ) -> Result<GitStatus, GitError> {
     let repo = open_repo(path)?;
     let (local, remote) = branch_oids(&repo);
@@ -659,8 +691,11 @@ pub fn push_only_blocking(
     }
     // The gate covers the commit only: the network must not hold it.
     let guard = match gate {
-        Some(gate) => Some(gate.write().map_err(|e| e.to_string())?),
-        None => None,
+        GateWait::Block(gate) => Some(gate.write().map_err(|e| e.to_string())?),
+        GateWait::Until(gate, wait) => match try_write_until(gate, wait) {
+            Some(guard) => Some(guard),
+            None => return status_of(&repo),
+        },
     };
     commit_pending(&repo, message.as_deref())?;
     drop(guard);
@@ -894,7 +929,7 @@ pub async fn git_push(
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
         if pull == Some(false) {
-            push_only_blocking(&path, message, token, Some(&gate))
+            push_only_blocking(&path, message, token, GateWait::Block(&gate))
                 .map(|status| (status, Vec::new(), None))
         } else {
             push_blocking(&path, message, token, gate)
@@ -1531,7 +1566,7 @@ mod tests {
         drop(a);
 
         let gate = std::sync::RwLock::new(());
-        let status = push_only_blocking(&a_path, None, None, Some(&gate)).unwrap();
+        let status = push_only_blocking(&a_path, None, None, GateWait::Block(&gate)).unwrap();
         assert_eq!(status.ahead, 0);
         assert!(gate.try_write().is_ok());
         let _ = std::fs::remove_dir_all(&root);
@@ -1552,7 +1587,7 @@ mod tests {
         std::fs::remove_dir_all(&remote_path).unwrap();
 
         let gate = std::sync::RwLock::new(());
-        assert!(push_only_blocking(&a_path, None, None, Some(&gate)).is_err());
+        assert!(push_only_blocking(&a_path, None, None, GateWait::Block(&gate)).is_err());
         assert!(gate.try_write().is_ok());
         let _ = std::fs::remove_dir_all(&root);
     }
@@ -1575,7 +1610,9 @@ mod tests {
         let task_gate = gate.clone();
         let task_path = a_path.clone();
         let task = std::thread::spawn(move || {
-            let ok = push_only_blocking(&task_path, None, None, Some(task_gate.as_ref())).is_ok();
+            let ok =
+                push_only_blocking(&task_path, None, None, GateWait::Block(task_gate.as_ref()))
+                    .is_ok();
             let _ = tx.send(ok);
         });
 
@@ -1586,6 +1623,119 @@ mod tests {
         assert!(rx.recv_timeout(std::time::Duration::from_secs(10)).unwrap());
         task.join().unwrap();
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn push_only_skips_commit_when_the_gate_never_frees() {
+        let root = tmp("push-only-until-timeout");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "one");
+        push_current(&a);
+        let before = a.head().unwrap().target().unwrap();
+        drop(a);
+        std::fs::write(a_path.join("a.txt"), "edited").unwrap();
+
+        let gate = std::sync::Arc::new(std::sync::RwLock::new(()));
+        let held = gate.write().unwrap();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let task_gate = gate.clone();
+        let task_path = a_path.clone();
+        let started = std::time::Instant::now();
+        let task = std::thread::spawn(move || {
+            let result = push_only_blocking(
+                &task_path,
+                None,
+                None,
+                GateWait::Until(task_gate.as_ref(), std::time::Duration::from_millis(100)),
+            );
+            let _ = tx.send(result);
+        });
+
+        let result = rx
+            .recv_timeout(std::time::Duration::from_millis(500))
+            .expect("Until must give up instead of waiting for the gate");
+        assert!(started.elapsed() < std::time::Duration::from_millis(500));
+        assert!(result.is_ok());
+        task.join().unwrap();
+        assert_eq!(std::fs::read_to_string(a_path.join("a.txt")).unwrap(), "edited");
+        let repo = Repository::open(&a_path).unwrap();
+        assert_eq!(repo.head().unwrap().target().unwrap(), before);
+        drop(held);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn push_only_until_commits_and_pushes_when_the_gate_is_free() {
+        let root = tmp("push-only-until-free");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "one");
+        push_current(&a);
+        drop(a);
+        std::fs::write(a_path.join("a.txt"), "edited").unwrap();
+
+        let gate = std::sync::RwLock::new(());
+        let status = push_only_blocking(
+            &a_path,
+            None,
+            None,
+            GateWait::Until(&gate, std::time::Duration::from_millis(100)),
+        )
+        .unwrap();
+        assert_eq!(status.ahead, 0);
+        assert!(status.changes.is_empty());
+        let repo = Repository::open(&a_path).unwrap();
+        let head = repo.head().unwrap().peel_to_commit().unwrap();
+        assert!(head.message().unwrap().starts_with("gitpad: sync"));
+        assert!(gate.try_write().is_ok());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn push_only_until_recovers_a_poisoned_gate() {
+        let root = tmp("push-only-until-poisoned");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "a.txt", "one");
+        push_current(&a);
+        drop(a);
+        std::fs::write(a_path.join("a.txt"), "edited").unwrap();
+
+        let gate = std::sync::Arc::new(std::sync::RwLock::new(()));
+        let task_gate = gate.clone();
+        let _ = std::thread::spawn(move || {
+            let _guard = task_gate.write().unwrap();
+            panic!("poison the gate");
+        })
+        .join();
+        assert!(gate.is_poisoned());
+
+        let status = push_only_blocking(
+            &a_path,
+            None,
+            None,
+            GateWait::Until(gate.as_ref(), std::time::Duration::from_millis(100)),
+        )
+        .unwrap();
+        assert_eq!(status.ahead, 0);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn try_write_until_releases_the_guard() {
+        let gate = std::sync::RwLock::new(());
+        let guard = try_write_until(&gate, std::time::Duration::from_millis(100))
+            .expect("a free gate must be acquired");
+        assert!(gate.try_write().is_err());
+        drop(guard);
+        assert!(gate.try_write().is_ok());
     }
 
     #[test]
