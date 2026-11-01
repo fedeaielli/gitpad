@@ -118,6 +118,7 @@ GitPad never force-pushes and never rebases. Pulls fast-forward when possible, o
 | Action | Shortcut |
 |---|---|
 | Save every open file now, then push | `Ctrl+S` |
+| New file (type `name.ext`) | `Ctrl+N` |
 | Command palette | `Ctrl+P` |
 | Cycle Markdown preview: off → split → full | `Ctrl+Shift+P` |
 | Move selection in the palette | `Up` / `Down` |
