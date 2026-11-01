@@ -126,7 +126,7 @@
 <style>
   .rail {
     display: flex;
-    flex: 0 0 44px;
+    flex: 0 0 var(--w-activitybar);
     flex-direction: column;
     align-items: center;
     gap: 2px;
@@ -139,8 +139,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: var(--w-activitybar);
+    height: var(--w-activitybar);
     color: var(--muted);
   }
   .item:hover {
