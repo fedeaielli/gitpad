@@ -19,7 +19,7 @@
   import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
-  import { applyTheme } from './lib/utils/themes'
+  import { applyTheme, applyAccent } from './lib/utils/themes'
   import {
     applyGitStatus,
     gitStatus,
@@ -64,6 +64,7 @@
       pushIdleMs: ui.pushIdleMs,
       keybindings: ui.keybindings,
       extensions: { ...ui.extensions },
+      accent: ui.accent,
     }
     if (!configLoaded) return
     pendingConfig = config
@@ -78,6 +79,8 @@
 
   $effect(() => {
     applyTheme(ui.editorTheme)
+    // The accent tokens depend on the theme's surface, so re-derive on both.
+    applyAccent(ui.accent)
   })
 
   // A resolved merge re-arms the conflict modal for the next one.
@@ -229,6 +232,10 @@
         if (config.fontFamily) ui.fontFamily = config.fontFamily
         if (Number.isFinite(config.sidebarWidth)) ui.sidebarWidth = clamp(config.sidebarWidth, 150, 500)
         ui.autoSync = config.autoSync
+        ui.accent =
+          typeof config.accent === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(config.accent)
+            ? config.accent
+            : ''
         if (Number.isFinite(config.saveDebounceMs)) {
           ui.saveDebounceMs = clamp(config.saveDebounceMs, 500, 10_000)
         }
