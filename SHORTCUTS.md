@@ -10,15 +10,20 @@ open file now and pushes immediately. Autosave keeps running as before.
 |---|---|
 | `Ctrl+S` | Save every open file now, then push |
 | `Ctrl+N` | New file: type a name like `notes.md` |
+| `Ctrl+O` | Import: opens the palette on `Import file…` / `Import folder…` |
 | `Ctrl+P` | Open the command palette (files, `>` commands, `>search`) |
 | `Ctrl+Shift+P` | Cycle the markdown preview: off → split → full (markdown tabs only) |
 | `↑` / `↓` | Move the palette selection |
 | `Enter` | Open the selected file, run the selected command, or submit a prompt |
 | `Esc` | Close the palette |
 
-In Vim or Emacs keybindings, `Ctrl+N` stays with the editor while it has focus
-(completion in Vim, next line in Emacs). Use `>` → `New file` from the palette
-there, or press `Ctrl+N` with the focus outside the editor.
+In Vim or Emacs keybindings, `Ctrl+N` and `Ctrl+O` stay with the editor while it
+has focus (completion / jump back in Vim, next line / open line in Emacs). Use
+`>` → `New file` or `Import file…` from the palette there, or press the shortcut
+with the focus outside the editor.
+
+Imports from `Ctrl+O` land in the repository root. To import into a subfolder,
+right-click that folder in the tree and use **Import file** / **Import folder**.
 
 ## Mouse
 
@@ -38,5 +43,7 @@ Type `>` first to list them:
 - `Toggle markdown preview` — same as `Ctrl+Shift+P`
 - `Theme: cycle` — rotate between the available editor themes
 - `New file` / `New folder` — create an entry by path
+- `Import file…` / `Import folder…` — copy into the repository root; same names
+  are renamed to `name (1).ext`, nothing is overwritten
 - `Search in files` — global search across the repository
 - `Open settings` — same as the `⚙` button

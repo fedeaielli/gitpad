@@ -119,6 +119,7 @@ GitPad never force-pushes and never rebases. Pulls fast-forward when possible, o
 |---|---|
 | Save every open file now, then push | `Ctrl+S` |
 | New file (type `name.ext`) | `Ctrl+N` |
+| Import a file or folder (into the repo root) | `Ctrl+O` |
 | Command palette | `Ctrl+P` |
 | Cycle Markdown preview: off → split → full | `Ctrl+Shift+P` |
 | Move selection in the palette | `Up` / `Down` |
@@ -160,6 +161,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **External edits are focus-based.** Changes made outside GitPad appear after the window regains focus; an open tab is not reloaded automatically.
 - **Remote images are blocked in preview.** The content security policy allows local/data images and GitHub avatars, not arbitrary remote images.
 - **No filesystem watcher.** The file tree refreshes on focus, not through inotify.
+- **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes.
 - **Crash safety.** `SIGTERM` commits and pushes files already written before exit. `SIGKILL` or a crash cannot be caught; the last edits remain local until the next start.
 - **Linux only.** The current release bundles an AppImage. Windows is not supported yet.
 - **Not a full Git client.** There is no branch UI, terminal, plugin system, or multi-user collaboration.
