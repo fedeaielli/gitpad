@@ -360,7 +360,7 @@
     border-radius: 3px;
   }
   .row:hover {
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .row.active {
     background: var(--selection);
@@ -409,7 +409,7 @@
   .bone {
     height: 10px;
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
     animation: pulse 1.2s ease-in-out infinite;
   }
   @keyframes pulse {
@@ -427,7 +427,7 @@
     z-index: 10;
     min-width: 160px;
     padding: 4px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 4px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);

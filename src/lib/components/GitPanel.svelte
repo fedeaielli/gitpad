@@ -185,7 +185,7 @@
     padding: 3px 8px;
     border: 1px solid var(--border);
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   button:hover:not(:disabled) {
     border-color: var(--accent);
@@ -263,7 +263,7 @@
     font-weight: 600;
   }
   .badge.M {
-    color: var(--accent);
+    color: var(--accent-fg);
   }
   .badge.A {
     color: var(--ok);

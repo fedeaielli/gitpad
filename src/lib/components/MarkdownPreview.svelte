@@ -113,7 +113,7 @@
   .preview {
     height: 100%;
     overflow: auto;
-    background: var(--bg);
+    background: var(--surface-0);
   }
   .markdown-body {
     min-width: 0;

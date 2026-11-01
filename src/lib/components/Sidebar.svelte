@@ -85,7 +85,7 @@
     flex: 0 0 260px;
     flex-direction: column;
     min-height: 0;
-    background: var(--bg-panel);
+    background: var(--surface-1);
     border-right: 1px solid var(--border);
   }
   .resize {
@@ -133,7 +133,7 @@
   }
   .actions button:hover {
     color: var(--text);
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .actions button[aria-pressed='true'] {
     color: var(--accent);

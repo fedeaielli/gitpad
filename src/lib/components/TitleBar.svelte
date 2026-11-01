@@ -69,7 +69,7 @@
     gap: 10px;
     padding-left: 10px;
     border-bottom: 1px solid var(--border);
-    background: var(--bg-panel);
+    background: var(--surface-1);
     user-select: none;
   }
   /* Centred on the window, not on the space left by the title and controls. */
@@ -88,7 +88,7 @@
     padding: 0 6px;
     border: 1px solid var(--border);
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
     color: var(--text);
     font-size: 12px;
     text-align: left;
@@ -162,7 +162,7 @@
     color: var(--text);
   }
   .win:hover {
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .win.close:hover {
     background: #c42b1c;

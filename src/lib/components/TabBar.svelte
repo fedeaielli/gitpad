@@ -56,7 +56,7 @@
     box-sizing: border-box;
     flex: 0 0 var(--h-tabbar);
     overflow: hidden;
-    background: var(--bg-panel);
+    background: var(--surface-1);
     border-bottom: 1px solid var(--border);
   }
   .tabs {
@@ -74,7 +74,7 @@
     border-right: 1px solid var(--border);
   }
   .tab.active {
-    background: var(--bg);
+    background: var(--surface-0);
     box-shadow: inset 0 2px 0 var(--accent);
   }
   .label {
@@ -120,7 +120,7 @@
     color: var(--text);
   }
   .icon:hover {
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .icon.active {
     color: var(--accent);

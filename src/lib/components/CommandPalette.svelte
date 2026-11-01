@@ -376,7 +376,7 @@
     width: 620px;
     max-width: calc(100vw - 32px);
     max-height: 60vh;
-    background: var(--bg-panel);
+    background: var(--surface-3);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     box-shadow: var(--shadow-2);

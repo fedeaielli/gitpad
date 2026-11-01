@@ -60,6 +60,7 @@
       'editor.lineHighlightBackground': '#252526',
       'editorCursor.foreground': '#d4d4d4',
       'editorIndentGuide.background1': '#3c3c3c',
+      'editorIndentGuide.activeBackground1': '#6b6b6b',
     },
   })
 
@@ -70,8 +71,13 @@
     colors: {
       'editor.background': '#ffffff',
       'editor.foreground': '#1f1f1f',
+      'editorLineNumber.foreground': '#616161',
+      'editorLineNumber.activeForeground': '#1f1f1f',
       'editor.selectionBackground': '#d6e6f7',
       'editor.lineHighlightBackground': '#f3f3f3',
+      'editorCursor.foreground': '#1f1f1f',
+      'editorIndentGuide.background1': '#c8c8c8',
+      'editorIndentGuide.activeBackground1': '#949494',
     },
   })
 
@@ -82,8 +88,13 @@
     colors: {
       'editor.background': '#000000',
       'editor.foreground': '#ffffff',
+      'editorLineNumber.foreground': '#d4d4d4',
+      'editorLineNumber.activeForeground': '#ffffff',
       'editor.selectionBackground': '#264f78',
       'editor.lineHighlightBackground': '#0a0a0a',
+      'editorCursor.foreground': '#ffffff',
+      'editorIndentGuide.background1': '#6fc3df',
+      'editorIndentGuide.activeBackground1': '#6fc3df',
     },
   })
 
@@ -511,7 +522,7 @@
     z-index: 5;
     padding: 0 4px;
     border-radius: 3px;
-    background: var(--bg-panel);
+    background: var(--surface-1);
     color: var(--muted);
     font: 12px ui-monospace, monospace;
     pointer-events: none;
@@ -539,7 +550,7 @@
     padding: 4px 8px;
     border: 1px solid var(--err);
     border-radius: 3px;
-    background: var(--bg-panel);
+    background: var(--surface-1);
     color: var(--err);
     font-size: 12px;
   }

@@ -185,7 +185,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg);
+    background: var(--surface-0);
   }
   .card {
     display: flex;
@@ -231,7 +231,7 @@
     padding: 1px 4px;
     border: 1px solid var(--border);
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
     font: inherit;
   }
   .error {
@@ -264,7 +264,7 @@
     padding: 6px 12px;
     border: 1px solid var(--border);
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   button:hover:not(:disabled) {
     border-color: var(--accent);
