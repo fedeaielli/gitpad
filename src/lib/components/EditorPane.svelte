@@ -498,8 +498,6 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    margin-right: var(--sp-1);
-    margin-bottom: var(--sp-1);
     border-radius: 0 0 var(--r-lg) var(--r-lg);
     background: var(--surface-0);
   }

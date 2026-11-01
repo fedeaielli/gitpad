@@ -309,7 +309,9 @@
   .body {
     display: flex;
     flex: 1;
+    gap: var(--sp-1);
     min-height: 0;
+    padding: var(--sp-1);
   }
   .editor {
     display: flex;
