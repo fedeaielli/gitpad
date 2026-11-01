@@ -184,7 +184,7 @@
   button {
     padding: 3px 8px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
   }
   button:hover:not(:disabled) {
@@ -259,6 +259,7 @@
   .badge {
     flex: 0 0 auto;
     width: 12px;
+    border-radius: var(--r-pill);
     font-size: 10px;
     font-weight: 600;
   }

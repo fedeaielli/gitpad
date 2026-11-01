@@ -287,7 +287,7 @@
     flex: 0 0 auto;
     padding: 2px 6px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     font-size: 11px;
     opacity: 0;
   }

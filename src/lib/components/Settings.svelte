@@ -379,7 +379,7 @@
     align-items: center;
     gap: 10px;
     padding: 4px 8px;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
   }
   .extensions .ext {
@@ -413,7 +413,7 @@
     flex: 0 0 auto;
     padding: 4px 14px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
   }
   .add button:hover {
@@ -432,7 +432,7 @@
   .danger {
     padding: 4px 12px;
     border: 1px solid var(--err);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     color: var(--err);
     justify-self: start;
   }

@@ -87,7 +87,7 @@
     height: 22px;
     padding: 0 6px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
     color: var(--text);
     font-size: 12px;
@@ -127,7 +127,7 @@
   .search .chip {
     padding: 0 4px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
   }
   /* Narrow windows: icon only, so it cannot collide with the title or controls. */
   @media (max-width: 560px) {

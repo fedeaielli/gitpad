@@ -521,7 +521,7 @@
     bottom: 6px;
     z-index: 5;
     padding: 0 4px;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-1);
     color: var(--muted);
     font: 12px ui-monospace, monospace;
@@ -549,7 +549,7 @@
     margin: 0;
     padding: 4px 8px;
     border: 1px solid var(--err);
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-1);
     color: var(--err);
     font-size: 12px;

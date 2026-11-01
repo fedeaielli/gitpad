@@ -124,7 +124,7 @@
   }
   .actions button {
     border: 0;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
     font-size: 15px;

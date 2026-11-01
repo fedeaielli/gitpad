@@ -138,10 +138,16 @@ button {
   cursor: pointer;
 }
 
-input {
+/* Window controls stay square: they sit flush against the window corner. */
+button:not(.win) {
+  border-radius: var(--r-md);
+}
+
+input,
+select {
   padding: 3px 6px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--r-md);
   background: var(--surface-2);
   color: inherit;
   font: inherit;

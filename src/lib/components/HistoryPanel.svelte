@@ -210,6 +210,7 @@
   .badge {
     flex: 0 0 auto;
     width: 12px;
+    border-radius: var(--r-pill);
     font-size: 10px;
     font-weight: 600;
   }

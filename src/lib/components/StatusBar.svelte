@@ -73,7 +73,7 @@
   }
   .badge {
     padding: 0 6px;
-    border-radius: 8px;
+    border-radius: var(--r-pill);
     background: var(--surface-1);
     color: var(--ok);
   }

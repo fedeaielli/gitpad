@@ -131,7 +131,7 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    padding: 4px 0;
+    padding: 4px;
     background: var(--surface-1);
     border-right: 1px solid var(--border);
   }
@@ -140,8 +140,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--w-activitybar);
-    height: var(--w-activitybar);
+    width: calc(var(--w-activitybar) - 8px);
+    height: calc(var(--w-activitybar) - 8px);
+    border-radius: var(--r-lg);
     color: var(--muted);
   }
   .item:hover {

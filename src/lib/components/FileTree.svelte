@@ -357,7 +357,7 @@
     width: 100%;
     padding: 2px 8px;
     text-align: left;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
   }
   .row:hover {
     background: var(--surface-2);
@@ -408,7 +408,7 @@
   }
   .bone {
     height: 10px;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
     animation: pulse 1.2s ease-in-out infinite;
   }
@@ -429,7 +429,7 @@
     padding: 4px;
     background: var(--surface-2);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--r-md);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
   .menu button {
@@ -437,7 +437,7 @@
     width: 100%;
     padding: 5px 8px;
     text-align: left;
-    border-radius: 3px;
+    border-radius: var(--r-sm);
   }
   .menu button:hover {
     background: var(--accent);
