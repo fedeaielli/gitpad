@@ -42,7 +42,7 @@ export function registerThemeStyles(map: Record<string, { markdown: string; code
 }
 
 /// Panel surface the accent is drawn on, mirroring --surface-1 in app.css.
-function surfaceForTheme() {
+export function surfaceForTheme() {
   const theme = document.documentElement.dataset.theme
   if (theme === 'vs') return '#f3f3f3'
   if (theme === 'hc-black') return '#0a0a0a'
