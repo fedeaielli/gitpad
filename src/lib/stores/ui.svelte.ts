@@ -37,6 +37,8 @@ export const ui = $state({
   /// Height of the per-file history panel in px.
   timelineHeight: 200,
   commandPaletteOpen: false,
+  /// Set by a global shortcut so the palette opens straight in its prompt.
+  palettePrompt: null as 'file' | 'folder' | null,
   settingsOpen: false,
   fileTree: [] as FileNode[],
   /** Bumped after clone/rename so the tree reloads without prop drilling. */
