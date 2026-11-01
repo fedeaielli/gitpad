@@ -380,7 +380,7 @@
     gap: 10px;
     padding: 4px 8px;
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .extensions .ext {
     width: 120px;
@@ -414,7 +414,7 @@
     padding: 4px 14px;
     border: 1px solid var(--border);
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .add button:hover {
     border-color: var(--accent);

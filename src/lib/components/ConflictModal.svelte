@@ -233,7 +233,7 @@
     white-space: nowrap;
   }
   .file:hover {
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .file.active {
     background: var(--accent);
@@ -268,7 +268,7 @@
     padding: 4px 10px;
     border: 1px solid var(--border);
     border-radius: 3px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .actions button:hover:not(:disabled) {
     border-color: var(--accent);

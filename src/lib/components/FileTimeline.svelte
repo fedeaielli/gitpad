@@ -221,7 +221,7 @@
     flex-direction: column;
     min-height: 0;
     border-top: 1px solid var(--border);
-    background: var(--bg-panel);
+    background: var(--surface-1);
   }
   .resize {
     position: absolute;
@@ -263,10 +263,10 @@
     text-align: left;
   }
   .commit:hover {
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .commit.active {
-    background: var(--bg-raised);
+    background: var(--surface-2);
     box-shadow: inset 2px 0 0 var(--accent);
   }
   code {

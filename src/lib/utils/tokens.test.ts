@@ -119,9 +119,9 @@ describe('token set', () => {
     for (const token of COLOUR_TOKENS) expect(vars[token], token).toBeDefined()
   })
 
-  it('keeps the legacy aliases working', () => {
-    expect(resolve(ROOT, '--bg')).toBe(ROOT['--surface-0'])
-    expect(resolve(ROOT, '--bg-panel')).toBe(ROOT['--surface-1'])
-    expect(resolve(ROOT, '--bg-raised')).toBe(ROOT['--surface-2'])
+  it('no longer defines the legacy aliases', () => {
+    for (const alias of ['--bg', '--bg-panel', '--bg-raised']) {
+      expect(ROOT[alias], alias).toBeUndefined()
+    }
   })
 })

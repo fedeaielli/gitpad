@@ -58,7 +58,7 @@
     align-items: center;
     gap: 14px;
     padding: 0 10px;
-    background: var(--bg-raised);
+    background: var(--surface-2);
     border-top: 1px solid var(--border);
     color: var(--muted);
     font-size: 11px;
@@ -74,7 +74,7 @@
   .badge {
     padding: 0 6px;
     border-radius: 8px;
-    background: var(--bg-panel);
+    background: var(--surface-1);
     color: var(--ok);
   }
   .badge.queued,

@@ -164,7 +164,7 @@
     padding: 0;
   }
   .commit.open {
-    background: var(--bg-raised);
+    background: var(--surface-2);
   }
   .row {
     display: flex;
@@ -214,7 +214,7 @@
     font-weight: 600;
   }
   .badge.M {
-    color: var(--accent);
+    color: var(--accent-fg);
   }
   .badge.A {
     color: var(--ok);
