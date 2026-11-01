@@ -46,6 +46,7 @@
     },
   }
 
+  // One Monaco theme per app theme: surface and text colours mirror app.css.
   monaco.editor.defineTheme('gitpad-dark', {
     base: 'vs-dark',
     inherit: true,
@@ -55,9 +56,34 @@
       'editor.foreground': '#d4d4d4',
       'editorLineNumber.foreground': '#6e6e6e',
       'editorLineNumber.activeForeground': '#d4d4d4',
-      'editor.selectionBackground': '#2f6fa866',
+      'editor.selectionBackground': '#264f78',
+      'editor.lineHighlightBackground': '#252526',
       'editorCursor.foreground': '#d4d4d4',
       'editorIndentGuide.background1': '#3c3c3c',
+    },
+  })
+
+  monaco.editor.defineTheme('gitpad-light', {
+    base: 'vs',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#ffffff',
+      'editor.foreground': '#1f1f1f',
+      'editor.selectionBackground': '#d6e6f7',
+      'editor.lineHighlightBackground': '#f3f3f3',
+    },
+  })
+
+  monaco.editor.defineTheme('gitpad-hc', {
+    base: 'hc-black',
+    inherit: true,
+    rules: [],
+    colors: {
+      'editor.background': '#000000',
+      'editor.foreground': '#ffffff',
+      'editor.selectionBackground': '#264f78',
+      'editor.lineHighlightBackground': '#0a0a0a',
     },
   })
 
