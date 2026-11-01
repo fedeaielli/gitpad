@@ -28,7 +28,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 ## Features
 
 - **Monaco editor** with syntax highlighting for the languages Monaco supports, tabs, find/replace, and a dark default theme.
-- **Automatic save and sync.** Edits are written after a short debounce (2 s by default), committed locally, and pushed after you stop typing (30 s by default), on window blur, or on close.
+- **Automatic save and sync.** Edits are written after a short debounce (2 s by default), committed locally, and pushed after you stop typing (30 s by default), on window blur, or on close. `Ctrl+S` does both immediately.
 - **GitHub integration.** Connect with a personal access token, create a private `gitpad_notes` repository by default or clone an existing one, pull at startup, and push from the Git panel.
 - **Conflict resolution.** When a pull conflicts, GitPad opens a diff dialog with local and remote versions. Accept one side, edit manually, then confirm the merge.
 - **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and editor/preview scroll sync.
@@ -117,13 +117,16 @@ GitPad never force-pushes and never rebases. Pulls fast-forward when possible, o
 
 | Action | Shortcut |
 |---|---|
+| Save every open file now, then push | `Ctrl+S` |
 | Command palette | `Ctrl+P` |
 | Cycle Markdown preview: off → split → full | `Ctrl+Shift+P` |
 | Move selection in the palette | `Up` / `Down` |
 | Open, run, or submit | `Enter` |
 | Close the palette | `Esc` |
 
-There is no save shortcut: saving is automatic.
+Saving is automatic (2 s debounce) and pushing is automatic too (30 s idle,
+window blur, or close). `Ctrl+S` only skips those two waits; it does not disable
+autosave.
 
 Mouse and UI actions:
 
