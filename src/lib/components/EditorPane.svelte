@@ -530,7 +530,7 @@
   .preview {
     flex: 1;
     min-width: 0;
-    border-left: 1px solid var(--border);
+    box-shadow: inset 1px 0 0 var(--border);
   }
   .empty {
     position: absolute;
