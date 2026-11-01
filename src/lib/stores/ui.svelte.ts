@@ -39,6 +39,8 @@ export const ui = $state({
   commandPaletteOpen: false,
   /// Set by a global shortcut so the palette opens straight in its prompt.
   palettePrompt: null as 'file' | 'folder' | null,
+  /// Set by a global shortcut so the palette opens with this text typed.
+  paletteQuery: null as string | null,
   settingsOpen: false,
   fileTree: [] as FileNode[],
   /** Bumped after clone/rename so the tree reloads without prop drilling. */
