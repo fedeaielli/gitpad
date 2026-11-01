@@ -3,11 +3,11 @@
 :root {
   color-scheme: dark;
 
-  /* Surfaces, from the editor outwards. Dark Modern: the chrome sits darker
-     than the editor. */
+  /* Surfaces, from the editor outwards. Dark Modern: the sidebar and title bar
+     sit lighter than the editor, the tab bar and depressed areas darker. */
   --surface-0: #1f1f1f;
-  --surface-1: #181818;
-  --surface-2: #252526;
+  --surface-1: #252526;
+  --surface-2: #181818;
   --surface-3: #2d2d30;
 
   --text: #cccccc;
@@ -41,9 +41,9 @@
   --sp-4: 16px;
   --sp-6: 24px;
 
-  --r-sm: 3px;
-  --r-md: 4px;
-  --r-lg: 6px;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
   --r-pill: 10px;
 
   --fs-xs: 11px;
