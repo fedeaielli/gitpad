@@ -17,6 +17,8 @@ pub struct Config {
     pub push_idle_ms: u32,
     pub keybindings: String,
     pub extensions: BTreeMap<String, String>,
+    /// Hex accent override; empty means "use the theme's own accent".
+    pub accent: String,
 }
 
 impl Default for Config {
@@ -48,6 +50,7 @@ impl Default for Config {
             push_idle_ms: 30_000,
             keybindings: "vscode".into(),
             extensions,
+            accent: String::new(),
         }
     }
 }
@@ -124,6 +127,7 @@ mod tests {
             push_idle_ms: 60_000,
             keybindings: "vim".into(),
             extensions: [("md".to_string(), "markdown".to_string())].into(),
+            accent: "#10b981".into(),
         };
         write_config(&path, &config).unwrap();
         assert!(!dir.join("config.json.tmp").exists());
@@ -136,6 +140,7 @@ mod tests {
         assert!(!loaded.auto_sync);
         assert_eq!(loaded.keybindings, "vim");
         assert_eq!(loaded.extensions.len(), 1);
+        assert_eq!(loaded.accent, "#10b981");
         std::fs::write(&path, "not json").unwrap();
         assert_eq!(read_config(&path).theme, "gitpad-dark");
         let _ = std::fs::remove_dir_all(&dir);

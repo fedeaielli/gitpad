@@ -51,6 +51,7 @@ export const ui = $state({
   expanded: [] as string[],
   conflictsHidden: false,
   editorTheme: 'gitpad-dark',
+  accent: '',
   fontSize: 13,
   fontFamily: 'ui-monospace, monospace',
   sidebarWidth: 240,

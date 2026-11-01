@@ -1,3 +1,5 @@
+import { accentTokens } from './color'
+
 /// App theme id → Monaco theme id. Each app theme has its own Monaco theme so
 /// the editor surface matches the surrounding chrome.
 const MONACO: Record<string, string> = {
@@ -37,4 +39,29 @@ export function registerThemeStyles(map: Record<string, { markdown: string; code
   Object.assign(STYLES, map)
   // The lazy preview chunk registers after the first applyTheme call.
   applyTheme(document.documentElement.dataset.theme ?? 'gitpad-dark')
+}
+
+/// Panel surface the accent is drawn on, mirroring --surface-1 in app.css.
+function surfaceForTheme() {
+  const theme = document.documentElement.dataset.theme
+  if (theme === 'vs') return '#f3f3f3'
+  if (theme === 'hc-black') return '#0a0a0a'
+  return '#252526'
+}
+
+/// An empty accent drops the overrides and falls back to the theme's own.
+export function applyAccent(accent: string) {
+  const root = document.documentElement.style
+  if (!accent) {
+    root.removeProperty('--accent')
+    root.removeProperty('--accent-fg')
+    root.removeProperty('--on-accent')
+    return
+  }
+  const light = document.documentElement.dataset.theme === 'vs'
+  const tokens = accentTokens(accent, surfaceForTheme(), light)
+  if (!tokens) return
+  root.setProperty('--accent', accent)
+  root.setProperty('--accent-fg', tokens.fg)
+  root.setProperty('--on-accent', tokens.on)
 }

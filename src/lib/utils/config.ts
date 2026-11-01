@@ -12,6 +12,7 @@ export interface Config {
   pushIdleMs: number
   keybindings: string
   extensions: Record<string, string>
+  accent: string
 }
 
 export const loadConfig = () => invoke<Config>('config_get')
