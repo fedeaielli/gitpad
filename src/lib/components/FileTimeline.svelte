@@ -220,7 +220,7 @@
     flex: 0 0 auto;
     flex-direction: column;
     min-height: 0;
-    border-top: 1px solid var(--border);
+    border-radius: var(--r-lg);
     background: var(--surface-1);
   }
   .resize {
