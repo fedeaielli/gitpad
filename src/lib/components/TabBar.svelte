@@ -54,7 +54,7 @@
     display: flex;
     align-items: stretch;
     box-sizing: border-box;
-    flex: 0 0 35px;
+    flex: 0 0 var(--h-tabbar);
     overflow: hidden;
     background: var(--bg-panel);
     border-bottom: 1px solid var(--border);
@@ -70,7 +70,7 @@
     display: flex;
     align-items: center;
     flex: 0 0 auto;
-    max-width: 240px;
+    max-width: 200px;
     border-right: 1px solid var(--border);
   }
   .tab.active {

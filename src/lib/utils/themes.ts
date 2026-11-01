@@ -1,9 +1,10 @@
-/// App theme id → Monaco theme id. Custom dark theme covers both dark presets.
+/// App theme id → Monaco theme id. Each app theme has its own Monaco theme so
+/// the editor surface matches the surrounding chrome.
 const MONACO: Record<string, string> = {
   'gitpad-dark': 'gitpad-dark',
   'vs-dark': 'gitpad-dark',
-  vs: 'vs',
-  'hc-black': 'hc-black',
+  vs: 'gitpad-light',
+  'hc-black': 'gitpad-hc',
 }
 
 export function monacoTheme(theme: string) {
