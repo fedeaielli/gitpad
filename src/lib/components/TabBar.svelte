@@ -57,9 +57,10 @@
     flex: 0 0 var(--h-tabbar);
     overflow: hidden;
     margin-top: var(--sp-1);
+    margin-right: var(--sp-1);
     padding: 4px 4px 0;
     border-radius: var(--r-lg) var(--r-lg) 0 0;
-    background: var(--surface-2);
+    background: var(--surface-1);
   }
   .tabs {
     display: flex;
