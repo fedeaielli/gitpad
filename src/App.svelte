@@ -59,6 +59,7 @@
       fontSize: ui.fontSize,
       fontFamily: ui.fontFamily,
       sidebarWidth: ui.sidebarWidth,
+      sidebarOpen: ui.sidebarOpen,
       autoSync: ui.autoSync,
       saveDebounceMs: ui.saveDebounceMs,
       pushIdleMs: ui.pushIdleMs,
@@ -231,6 +232,7 @@
         if (Number.isFinite(config.fontSize)) ui.fontSize = clamp(config.fontSize, 8, 32)
         if (config.fontFamily) ui.fontFamily = config.fontFamily
         if (Number.isFinite(config.sidebarWidth)) ui.sidebarWidth = clamp(config.sidebarWidth, 150, 500)
+        if (typeof config.sidebarOpen === 'boolean') ui.sidebarOpen = config.sidebarOpen
         ui.autoSync = config.autoSync
         ui.accent =
           typeof config.accent === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(config.accent)
