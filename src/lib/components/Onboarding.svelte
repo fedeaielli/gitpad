@@ -194,9 +194,10 @@
     width: 380px;
     max-width: calc(100vw - 32px);
     padding: 20px;
-    background: var(--bg-panel);
+    background: var(--surface-3);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-2);
   }
   h1 {
     margin: 0;
