@@ -257,7 +257,7 @@
     letter-spacing: 0.1em;
   }
   a {
-    color: var(--accent);
+    color: var(--accent-fg);
     font-size: 12px;
   }
   button {
