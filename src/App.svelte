@@ -144,6 +144,17 @@
       return
     }
     if (ui.settingsOpen) return
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'n') {
+      // Vim and Emacs own Ctrl+N (completion / next line) while the editor has
+      // focus; everywhere else it opens the "New file" prompt.
+      const inEditor = !!document.activeElement?.closest('.monaco-editor')
+      if (ui.keybindings !== 'vscode' && inEditor) return
+      e.preventDefault()
+      if (e.repeat) return
+      ui.palettePrompt = 'file'
+      ui.commandPaletteOpen = true
+      return
+    }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
       e.preventDefault()
       ui.commandPaletteOpen = true

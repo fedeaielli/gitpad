@@ -7,6 +7,7 @@
   import { debounce } from '../utils/debounce'
   import { gitStatus, syncNow } from '../stores/git.svelte'
   import { saveAndSync } from '../utils/save-and-sync'
+  import { newFileError } from '../utils/new-file'
   import { revealLine } from '../editor/bridge'
 
   interface SearchResult {
@@ -33,14 +34,21 @@
   let listEl: HTMLDivElement
   let inputEl: HTMLInputElement
 
-  onMount(() => inputEl?.focus())
+  onMount(() => {
+    inputEl?.focus()
+    // A global shortcut asked for the prompt: consume it once.
+    if (ui.palettePrompt) {
+      prompt = ui.palettePrompt
+      ui.palettePrompt = null
+    }
+  })
 
   const commands = $derived([
     { id: 'save-sync', label: 'Save and sync', hint: 'Ctrl+S' },
     { id: 'sync', label: 'Sync' },
     { id: 'preview', label: 'Toggle markdown preview', hint: 'Ctrl+Shift+P' },
     { id: 'theme', label: `Theme: cycle (${ui.editorTheme})` },
-    { id: 'new-file', label: 'New file' },
+    { id: 'new-file', label: 'New file', hint: 'Ctrl+N' },
     { id: 'new-folder', label: 'New folder' },
     { id: 'search', label: 'Search in files' },
     { id: 'settings', label: 'Open settings' },
@@ -56,6 +64,25 @@
   }
 
   const filePaths = $derived(flatten(ui.fileTree))
+
+  /// Ctrl+N must not overwrite a folder either, so collect files and dirs.
+  function allPaths(nodes: FileNode[]): string[] {
+    const out: string[] = []
+    for (const node of nodes) {
+      out.push(node.path)
+      if (node.type === 'dir') out.push(...allPaths(node.children ?? []))
+    }
+    return out
+  }
+
+  const existingPaths = $derived(allPaths(ui.fileTree))
+
+  const extensionHint = $derived(
+    Object.keys(ui.extensions)
+      .slice(0, 6)
+      .map((ext) => `.${ext}`)
+      .join(' '),
+  )
 
   const commandMode = $derived(prompt === null && !searching && text.startsWith('>'))
   const needle = $derived((commandMode ? text.slice(1) : text).trim().toLowerCase())
@@ -157,6 +184,11 @@
     busy = true
     try {
       if (prompt === 'file') {
+        const invalid = newFileError(name, existingPaths)
+        if (invalid) {
+          error = invalid
+          return
+        }
         await invoke('fs_write_file', { path: name, content: '' })
         ui.treeVersion += 1
         await openPath(name)
@@ -253,7 +285,11 @@
     <div class="list" bind:this={listEl}>
       {#if prompt}
         <p class="hint">
-          {text.trim() ? `Enter to create ${text.trim()}` : 'Type a path, e.g. notes/today.md'}
+          {text.trim()
+            ? `Enter to create ${text.trim()}`
+            : prompt === 'file'
+              ? `Type a name with extension, e.g. notes.md — ${extensionHint}`
+              : 'Type a path, e.g. notes/today'}
         </p>
       {:else if items.length === 0}
         <p class="hint">
