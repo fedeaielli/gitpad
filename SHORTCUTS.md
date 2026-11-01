@@ -9,11 +9,16 @@ open file now and pushes immediately. Autosave keeps running as before.
 | Shortcut | Action |
 |---|---|
 | `Ctrl+S` | Save every open file now, then push |
+| `Ctrl+N` | New file: type a name like `notes.md` |
 | `Ctrl+P` | Open the command palette (files, `>` commands, `>search`) |
 | `Ctrl+Shift+P` | Cycle the markdown preview: off → split → full (markdown tabs only) |
 | `↑` / `↓` | Move the palette selection |
 | `Enter` | Open the selected file, run the selected command, or submit a prompt |
 | `Esc` | Close the palette |
+
+In Vim or Emacs keybindings, `Ctrl+N` stays with the editor while it has focus
+(completion in Vim, next line in Emacs). Use `>` → `New file` from the palette
+there, or press `Ctrl+N` with the focus outside the editor.
 
 ## Mouse
 
