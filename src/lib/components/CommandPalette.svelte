@@ -6,6 +6,7 @@
   import { languageFor } from '../utils/langmap'
   import { debounce } from '../utils/debounce'
   import { gitStatus, syncNow } from '../stores/git.svelte'
+  import { saveAndSync } from '../utils/save-and-sync'
   import { revealLine } from '../editor/bridge'
 
   interface SearchResult {
@@ -35,6 +36,7 @@
   onMount(() => inputEl?.focus())
 
   const commands = $derived([
+    { id: 'save-sync', label: 'Save and sync', hint: 'Ctrl+S' },
     { id: 'sync', label: 'Sync' },
     { id: 'preview', label: 'Toggle markdown preview', hint: 'Ctrl+Shift+P' },
     { id: 'theme', label: `Theme: cycle (${ui.editorTheme})` },
@@ -121,6 +123,11 @@
   }
 
   async function run(id: string) {
+    if (id === 'save-sync') {
+      close()
+      void saveAndSync()
+      return
+    }
     if (id === 'sync') return void sync()
     if (id === 'preview') {
       cyclePreview()

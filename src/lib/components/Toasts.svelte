@@ -35,4 +35,7 @@
     border-color: var(--err);
     color: var(--err);
   }
+  .toast.success {
+    border-color: var(--accent);
+  }
 </style>
