@@ -496,15 +496,19 @@
     display: flex;
     flex-direction: column;
     flex: 1;
+    gap: var(--sp-1);
     min-height: 0;
     overflow: hidden;
     border-radius: 0 0 var(--r-lg) var(--r-lg);
-    background: var(--surface-0);
+    background: var(--surface-base);
   }
   .content {
     display: flex;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+    background: var(--surface-0);
   }
   .editor-wrap {
     position: relative;
