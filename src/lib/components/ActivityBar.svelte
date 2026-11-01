@@ -41,10 +41,13 @@
 
 <nav class="rail" aria-label="Primary">
   <button
+    type="button"
     class="item"
-    class:active={ui.activeView === 'files' && ui.sidebarOpen}
+    class:active={ui.activeView === 'files'}
+    class:open={ui.sidebarOpen}
     title="Explorer"
     aria-label="Explorer"
+    aria-pressed={ui.activeView === 'files' && ui.sidebarOpen}
     onclick={() => select('files')}
   >
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -52,10 +55,13 @@
     </svg>
   </button>
   <button
+    type="button"
     class="item"
-    class:active={ui.activeView === 'git' && ui.sidebarOpen}
+    class:active={ui.activeView === 'git'}
+    class:open={ui.sidebarOpen}
     title="Source control"
     aria-label="Source control"
+    aria-pressed={ui.activeView === 'git' && ui.sidebarOpen}
     onclick={() => select('git')}
   >
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -69,10 +75,13 @@
     {/if}
   </button>
   <button
+    type="button"
     class="item"
-    class:active={ui.activeView === 'history' && ui.sidebarOpen}
+    class:active={ui.activeView === 'history'}
+    class:open={ui.sidebarOpen}
     title="History"
     aria-label="History"
+    aria-pressed={ui.activeView === 'history' && ui.sidebarOpen}
     onclick={() => select('history')}
   >
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -84,6 +93,7 @@
   <div class="spacer"></div>
 
   <button
+    type="button"
     class="item avatar"
     title={user ? `Account: ${user.login}` : 'Account'}
     aria-label="Account"
@@ -99,6 +109,7 @@
     {/if}
   </button>
   <button
+    type="button"
     class="item settings"
     title="Settings"
     aria-label="Settings"
@@ -135,6 +146,11 @@
   .item:hover {
     color: var(--text);
   }
+  .item:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: -2px;
+  }
+  /* The view stays selected when the panel is closed; only the bar fades. */
   .item.active {
     color: var(--text);
   }
@@ -147,6 +163,10 @@
     border-radius: 0 2px 2px 0;
     background: var(--accent);
     content: '';
+  }
+  .item.active:not(.open)::before {
+    background: var(--muted);
+    opacity: 0.4;
   }
   .item svg {
     width: 20px;
