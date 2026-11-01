@@ -39,7 +39,7 @@ pub(crate) mod test_util {
 
 use nix::sys::signal::{pthread_sigmask, SigSet, SigmaskHow, Signal};
 use reqwest::Client;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Duration;
 use tauri::{Emitter, Manager};
 
@@ -57,9 +57,19 @@ pub struct AppState {
 }
 
 static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
+/// Bumped on every `CloseRequested`: a watchdog may only close the request it
+/// was started for, not a later one.
+static CLOSE_GEN: AtomicU64 = AtomicU64::new(0);
 /// Set by the frontend as soon as it handles `app-closing`; the watchdog below
 /// only fires when the webview is dead and never acknowledges.
 static CLOSE_ACK: AtomicBool = AtomicBool::new(false);
+
+/// A watchdog forces the exit only for its own, still-unacknowledged close.
+/// A late ack from a previous close is theoretically possible, but it would
+/// have to arrive after an entire close-and-reopen cycle: accepted.
+fn watchdog_should_exit(captured: u64, current: u64, acked: bool) -> bool {
+    captured == current && !acked
+}
 
 /// How long a closing path waits for the worktree gate before skipping the
 /// final commit and push. One second leaves room for the commit and push
@@ -210,6 +220,7 @@ pub fn run() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                let generation = CLOSE_GEN.fetch_add(1, Ordering::SeqCst) + 1;
                 CLOSE_ACK.store(false, Ordering::SeqCst);
                 let _ = window.emit("app-closing", ());
                 // Force-close only if the webview never answers (crash/hang). The
@@ -218,7 +229,11 @@ pub fn run() {
                 let app = window.app_handle().clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(Duration::from_secs(5));
-                    if !CLOSE_ACK.load(Ordering::SeqCst) {
+                    if watchdog_should_exit(
+                        generation,
+                        CLOSE_GEN.load(Ordering::SeqCst),
+                        CLOSE_ACK.load(Ordering::SeqCst),
+                    ) {
                         app.exit(0);
                     }
                 });
@@ -229,5 +244,25 @@ pub fn run() {
     if let Err(err) = result {
         eprintln!("gitpad: {err}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::watchdog_should_exit;
+
+    #[test]
+    fn watchdog_exits_for_its_own_unacked_close() {
+        assert!(watchdog_should_exit(7, 7, false));
+    }
+
+    #[test]
+    fn watchdog_stands_down_once_acked() {
+        assert!(!watchdog_should_exit(7, 7, true));
+    }
+
+    #[test]
+    fn watchdog_ignores_a_later_close_request() {
+        assert!(!watchdog_should_exit(7, 8, false));
     }
 }
