@@ -131,9 +131,10 @@
     flex-direction: column;
     align-items: center;
     gap: 2px;
+    margin: var(--sp-1);
     padding: 4px;
+    border-radius: var(--r-lg);
     background: var(--surface-1);
-    border-right: 1px solid var(--border);
   }
   .item {
     position: relative;

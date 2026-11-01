@@ -298,6 +298,7 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
+    background: var(--surface-base);
   }
   .app {
     display: flex;

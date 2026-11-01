@@ -68,8 +68,7 @@
     align-items: center;
     gap: 10px;
     padding-left: 10px;
-    background: var(--surface-1);
-    box-shadow: inset 0 -1px 0 var(--border);
+    background: var(--surface-base);
     user-select: none;
   }
   /* Centred on the window, not on the space left by the title and controls. */
