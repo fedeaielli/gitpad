@@ -29,6 +29,7 @@
   import { monacoTheme } from '../utils/themes'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { debounce } from '../utils/debounce'
+  import { withTimeout } from '../utils/timeout'
   import { saveDecision } from '../utils/save-guard'
   import { initVimMode } from 'monaco-vim'
   import { EmacsExtension } from 'monaco-emacs'
@@ -74,7 +75,8 @@
   const viewStates = new Map<string, monaco.editor.ICodeEditorViewState | null>()
 
   const persist = debounce(() => void savePending(), () => ui.saveDebounceMs)
-  /// Close path: past this wait, report instead of risking a duplicate write.
+  /// Close path: one budget for the whole flush (waiting on in-flight writes
+  /// included). Past this wait, report and let the user decide.
   const FLUSH_WAIT_MS = 4000
   let pushTimer: ReturnType<typeof setTimeout> | undefined
   let keymap: { dispose(): void } | undefined
@@ -141,23 +143,22 @@
 
   /// Exit path: no debounce left, so write every tab that is still dirty.
   async function flushAll(): Promise<boolean> {
+    try {
+      return await withTimeout(flushBody(), FLUSH_WAIT_MS, 'flush')
+    } catch {
+      // The body is not cancelled: it keeps waiting for the write in flight and
+      // only then writes the rest, so nothing races. If the user cancels, the
+      // `finally` handlers still clear `inFlight` and no `closing` flag is left set.
+      saveError = 'a save is still in progress — close anyway?'
+      return false
+    }
+  }
+
+  async function flushBody(): Promise<boolean> {
     persist.cancel()
     // A save started by the debounce may still be writing: wait for it so the
     // loop below sees the flag it sets instead of writing the same file twice.
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const timedOut = await Promise.race([
-      Promise.allSettled([...inFlight.values()]).then(() => false),
-      new Promise<boolean>((resolve) => {
-        timer = setTimeout(() => resolve(true), FLUSH_WAIT_MS)
-      }),
-    ])
-    clearTimeout(timer)
-    if (timedOut) {
-      // The first write is still running: a second one on the same path would
-      // race it, so let the caller ask the user instead.
-      saveError = 'a save is still in progress — try again in a moment'
-      return false
-    }
+    await Promise.allSettled([...inFlight.values()])
     const attempted = pendingId
     let ok = await savePending()
     for (const tab of tabs.tabs) {
