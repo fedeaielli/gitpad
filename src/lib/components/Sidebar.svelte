@@ -85,8 +85,9 @@
     flex: 0 0 260px;
     flex-direction: column;
     min-height: 0;
+    margin: var(--sp-1) 0;
+    border-radius: var(--r-lg);
     background: var(--surface-1);
-    box-shadow: inset -1px 0 0 var(--border);
   }
   .resize {
     position: absolute;
@@ -107,11 +108,10 @@
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 8px;
-    /* Same height as the tab bar so both bottom borders line up. */
+    /* Same height as the tab bar so the two headers line up. */
     box-sizing: border-box;
     min-height: var(--h-tabbar);
     padding: 2px 8px;
-    border-bottom: 1px solid var(--border);
     color: var(--muted);
     font-size: 11px;
     letter-spacing: 0.06em;

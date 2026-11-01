@@ -497,6 +497,10 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
+    margin-bottom: var(--sp-1);
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+    background: var(--surface-0);
   }
   .content {
     display: flex;

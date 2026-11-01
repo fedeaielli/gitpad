@@ -9,6 +9,8 @@
   --surface-1: #252526;
   --surface-2: #181818;
   --surface-3: #2d2d30;
+  /* The window floor: shows through the gaps between the floating panels. */
+  --surface-base: #141414;
 
   --text: #cccccc;
   --muted: #8e8e8e;
@@ -68,6 +70,7 @@
   --surface-1: #f3f3f3;
   --surface-2: #e7e7e7;
   --surface-3: #ffffff;
+  --surface-base: #f0f0f0;
 
   --text: #1f1f1f;
   --muted: #616161;
@@ -95,6 +98,7 @@
   --surface-1: #0a0a0a;
   --surface-2: #1a1a1a;
   --surface-3: #0a0a0a;
+  --surface-base: #000000;
 
   --text: #ffffff;
   --muted: #d4d4d4;
