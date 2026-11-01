@@ -45,18 +45,6 @@
     onpointerup={endResize}
     onpointercancel={endResize}
   ></div>
-  <button
-    class="search"
-    title="Search files (Ctrl+P)"
-    onclick={() => (ui.commandPaletteOpen = true)}
-  >
-    <svg viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="7" cy="7" r="4.2" />
-      <path d="M10.2 10.2 13.5 13.5" />
-    </svg>
-    <span>Search files</span>
-    <kbd>Ctrl+P</kbd>
-  </button>
   <div class="head">
     <span>
       {ui.activeView === 'files'
@@ -112,40 +100,6 @@
   .resize:hover,
   .resize.active {
     background: var(--accent);
-  }
-  .search {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin: 6px 8px 2px;
-    padding: 3px 6px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: var(--bg-raised);
-    color: var(--muted);
-    font-size: 12px;
-    text-align: left;
-  }
-  .search:hover {
-    border-color: var(--accent);
-    color: var(--text);
-  }
-  .search svg {
-    width: 12px;
-    height: 12px;
-    flex: 0 0 auto;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.4;
-    stroke-linecap: round;
-  }
-  .search span {
-    flex: 1;
-  }
-  .search kbd {
-    font: inherit;
-    font-size: 10px;
-    opacity: 0.7;
   }
   .head {
     display: flex;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { getCurrentWindow } from '@tauri-apps/api/window'
+  import { ui } from '../stores/ui.svelte'
 
   const appWindow = getCurrentWindow()
   let maximized = $state(false)
@@ -18,6 +19,20 @@
   <span class="title" data-tauri-drag-region ondblclick={() => void appWindow.toggleMaximize()}>
     GitPad
   </span>
+  <button
+    type="button"
+    class="search"
+    aria-label="Search files"
+    title="Search files (Ctrl+P)"
+    onclick={() => (ui.commandPaletteOpen = true)}
+  >
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <circle cx="7" cy="7" r="4.2" />
+      <path d="M10.2 10.2 13.5 13.5" />
+    </svg>
+    <span class="label">Search files</span>
+    <kbd>Ctrl+P</kbd>
+  </button>
   <div class="spacer" data-tauri-drag-region></div>
   <div class="controls">
     <button class="win" aria-label="Minimize" title="Minimize" onclick={() => void appWindow.minimize()}>
@@ -46,6 +61,7 @@
 
 <style>
   .titlebar {
+    position: relative;
     display: flex;
     flex: 0 0 32px;
     align-items: center;
@@ -54,6 +70,68 @@
     border-bottom: 1px solid var(--border);
     background: var(--bg-panel);
     user-select: none;
+  }
+  /* Centred on the window, not on the space left by the title and controls. */
+  .search {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 40%;
+    min-width: 200px;
+    max-width: 480px;
+    height: 22px;
+    padding: 0 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg-raised);
+    color: var(--muted);
+    font-size: 12px;
+    text-align: left;
+  }
+  .search:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .search:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .search svg {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+  }
+  .search .label {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .search kbd {
+    font: inherit;
+    font-size: 10px;
+    opacity: 0.7;
+  }
+  /* Narrow windows: icon only, so it cannot collide with the title or controls. */
+  @media (max-width: 560px) {
+    .search {
+      width: 24px;
+      min-width: 0;
+      justify-content: center;
+      padding: 0;
+    }
+    .search .label,
+    .search kbd {
+      display: none;
+    }
   }
   .title {
     color: var(--muted);
