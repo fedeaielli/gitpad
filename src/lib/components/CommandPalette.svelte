@@ -361,8 +361,8 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    /* Anchored under the 32px title bar, like the VS Code quick pick. */
-    padding: 40px 16px 0;
+    /* Anchored under the title bar, like the VS Code quick pick. */
+    padding: calc(var(--h-titlebar) + var(--sp-2)) 16px 0;
   }
   .backdrop {
     position: absolute;

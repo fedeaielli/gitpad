@@ -54,7 +54,7 @@
 <style>
   .statusbar {
     display: flex;
-    flex: 0 0 24px;
+    flex: 0 0 var(--h-statusbar);
     align-items: center;
     gap: 14px;
     padding: 0 10px;

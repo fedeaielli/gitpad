@@ -64,7 +64,7 @@
   .titlebar {
     position: relative;
     display: flex;
-    flex: 0 0 32px;
+    flex: 0 0 var(--h-titlebar);
     align-items: center;
     gap: 10px;
     padding-left: 10px;
