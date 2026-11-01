@@ -61,14 +61,20 @@ static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
 /// only fires when the webview is dead and never acknowledges.
 static CLOSE_ACK: AtomicBool = AtomicBool::new(false);
 
+/// How long a closing path waits for the worktree gate before skipping the
+/// final commit and push. One second leaves room for the commit and push
+/// inside the 3 s (shutdown) and 5 s (terminate) caps.
+const GATE_WAIT: Duration = Duration::from_millis(1000);
+
 /// Push the last local commits (short timeout, offline is fine) and exit.
 async fn shutdown(app: tauri::AppHandle) {
     if SHUTTING_DOWN.swap(true, Ordering::SeqCst) {
         return;
     }
     if let Ok(path) = git::repo_dir(&app) {
-        // The worktree gate is deliberately not taken here: waiting for a pull
-        // could burn the whole close timeout.
+        let gate = app.state::<AppState>().repo_gate.clone();
+        // The worktree gate is taken with a deadline: if a pull or an import
+        // holds it, skip the closing commit instead of burning the timeout.
         // Push only: fetching at exit just delays closing, and a rejected push
         // (remote moved) leaves the local commit for the next sync.
         let _ = tokio::time::timeout(
@@ -76,7 +82,7 @@ async fn shutdown(app: tauri::AppHandle) {
             tokio::task::spawn_blocking(move || {
                 // Keyring reads are blocking: keep them off the async runtime.
                 let token = auth::token().ok();
-                git::push_only_blocking(&path, None, token, None)
+                git::push_only_blocking(&path, None, token, git::GateWait::Until(&gate, GATE_WAIT))
             }),
         )
         .await;
@@ -88,13 +94,19 @@ async fn shutdown(app: tauri::AppHandle) {
 /// commits pending changes first, so this is the whole shutdown path.
 fn terminate(app: tauri::AppHandle) {
     if let Ok(path) = git::repo_dir(&app) {
-        // No worktree gate either: the 5 s cap cannot wait for a pull.
+        let gate = app.state::<AppState>().repo_gate.clone();
+        // Same deadline as shutdown: a held gate means no closing commit.
         let token = auth::token().ok();
         // 5 s cap: a hanging push must not keep the process alive. No tokio
         // here: this thread is outside the async runtime.
         let (done, wait) = std::sync::mpsc::channel();
         std::thread::spawn(move || {
-            let _ = done.send(git::push_only_blocking(&path, None, token, None));
+            let _ = done.send(git::push_only_blocking(
+                &path,
+                None,
+                token,
+                git::GateWait::Until(&gate, GATE_WAIT),
+            ));
         });
         let _ = wait.recv_timeout(Duration::from_secs(5));
     }
