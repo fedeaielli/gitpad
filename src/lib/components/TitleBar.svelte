@@ -18,6 +18,7 @@
 <header class="titlebar" data-tauri-drag-region>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <span class="title" data-tauri-drag-region ondblclick={() => void appWindow.toggleMaximize()}>
+    <span class="logo" aria-hidden="true"></span>
     GitPad
   </span>
   <button
@@ -144,8 +145,19 @@
     }
   }
   .title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     color: var(--muted);
     font-size: 12px;
+  }
+  /* A mask, not an image: the mark takes the title colour in every theme. */
+  .logo {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 18px;
+    background: var(--muted);
+    mask: url('/logo.png') center / contain no-repeat;
   }
   .spacer {
     flex: 1;
