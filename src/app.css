@@ -179,6 +179,16 @@ select {
   background-color: var(--accent) !important;
 }
 
+/* The divider between the two sides of a diff hovers in the VS blue (#007fd4).
+   Keep the same neutral as our own handles, accent only while dragging. */
+.monaco-sash {
+  --vscode-sash-hoverBorder: var(--border-strong);
+}
+
+.monaco-sash.active:before {
+  background: var(--accent) !important;
+}
+
 /* Shared hover hint, moved around by use:tip. Fixed to the viewport so a
    scroll container cannot clip it. */
 .gitpad-tip {
