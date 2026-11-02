@@ -41,6 +41,15 @@ export function registerThemeStyles(map: Record<string, { markdown: string; code
   applyTheme(document.documentElement.dataset.theme ?? 'gitpad-dark')
 }
 
+/// The sentinel value of the "Default" option: it means "let each surface pick".
+export const DEFAULT_FONT = 'ui-monospace, monospace'
+
+/// The chrome follows the editor font; the Default value keeps the system stack
+/// that app.css sets on body.
+export function applyUiFont(font: string) {
+  document.body.style.fontFamily = font === DEFAULT_FONT ? '' : font
+}
+
 /// Panel surface the accent is drawn on, mirroring --surface-1 in app.css.
 export function surfaceForTheme() {
   const theme = document.documentElement.dataset.theme

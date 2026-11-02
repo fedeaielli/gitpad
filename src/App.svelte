@@ -23,7 +23,7 @@
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { tabs } from './lib/stores/tabs.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
-  import { applyTheme, applyAccent } from './lib/utils/themes'
+  import { applyTheme, applyAccent, applyUiFont } from './lib/utils/themes'
   import {
     applyGitStatus,
     gitStatus,
@@ -126,6 +126,10 @@
     applyTheme(ui.editorTheme)
     // The accent tokens depend on the theme's surface, so re-derive on both.
     applyAccent(ui.accent)
+  })
+
+  $effect(() => {
+    applyUiFont(ui.fontFamily)
   })
 
   // A resolved merge re-arms the conflict modal for the next one.
