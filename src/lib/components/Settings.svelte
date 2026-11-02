@@ -327,68 +327,98 @@
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
-    background: var(--surface-3);
-    box-shadow: var(--shadow-2);
+    background: var(--surface-2);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.6),
+      0 8px 32px rgba(0, 0, 0, 0.4);
   }
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 40px;
-    padding: 0 16px;
+    padding: var(--sp-3) var(--sp-4);
+    border-bottom: 1px solid var(--border);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: var(--surface-1);
   }
   h2 {
     margin: 0;
-    font-size: 15px;
+    color: var(--text);
+    font-size: var(--fs-lg);
     font-weight: 600;
   }
   .close {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     padding: 0;
+    border-radius: var(--r-md);
     color: var(--muted);
-    font-size: 18px;
+    font-size: var(--fs-lg);
   }
   .close:hover {
+    background: var(--surface-0);
     color: var(--text);
   }
   .tabs {
     display: flex;
     gap: 2px;
-    padding: 0 12px;
+    padding: 0 var(--sp-4);
     border-bottom: 1px solid var(--border);
+    background: var(--surface-1);
   }
   .tab {
     padding: 7px 12px;
     border-bottom: 2px solid transparent;
+    background: transparent;
     color: var(--muted);
   }
   .tab:hover {
+    background: var(--surface-2);
     color: var(--text);
+    opacity: 0.6;
   }
   .tab.active {
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    background: var(--surface-2);
     color: var(--text);
     border-bottom-color: var(--accent);
   }
   .body {
+    display: flex;
     flex: 1;
+    flex-direction: column;
+    gap: var(--sp-4);
     overflow-y: auto;
-    padding: 18px 22px;
+    padding: var(--sp-4);
   }
   .field {
-    display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
+    display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 9px 0;
-    border-bottom: 1px solid var(--border);
+    gap: var(--sp-4);
+    padding: var(--sp-2) 0;
     font-size: 13px;
   }
   .field > span:first-child {
-    color: var(--muted);
+    min-width: 120px;
+    color: var(--text);
+  }
+  .modal select,
+  .modal input[type='text'],
+  .modal input[type='number'] {
+    padding: var(--sp-1) var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-0);
+    color: var(--text);
+  }
+  .modal select:focus,
+  .modal input[type='text']:focus,
+  .modal input[type='number']:focus {
+    border-color: var(--accent-fg);
+    outline: none;
   }
   .inline {
     display: flex;
@@ -476,7 +506,7 @@
     gap: 10px;
     padding: 4px 8px;
     border-radius: var(--r-sm);
-    background: var(--surface-2);
+    background: var(--surface-0);
   }
   .extensions .ext {
     width: 120px;
@@ -510,7 +540,7 @@
     padding: 4px 14px;
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
-    background: var(--surface-2);
+    background: var(--surface-0);
   }
   .add button:hover {
     border-color: var(--accent);
