@@ -40,7 +40,7 @@
   const changed = $derived(gitStatus.modifiedFiles.length)
 </script>
 
-<nav class="rail" aria-label="Primary">
+<nav class="rail" class:separated={ui.sidebarOpen} aria-label="Primary">
   <button
     type="button"
     class="item"
@@ -135,7 +135,12 @@
     padding: 4px;
     /* Rounded by the wrapper that also holds the sidebar. */
     border-radius: 0;
+    box-sizing: border-box;
     background: var(--surface-1);
+  }
+  /* Only when the sidebar follows: alone, the rail keeps clean rounded edges. */
+  .rail.separated {
+    border-right: 1px solid var(--divider);
   }
   .item {
     position: relative;

@@ -18,6 +18,8 @@
 
   --border: #262626;
   --border-strong: #6b6b6b;
+  /* Visible against the panel surfaces, where --border is not. */
+  --divider: #333333;
 
   --accent: #0078d4;
   --on-accent: #ffffff;
@@ -78,6 +80,7 @@
 
   --border: #c8c8c8;
   --border-strong: #949494;
+  --divider: #d5d5d5;
 
   --accent: #005fb8;
   --on-accent: #ffffff;
@@ -106,6 +109,7 @@
 
   --border: #6fc3df;
   --border-strong: #6fc3df;
+  --divider: #6fc3df;
 
   --accent: #f38518;
   --on-accent: #000000;

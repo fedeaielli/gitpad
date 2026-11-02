@@ -38,7 +38,8 @@
   let startWidth = 0
 
   function startResize(e: PointerEvent) {
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    // Window listeners below keep the drag alive outside the 6px handle.
+    e.preventDefault()
     startX = e.clientX
     startWidth = ui.sidebarWidth
     resizing = true
@@ -52,7 +53,12 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window
+  onkeydown={onKeydown}
+  onpointermove={moveResize}
+  onpointerup={endResize}
+  onpointercancel={endResize}
+/>
 
 <aside class="panel" style="flex: 0 0 {ui.sidebarWidth}px">
   <div
@@ -167,6 +173,10 @@
     flex: 0 0 260px;
     flex-direction: column;
     min-height: 0;
+    /* The right padding is the resize handle's strip: it keeps the handle off
+       the 6px scrollbar that would otherwise sit underneath it. */
+    box-sizing: border-box;
+    padding-right: 6px;
     /* Rounded by the wrapper that also holds the activity bar. */
     border-radius: 0;
     background: var(--surface-1);
@@ -178,6 +188,7 @@
     width: 6px;
     height: 100%;
     cursor: col-resize;
+    touch-action: none;
     z-index: 2;
   }
   .resize:hover,
