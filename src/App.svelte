@@ -210,6 +210,11 @@
       return
     }
     if (ui.shortcutsOpen) return
+    // Escape closes the file history, but not while the palette is on top of it.
+    if (e.key === 'Escape' && ui.timelineOpen && !ui.commandPaletteOpen) {
+      ui.timelineOpen = false
+      return
+    }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'h') {
       e.preventDefault()
       if (e.repeat) return

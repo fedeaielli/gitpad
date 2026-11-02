@@ -6,9 +6,12 @@
   import { closeIfClean, discarded, openTab, tabs } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { ui } from '../stores/ui.svelte'
-  import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
+  import { applyGitStatus, errorMessage, gitStatus, type GitStatus } from '../stores/git.svelte'
+  import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { tip } from '../utils/tooltip'
+  import { isCurrentVersion } from '../utils/file-history'
+  import FileIcon from './FileIcon.svelte'
 
   interface CommitEntry {
     hash: string
@@ -26,12 +29,19 @@
 
   const active = $derived(tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null)
   const path = $derived(active?.path ?? '')
+  const name = $derived(path.split('/').pop() ?? path)
+  const dirty = $derived(!!active?.modified)
   const language = $derived(active?.language ?? 'plaintext')
+  // Any working-tree change, or a dirty buffer, means the disk matches no commit.
+  const pending = $derived(
+    dirty || gitStatus.changes.some((change) => change.path === path),
+  )
 
   let commits = $state<CommitEntry[]>([])
   let selected = $state('')
   let diff = $state<FileDiff | null>(null)
   let busy = $state(false)
+  let loading = $state(false)
   let error = $state<string | null>(null)
   let dragging = $state(false)
 
@@ -40,23 +50,33 @@
   let models: monaco.editor.ITextModel[] = []
   let startY = 0
   let startHeight = 0
-  let loadedFor = ''
+  let loadedKey = ''
+
+  // Reload on another file, on a tree refresh and whenever this file's status
+  // changes: the list goes stale after a commit, a pull or a restore elsewhere.
+  const refreshKey = $derived(
+    `${path}|${ui.treeVersion}|${pending}|${gitStatus.changes.map((c) => c.path + c.status).join(',')}`,
+  )
 
   $effect(() => {
-    const target = ui.timelineOpen ? path : ''
-    if (!target || target === loadedFor) return
-    loadedFor = target
+    const key = ui.timelineOpen ? refreshKey : ''
+    if (!key || key === loadedKey) return
+    loadedKey = key
     selected = ''
     setDiff(null, '')
-    void load(target)
+    void load()
   })
 
-  async function load(target: string) {
+  async function load() {
+    const target = path
+    if (!target) return
+    loading = true
     error = null
     commits = await invoke<CommitEntry[]>('git_file_log', { path: target }).catch((e) => {
       error = errorMessage(e)
       return []
     })
+    if (target === path) loading = false
   }
 
   function setDiff(next: FileDiff | null, hash: string) {
@@ -99,7 +119,7 @@
   async function restore(commit: CommitEntry) {
     // Snapshot: closing the tab clears the derived path.
     const target = path
-    if (tabs.tabs.find((t) => t.path === target)?.modified) {
+    if (dirty) {
       error = 'save or close the open file first'
       return
     }
@@ -110,10 +130,11 @@
       applyGitStatus(
         await invoke<GitStatus>('git_restore_file', { hash: commit.hash, path: target }),
       )
+      // Read before closing: a failure here leaves the tab exactly as it was.
+      const content = await invoke<string>('fs_read_file', { path: target })
       if (!closeIfClean(target)) return
       // Let EditorPane drop the stale model before the tab comes back.
       await tick()
-      const content = await invoke<string>('fs_read_file', { path: target })
       openTab({
         id: target,
         path: target,
@@ -122,13 +143,27 @@
         language: languageFor(target),
       })
       discarded.delete(target)
+      selected = ''
+      setDiff(null, '')
       ui.treeVersion += 1
-      await load(target)
+      pushToast(`Restored ${target} from ${commit.shortHash}`, 'success')
+      await load()
     } catch (e) {
       error = errorMessage(e)
     } finally {
       busy = false
     }
+  }
+
+  function close() {
+    ui.timelineOpen = false
+  }
+
+  function when(timestamp: number) {
+    return new Date(timestamp * 1000).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    })
   }
 
   function startResize(e: PointerEvent) {
@@ -151,11 +186,9 @@
     diffEditor = monaco.editor.createDiffEditor(host, {
       theme: monacoTheme(ui.editorTheme),
       readOnly: true,
-      renderSideBySide: false,
       automaticLayout: true,
+      renderSideBySide: true,
       minimap: { enabled: false },
-      fontSize: ui.fontSize,
-      fontFamily: ui.fontFamily,
       scrollBeyondLastLine: false,
       scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
     })
@@ -167,7 +200,7 @@
   })
 </script>
 
-<section class="timeline" style="height: {ui.timelineHeight}px">
+<section class="timeline" style="height: {ui.timelineHeight}px" aria-label="File history">
   <div
     class="resize"
     class:active={dragging}
@@ -182,27 +215,53 @@
     onpointerup={endResize}
     onpointercancel={endResize}
   ></div>
+
+  <header class="head">
+    <FileIcon name={path} size={13} />
+    <span class="name">{name}</span>
+    {#if !loading}{commits.length} commit{commits.length === 1 ? '' : 's'}{/if}
+    <button class="close" aria-label="Close file history" onclick={close}>×</button>
+  </header>
+
+  {#if error}
+    <div class="error">
+      <span>{error}</span>
+      <button onclick={() => void load()}>Retry</button>
+    </div>
+  {/if}
+
   <div class="body">
     <ul class="commits">
-      {#each commits as commit (commit.hash)}
-        <li class="row">
-          <button
-            class="commit"
-            class:active={selected === commit.hash}
-            use:tip={commit.author}
-            onclick={() => void select(commit)}
-          >
-            <code>{commit.shortHash}</code>
-            <span class="msg">{commit.message}</span>
-            <span class="meta">{new Date(commit.timestamp * 1000).toLocaleDateString()}</span>
-          </button>
-          <button class="restore" disabled={busy} onclick={() => void restore(commit)}>
-            Restore
-          </button>
-        </li>
+      {#if loading && commits.length === 0}
+        <li class="skeleton"></li>
+        <li class="skeleton"></li>
+        <li class="skeleton"></li>
       {:else}
-        <li class="empty">No commits touch this file.</li>
-      {/each}
+        {#each commits as commit, index (commit.hash)}
+          <li class="row" class:active={selected === commit.hash}>
+            <button class="commit" use:tip={commit.author} onclick={() => void select(commit)}>
+              <code>{commit.shortHash}</code>
+              <span class="msg">{commit.message}</span>
+              <span class="meta">{when(commit.timestamp)}</span>
+            </button>
+            {#if isCurrentVersion(index, path, gitStatus.changes, dirty)}
+              <span class="badge">Current</span>
+            {/if}
+            <button
+              class="restore"
+              disabled={busy || isCurrentVersion(index, path, gitStatus.changes, dirty)}
+              use:tip={isCurrentVersion(index, path, gitStatus.changes, dirty)
+                ? 'This is the current version'
+                : `Restore ${name} from ${commit.shortHash}`}
+              onclick={() => void restore(commit)}
+            >
+              Restore
+            </button>
+          </li>
+        {:else}
+          <li class="empty">No commits touch this file.</li>
+        {/each}
+      {/if}
     </ul>
     <div class="diff">
       <div class="editor" bind:this={host}></div>
@@ -211,7 +270,6 @@
       {/if}
     </div>
   </div>
-  {#if error}<p class="error">{error}</p>{/if}
 </section>
 
 <style>
@@ -237,13 +295,77 @@
   .resize.active {
     background: var(--accent);
   }
+  .head {
+    display: flex;
+    align-items: center;
+    flex: 0 0 26px;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-2);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-0);
+    color: var(--muted);
+    font-size: var(--fs-xs);
+  }
+  .name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .close {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    margin-left: auto;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1;
+  }
+  .close:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .error {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 3px var(--sp-2);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--err);
+    font-size: var(--fs-xs);
+  }
+  .error span {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .error button {
+    flex: 0 0 auto;
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text);
+    font-size: var(--fs-xs);
+  }
   .body {
     display: flex;
     flex: 1;
     min-height: 0;
   }
   .commits {
-    flex: 0 0 220px;
+    flex: 0 0 clamp(260px, 34%, 360px);
     margin: 0;
     padding: 4px 0;
     overflow: auto;
@@ -252,26 +374,25 @@
   .row {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--sp-1);
+    padding-right: 4px;
   }
   .commit {
     position: relative;
     display: flex;
     flex: 1;
-    flex-direction: column;
-    gap: 1px;
+    align-items: baseline;
+    gap: var(--sp-2);
     min-width: 0;
-    padding: 3px 8px;
+    padding: 3px var(--sp-2);
     text-align: left;
   }
-  .commit:hover {
-    background: var(--surface-2);
-  }
-  .commit.active {
+  .commit:hover,
+  .row.active .commit {
     background: var(--surface-2);
   }
   /* Inset past the corners: a box-shadow would follow the button radius. */
-  .commit.active::before {
+  .row.active .commit::before {
     position: absolute;
     top: var(--r-md);
     bottom: var(--r-md);
@@ -281,35 +402,57 @@
     content: '';
   }
   code {
-    color: var(--muted);
+    flex: 0 0 auto;
+    color: var(--accent-fg);
     font-size: 11px;
   }
-  .msg,
-  .meta {
+  .msg {
+    flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .meta {
+    flex: 0 0 auto;
     color: var(--muted);
     font-size: 11px;
   }
+  .badge {
+    flex: 0 0 auto;
+    color: var(--accent-fg);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
   .restore {
     flex: 0 0 auto;
-    padding: 2px 6px;
+    padding: 1px 6px;
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text);
     font-size: 11px;
-    opacity: 0;
+    opacity: 0.55;
   }
-  .row:hover .restore {
+  .row:hover .restore,
+  .restore:focus-visible {
     opacity: 1;
   }
-  .restore:hover {
+  .restore:hover:not(:disabled) {
     border-color: var(--accent);
   }
+  .restore:disabled {
+    opacity: 0.3;
+  }
+  .skeleton {
+    height: 10px;
+    margin: 6px var(--sp-2);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+  }
   .empty {
-    padding: 6px 8px;
+    padding: 6px var(--sp-2);
     color: var(--muted);
   }
   .diff {
@@ -329,10 +472,5 @@
     margin: 0;
     color: var(--muted);
     pointer-events: none;
-  }
-  .error {
-    margin: 0;
-    padding: 2px 8px;
-    color: var(--err);
   }
 </style>
