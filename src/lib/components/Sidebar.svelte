@@ -9,6 +9,7 @@
   const SORT_LABELS: Record<SortMode, string> = {
     name: 'Name',
     modified: 'Modified',
+    type: 'Type',
     folders: 'Folders first',
   }
 
