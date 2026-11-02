@@ -149,6 +149,7 @@ On Linux, under `~/.local/share/com.gitpad.app/`:
 |---|---|
 | `repos/gitpad_notes/` | Local Git clone of your notes |
 | `config.json` | Theme, font size, sync settings, extension mappings |
+| `logs/gitpad.log` | Text log of errors, kept for one rotation |
 | OS keyring | GitHub token |
 
 Deleting `config.json` resets settings but leaves the notes repository untouched.

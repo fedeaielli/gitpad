@@ -6,6 +6,7 @@ use git2::{
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_log::log;
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -941,7 +942,7 @@ fn move_clone(from: &Path, to: &Path) -> Result<(), GitError> {
     if let Err(e) = std::fs::remove_dir_all(from) {
         // The clone is already verified at its destination: a leftover copy is
         // better than failing a move that succeeded.
-        eprintln!("move: leaving {} in place: {e}", from.display());
+        log::warn!("move: leaving {} in place: {e}", from.display());
     }
     Ok(())
 }
@@ -1053,7 +1054,7 @@ pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Res
     clone_into(&app, &url, &target).await?;
     remember_repo(&app, target.clone());
     if let Err(e) = crate::config::store_repo_path(&app, &target) {
-        eprintln!("import: could not save the new location: {e}");
+        log::warn!("import: could not save the new location: {e}");
     }
     Ok(MovedRepo {
         from,
@@ -1122,7 +1123,7 @@ pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, 
     .map_err(|e| format!("git task: {e}"))??;
     remember_repo(&app, to.clone());
     if let Err(e) = crate::config::store_repo_path(&app, &to) {
-        eprintln!("move: could not save the new location: {e}");
+        log::warn!("move: could not save the new location: {e}");
     }
     Ok(MovedRepo {
         from: from.to_string_lossy().into_owned(),
