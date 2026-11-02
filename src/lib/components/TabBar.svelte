@@ -25,28 +25,30 @@
       </div>
     {/each}
   </div>
-  <div class="actions">
-    {#if tabs.activeTabId}
-      <button
-        class="icon"
-        class:active={ui.timelineOpen}
-        title="History for this file"
-        aria-label="File history"
-        aria-pressed={ui.timelineOpen}
-        onclick={() => (ui.timelineOpen = !ui.timelineOpen)}
-      >
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <circle cx="8" cy="8" r="6" />
-          <path d="M8 4.6v3.8l2.6 1.5" />
-        </svg>
-      </button>
-      {#if isMarkdown}
-        <button class="preview" onclick={cyclePreview} title="Cycle preview (Ctrl+Shift+P)">
-          Preview · {ui.previewMode}
+  {#if tabs.tabs.length > 0}
+    <div class="actions">
+      {#if tabs.activeTabId}
+        <button
+          class="icon"
+          class:active={ui.timelineOpen}
+          title="History for this file"
+          aria-label="File history"
+          aria-pressed={ui.timelineOpen}
+          onclick={() => (ui.timelineOpen = !ui.timelineOpen)}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" />
+            <path d="M8 4.6v3.8l2.6 1.5" />
+          </svg>
         </button>
+        {#if isMarkdown}
+          <button class="preview" onclick={cyclePreview} title="Cycle preview (Ctrl+Shift+P)">
+            Preview · {ui.previewMode}
+          </button>
+        {/if}
       {/if}
-    {/if}
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style>

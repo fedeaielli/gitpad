@@ -8,7 +8,6 @@ export interface Config {
   fontFamily: string
   sidebarWidth: number
   sidebarOpen: boolean
-  lastOpenPath: string
   autoSync: boolean
   saveDebounceMs: number
   pushIdleMs: number

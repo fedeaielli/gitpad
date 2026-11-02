@@ -19,7 +19,6 @@
   import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { tabs } from './lib/stores/tabs.svelte'
-  import { openFileInTab } from './lib/utils/open-file'
   import { setCustomLanguages } from './lib/utils/langmap'
   import { applyTheme, applyAccent } from './lib/utils/themes'
   import {
@@ -65,7 +64,6 @@
       keybindings: ui.keybindings,
       extensions: { ...ui.extensions },
       accent: ui.accent,
-      lastOpenPath: tabs.tabs.find((t) => t.id === tabs.activeTabId)?.path ?? '',
       sortMode: ui.sortMode,
       sortDesc: ui.sortDesc,
       showHidden: ui.showHidden,
@@ -254,13 +252,6 @@
         }
         if (typeof config.sortDesc === 'boolean') ui.sortDesc = config.sortDesc
         if (typeof config.showHidden === 'boolean') ui.showHidden = config.showHidden
-        if (config.lastOpenPath) {
-          try {
-            await openFileInTab(config.lastOpenPath)
-          } catch {
-            // The file may have been deleted or moved outside GitPad.
-          }
-        }
       }
       configLoaded = true
       clearTimeout(showTimer)
@@ -290,6 +281,14 @@
         <TabBar />
         {#if EditorPane}
           <EditorPane />
+        {/if}
+        {#if tabs.tabs.length === 0}
+          <div class="empty">
+            <p class="empty-title">No file open</p>
+            <p class="empty-hint">
+              <kbd>Ctrl</kbd>+<kbd>N</kbd> to create a file · <kbd>Ctrl</kbd>+<kbd>O</kbd> to import
+            </p>
+          </div>
         {/if}
       </section>
     </main>
@@ -336,9 +335,40 @@
     padding: var(--sp-1);
   }
   .editor {
+    position: relative;
     display: flex;
     flex: 1;
     flex-direction: column;
     min-width: 0;
+  }
+  .empty {
+    position: absolute;
+    /* Below the tab bar, so the strip stays visible. */
+    inset: var(--h-tabbar) 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    background: var(--surface-0);
+    color: var(--muted);
+  }
+  .empty-title {
+    margin: 0;
+    color: var(--text);
+    font-size: var(--fs-lg);
+  }
+  .empty-hint {
+    margin: 0;
+    font-size: var(--fs-sm);
+  }
+  .empty kbd {
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface-1);
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--fs-xs);
   }
 </style>
