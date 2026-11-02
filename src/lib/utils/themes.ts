@@ -44,6 +44,15 @@ export function registerThemeStyles(map: Record<string, { markdown: string; code
 /// The sentinel value of the "Default" option: it means "let each surface pick".
 export const DEFAULT_FONT = 'ui-monospace, monospace'
 
+/// Repairs a family saved before fs_list_fonts dropped the fc-list path, when
+/// the stored value looked like "/usr/share/fonts/x.ttf: Adwaita Sans".
+export function cleanFamily(value: string): string {
+  if (!value || value === DEFAULT_FONT) return DEFAULT_FONT
+  const rest = value.includes(': ') ? value.slice(value.lastIndexOf(': ') + 2) : value
+  const name = rest.split(':style=')[0].split(',')[0].trim()
+  return name || DEFAULT_FONT
+}
+
 /// The chrome follows the editor font; the Default value keeps the system stack
 /// that app.css sets on body.
 export function applyUiFont(font: string) {

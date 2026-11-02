@@ -23,7 +23,7 @@
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { tabs } from './lib/stores/tabs.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
-  import { applyTheme, applyAccent, applyUiFont } from './lib/utils/themes'
+  import { applyTheme, applyAccent, applyUiFont, cleanFamily } from './lib/utils/themes'
   import {
     applyGitStatus,
     gitStatus,
@@ -302,7 +302,7 @@
         }
         ui.onboardingComplete = config.onboardingComplete
         if (Number.isFinite(config.fontSize)) ui.fontSize = clamp(config.fontSize, 8, 32)
-        if (config.fontFamily) ui.fontFamily = config.fontFamily
+        if (config.fontFamily) ui.fontFamily = cleanFamily(config.fontFamily)
         if (Number.isFinite(config.sidebarWidth))
           ui.sidebarWidth = clamp(config.sidebarWidth, MIN_SIDEBAR, maxSidebar())
         if (typeof config.sidebarOpen === 'boolean') ui.sidebarOpen = config.sidebarOpen

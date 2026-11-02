@@ -94,7 +94,13 @@ pub fn fs_list_fonts() -> Result<Vec<String>, String> {
 fn parse_families(stdout: &str) -> Vec<String> {
     let mut families = std::collections::BTreeSet::new();
     for line in stdout.lines() {
-        for name in line.split(',') {
+        // fc-list prints "<path>: Family, Alias:style=Regular": drop both the
+        // path and the style, else the path ends up used as a font family.
+        let Some((_, rest)) = line.split_once(": ") else {
+            continue;
+        };
+        let names = rest.split(":style=").next().unwrap_or(rest);
+        for name in names.split(',') {
             let name = name.trim();
             if !name.is_empty() {
                 families.insert(name.to_string());
@@ -543,11 +549,14 @@ mod tests {
     use crate::test_util::assert_waits_for_gate;
 
     #[test]
-    fn parse_families_splits_aliases_and_dedupes() {
-        let output = "Noto Sans,Noto Sans Light\nInter\n  Inter  \n\n";
+    fn parse_families_skips_the_path_and_style() {
+        let output = "/usr/share/fonts/x/Adwaita.ttf: Adwaita Sans:style=Regular\n\
+/usr/share/fonts/y/Noto.ttf: Noto Sans,Noto Sans Light:style=Bold\n\
+/usr/share/fonts/z/Adwaita.ttf: Adwaita Sans:style=Italic\n\
+\n";
         assert_eq!(
             parse_families(output),
-            vec!["Inter", "Noto Sans", "Noto Sans Light"]
+            vec!["Adwaita Sans", "Noto Sans", "Noto Sans Light"]
         );
         assert!(parse_families("").is_empty());
     }
