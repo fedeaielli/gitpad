@@ -373,6 +373,7 @@
     background: var(--surface-1);
   }
   .tab {
+    position: relative;
     padding: var(--sp-2) var(--sp-3);
     border: none;
     border-top: 2px solid transparent;
@@ -386,9 +387,18 @@
     color: var(--text);
   }
   .tab.active {
-    border-top-color: var(--accent);
     background: var(--surface-2);
     color: var(--text);
+  }
+  /* Inset past the corners: a border-top would follow the radius and bow. */
+  .tab.active::after {
+    position: absolute;
+    top: 0;
+    right: var(--r-sm);
+    left: var(--r-sm);
+    height: 2px;
+    background: var(--accent);
+    content: '';
   }
   .body {
     display: flex;

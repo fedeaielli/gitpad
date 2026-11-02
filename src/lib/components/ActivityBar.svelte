@@ -163,7 +163,6 @@
     bottom: 8px;
     left: 0;
     width: 2px;
-    border-radius: 0 2px 2px 0;
     background: var(--accent);
     content: '';
   }
