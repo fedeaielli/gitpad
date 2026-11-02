@@ -317,7 +317,11 @@
   })
 
   $effect(() => {
-    editor?.updateOptions({ fontSize: ui.fontSize, fontFamily: ui.fontFamily })
+    // Read before the optional chain: while the editor is still undefined the
+    // argument is never evaluated, so the effect would subscribe to nothing.
+    const fontSize = ui.fontSize
+    const fontFamily = ui.fontFamily
+    editor?.updateOptions({ fontSize, fontFamily })
   })
 
   // Vim/Emacs keymaps wrap the single editor instance; swapping presets disposes the old one.
