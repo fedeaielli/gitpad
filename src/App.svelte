@@ -56,6 +56,13 @@
   /// The editor always keeps this much room, so the sidebar cannot swallow it.
   const MIN_EDITOR = 260
   const maxSidebar = () => Math.max(MIN_SIDEBAR, window.innerWidth - MIN_EDITOR)
+  // The wrapper declares its size: WebKit does not recompute a flex-basis:auto
+  // wrapper when the panel inside it changes width, so the panel was clipped.
+  const leftWidth = $derived(
+    ui.sidebarOpen
+      ? `calc(var(--w-activitybar) + ${ui.sidebarWidth}px)`
+      : 'var(--w-activitybar)',
+  )
   let resizing = $state(false)
   let resizeX = 0
   let resizeWidth = 0
@@ -334,7 +341,7 @@
   <TitleBar />
   <div class="app">
     <main class="body">
-      <div class="left">
+      <div class="left" style="flex: 0 0 {leftWidth}">
         <ActivityBar />
         {#if ui.sidebarOpen}
           <Sidebar />
@@ -417,6 +424,7 @@
   }
   .left {
     display: flex;
+    /* The inline flex-basis carries the sidebar width; see leftWidth. */
     flex: 0 0 auto;
     min-width: 0;
     /* One panel: the rail and the sidebar share the outer rounding. */
