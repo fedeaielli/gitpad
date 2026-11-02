@@ -342,7 +342,7 @@
       await savePending()
     }
     // Avoid pushing just because the window lost focus.
-    if (ui.autoSync && gitStatus.conflicts.length === 0 && (hadEdits || gitStatus.ahead > 0)) {
+    if (ui.autoSync && !ui.quitting && gitStatus.conflicts.length === 0 && (hadEdits || gitStatus.ahead > 0)) {
       await syncNow(null)
     }
   }
