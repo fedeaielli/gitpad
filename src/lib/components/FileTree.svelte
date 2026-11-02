@@ -17,6 +17,16 @@
   let name = $state('')
   let renaming = $state<string | null>(null)
   let renameValue = $state('')
+  let creating = $state<'file' | 'folder' | null>(null)
+
+  /// Opened from the header buttons: the new entry always lands at the root.
+  export function createAtRoot(kind: 'file' | 'folder') {
+    if (noRepo) return
+    menu = null
+    name = ''
+    error = null
+    creating = kind
+  }
 
   /// Dot files stay hidden unless the options menu enables them.
   function visible(nodes: FileNode[]): FileNode[] {
@@ -130,26 +140,41 @@
     }
   }
 
+  async function createIn(base: string, kind: MenuMode, value: string) {
+    if (kind === 'new-file') {
+      const target = join(base, value)
+      await invoke('fs_write_file', { path: target, content: '' })
+      await loadTree()
+      await openFile({ name: value, path: target, type: 'file' })
+      return
+    }
+    await invoke('fs_create_dir', { path: join(base, value) })
+    await loadTree()
+  }
+
   async function submitName(event: SubmitEvent) {
     event.preventDefault()
     if (!menu || !name.trim()) return
     error = null
     const value = name.trim()
+    const kind = menu.mode
     const base = menu.node ? (menu.node.type === 'dir' ? menu.node.path : parentOf(menu.node.path)) : ''
     try {
-      if (menu.mode === 'new-file') {
-        const target = join(base, value)
-        await invoke('fs_write_file', { path: target, content: '' })
-        menu = null
-        await loadTree()
-        await openFile({ name: value, path: target, type: 'file' })
-        return
-      }
-      if (menu.mode === 'new-folder') {
-        await invoke('fs_create_dir', { path: join(base, value) })
-      }
+      await createIn(base, kind, value)
       menu = null
-      await loadTree()
+    } catch (e) {
+      error = errorMessage(e)
+    }
+  }
+
+  async function submitCreate(event: SubmitEvent) {
+    event.preventDefault()
+    if (!creating || !name.trim()) return
+    error = null
+    const kind = creating === 'file' ? 'new-file' : 'new-folder'
+    try {
+      await createIn('', kind, name.trim())
+      creating = null
     } catch (e) {
       error = errorMessage(e)
     }
@@ -269,6 +294,22 @@
     {:else if error}
       <p class="error">{error}</p>
     {/if}
+    {#if creating}
+      <form class="create" onsubmit={submitCreate}>
+        <input
+          bind:value={name}
+          use:focusInput
+          placeholder={creating === 'file' ? 'File name' : 'Folder name'}
+          aria-label={creating === 'file' ? 'New file name' : 'New folder name'}
+          onkeydown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              creating = null
+            }
+          }}
+        />
+      </form>
+    {/if}
     {@render tree(ui.fileTree)}
   {/if}
 </div>
@@ -336,6 +377,14 @@
     padding: 0 8px;
   }
   .rename input {
+    width: 100%;
+    padding: 1px 4px;
+  }
+  .create {
+    padding: 2px 8px;
+  }
+  .create input {
+    box-sizing: border-box;
     width: 100%;
     padding: 1px 4px;
   }
