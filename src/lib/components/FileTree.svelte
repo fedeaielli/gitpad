@@ -370,7 +370,9 @@
     background: var(--surface-2);
   }
   .row.active {
+    /* Follows the accent, at a strength that keeps --text above 4.5:1. */
     background: var(--selection);
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
     color: var(--text);
   }
   .rename {
