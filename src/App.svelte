@@ -50,6 +50,28 @@
   let pendingConfig: Config | null = null
   let onboardingSkipped = $state(false)
 
+  // Dragging the gap between the left panel and the editor resizes the sidebar.
+  let resizing = $state(false)
+  let resizeX = 0
+  let resizeWidth = 0
+
+  function startResize(e: PointerEvent) {
+    if (!ui.sidebarOpen) return
+    // Without this the drag selects the text of the panel under the cursor.
+    e.preventDefault()
+    resizeX = e.clientX
+    resizeWidth = ui.sidebarWidth
+    resizing = true
+  }
+  function moveResize(e: PointerEvent) {
+    if (!resizing) return
+    // Rounded: config_save takes a u32, and a fractional width fails the save.
+    ui.sidebarWidth = Math.round(Math.min(500, Math.max(150, resizeWidth + e.clientX - resizeX)))
+  }
+  function endResize() {
+    resizing = false
+  }
+
   // Persist user-level settings whenever they change; skip the initial load.
   $effect(() => {
     const config: Config = {
@@ -293,7 +315,12 @@
   })
 </script>
 
-<svelte:window onkeydowncapture={onKeydown} />
+<svelte:window
+  onkeydowncapture={onKeydown}
+  onpointermove={moveResize}
+  onpointerup={endResize}
+  onpointercancel={endResize}
+/>
 
 <div class="shell">
   <TitleBar />
@@ -305,6 +332,18 @@
           <Sidebar />
         {/if}
       </div>
+      <div
+        class="gutter"
+        class:open={ui.sidebarOpen}
+        class:active={resizing}
+        role={ui.sidebarOpen ? 'separator' : 'presentation'}
+        aria-orientation={ui.sidebarOpen ? 'vertical' : undefined}
+        aria-label="Resize sidebar"
+        aria-valuemin={150}
+        aria-valuemax={500}
+        aria-valuenow={Math.round(ui.sidebarWidth)}
+        onpointerdown={startResize}
+      ></div>
       <section class="editor">
         <TabBar />
         <Breadcrumb />
@@ -363,7 +402,7 @@
   .body {
     display: flex;
     flex: 1;
-    gap: var(--sp-1);
+    gap: 0;
     min-height: 0;
     padding: var(--sp-1);
   }
@@ -375,6 +414,19 @@
     border-radius: var(--r-lg);
     overflow: hidden;
     background: var(--surface-1);
+  }
+  /* The gap between the panels, made grabbable: it is the only place where the
+     sidebar edge can be dragged without fighting the panel content. */
+  .gutter {
+    flex: 0 0 var(--sp-1);
+    touch-action: none;
+  }
+  .gutter.open {
+    cursor: col-resize;
+  }
+  .gutter.open:hover,
+  .gutter.active {
+    background: var(--accent);
   }
   .editor {
     position: relative;

@@ -33,48 +33,11 @@
     }
   }
 
-  let resizing = $state(false)
-  let startX = 0
-  let startWidth = 0
-
-  function startResize(e: PointerEvent) {
-    // Window listeners below keep the drag alive outside the 6px handle.
-    e.preventDefault()
-    startX = e.clientX
-    startWidth = ui.sidebarWidth
-    resizing = true
-  }
-  function moveResize(e: PointerEvent) {
-    if (!resizing) return
-    ui.sidebarWidth = Math.min(500, Math.max(150, startWidth + e.clientX - startX))
-  }
-  function endResize() {
-    resizing = false
-  }
 </script>
 
-<svelte:window
-  onkeydown={onKeydown}
-  onpointermove={moveResize}
-  onpointerup={endResize}
-  onpointercancel={endResize}
-/>
+<svelte:window onkeydown={onKeydown} />
 
 <aside class="panel" style="flex: 0 0 {ui.sidebarWidth}px">
-  <div
-    class="resize"
-    class:active={resizing}
-    role="separator"
-    aria-orientation="vertical"
-    aria-label="Resize sidebar"
-    aria-valuemin="150"
-    aria-valuemax="500"
-    aria-valuenow={Math.round(ui.sidebarWidth)}
-    onpointerdown={startResize}
-    onpointermove={moveResize}
-    onpointerup={endResize}
-    onpointercancel={endResize}
-  ></div>
   <div class="head">
     <span>
       {ui.activeView === 'files'
@@ -173,27 +136,9 @@
     flex: 0 0 260px;
     flex-direction: column;
     min-height: 0;
-    /* The right padding is the resize handle's strip: it keeps the handle off
-       the 6px scrollbar that would otherwise sit underneath it. */
-    box-sizing: border-box;
-    padding-right: 6px;
     /* Rounded by the wrapper that also holds the activity bar. */
     border-radius: 0;
     background: var(--surface-1);
-  }
-  .resize {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 6px;
-    height: 100%;
-    cursor: col-resize;
-    touch-action: none;
-    z-index: 2;
-  }
-  .resize:hover,
-  .resize.active {
-    background: var(--accent);
   }
   .head {
     position: relative;
