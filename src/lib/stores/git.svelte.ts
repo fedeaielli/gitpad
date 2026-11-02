@@ -20,6 +20,8 @@ export interface GitStatus {
   ahead: number
   behind: number
   diverged: boolean
+  /** Epoch seconds of the last push GitPad made from this clone. */
+  lastPush: number | null
 }
 
 export const gitStatus = $state({
@@ -47,6 +49,8 @@ export function applyGitStatus(status: GitStatus) {
   gitStatus.behind = status.behind
   gitStatus.diverged = status.diverged
   gitStatus.conflicts = status.conflicts
+  // Recorded per clone, so switching repository clears a stale timestamp.
+  gitStatus.lastPush = status.lastPush ? new Date(status.lastPush * 1000) : null
   gitStatus.error = null
   gitStatus.configured = true
 }

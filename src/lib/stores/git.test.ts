@@ -16,6 +16,7 @@ const status = {
   ahead: 0,
   behind: 0,
   diverged: false,
+  lastPush: null,
 }
 
 beforeEach(async () => {
