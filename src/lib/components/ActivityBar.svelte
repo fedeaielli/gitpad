@@ -133,7 +133,8 @@
     align-items: center;
     gap: 2px;
     padding: 4px;
-    border-radius: var(--r-lg);
+    /* Rounded by the wrapper that also holds the sidebar. */
+    border-radius: 0;
     background: var(--surface-1);
   }
   .item {
