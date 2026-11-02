@@ -925,19 +925,94 @@ fn copy_tree(src: &Path, dst: &Path) -> Result<(), GitError> {
     Ok(())
 }
 
-/// Rename when possible, copy otherwise; both paths end with the destination
-/// opened, so a half-move never reports success.
+/// Rename when possible; otherwise copy to a sibling folder, verify it and swap.
+/// The source stays until the destination is verified, so a failure leaves no
+/// half-moved clone behind.
 fn move_clone(from: &Path, to: &Path) -> Result<(), GitError> {
     if to.exists() {
         return Err(format!("a folder already exists at {}", to.display()).into());
     }
-    if std::fs::rename(from, to).is_err() {
-        copy_tree(from, to)?;
-        open_repo(to)?;
-        std::fs::remove_dir_all(from)
-            .map_err(|e| GitError::IoError(format!("remove {}: {e}", from.display())))?;
+    // Same filesystem: one syscall, nothing to verify.
+    if std::fs::rename(from, to).is_ok() {
+        return open_repo(to).map(|_| ());
     }
-    open_repo(to).map(|_| ())
+    // Other filesystems: stage a verified copy next to the destination first.
+    stage_copy(from, to)?;
+    if let Err(e) = std::fs::remove_dir_all(from) {
+        // The clone is already verified at its destination: a leftover copy is
+        // better than failing a move that succeeded.
+        eprintln!("move: leaving {} in place: {e}", from.display());
+    }
+    Ok(())
+}
+
+/// Cross-filesystem half of `move_clone`: copy, verify, then swap. Nothing is
+/// written directly into `to`, so a failure never leaves a partial clone there.
+fn stage_copy(from: &Path, to: &Path) -> Result<(), GitError> {
+    let parent = to
+        .parent()
+        .ok_or_else(|| GitError::Other(format!("no parent folder for {}", to.display())))?;
+    let name = to
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .ok_or_else(|| GitError::Other(format!("no name in {}", to.display())))?;
+    let tmp = parent.join(format!(".{name}.move-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&tmp);
+    let staged = copy_tree(from, &tmp)
+        .and_then(|_| verify_copy(from, &tmp))
+        .and_then(|_| {
+            std::fs::rename(&tmp, to)
+                .map_err(|e| GitError::IoError(format!("move into {}: {e}", to.display())))
+        });
+    if let Err(e) = staged {
+        // A partial copy must not block the next attempt.
+        let _ = std::fs::remove_dir_all(&tmp);
+        return Err(e);
+    }
+    Ok(())
+}
+
+/// A copy is trustworthy only if the commit and the file count match.
+fn verify_copy(from: &Path, to: &Path) -> Result<(), GitError> {
+    let source = open_repo(from)?;
+    let copy = open_repo(to)?;
+    if head_oid(&source) != head_oid(&copy) {
+        return Err(GitError::Other("copy does not match the clone".into()));
+    }
+    if count_files(from)? != count_files(to)? {
+        return Err(GitError::Other("copy is missing files".into()));
+    }
+    Ok(())
+}
+
+fn head_oid(repo: &Repository) -> Option<git2::Oid> {
+    repo.head().ok().and_then(|head| head.target())
+}
+
+/// Regular files only: `copy_tree` skips symlinks, so they never reach the copy.
+fn count_files(dir: &Path) -> Result<usize, GitError> {
+    let io = |path: &Path, e: std::io::Error| GitError::IoError(format!("{}: {e}", path.display()));
+    let mut total = 0;
+    for entry in std::fs::read_dir(dir).map_err(|e| io(dir, e))? {
+        let entry = entry.map_err(|e| io(dir, e))?;
+        let path = entry.path();
+        let kind = entry.file_type().map_err(|e| io(&path, e))?;
+        if kind.is_dir() {
+            total += count_files(&path)?;
+        } else if kind.is_file() {
+            total += 1;
+        }
+    }
+    Ok(total)
+}
+
+/// A new clone may only land where nothing is already versioned.
+fn fresh_clone_target(parent: &Path, name: &str) -> Result<PathBuf, GitError> {
+    let target = clone_target(parent, name)?;
+    if target.join(".git").exists() {
+        return Err(format!("a repository is already cloned at {}", target.display()).into());
+    }
+    Ok(target)
 }
 
 #[tauri::command]
@@ -974,12 +1049,12 @@ pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Res
         .map(|path| path.to_string_lossy().into_owned())
         .unwrap_or_default();
     let name = repo_name_from_url(&url)?;
-    let target = clone_target(Path::new(parent.trim()), &name)?;
-    // Already cloned there: switching is instant and needs no network.
-    if !target.join(".git").exists() {
-        clone_into(&app, &url, &target).await?;
-    }
+    let target = fresh_clone_target(Path::new(parent.trim()), &name)?;
+    clone_into(&app, &url, &target).await?;
     remember_repo(&app, target.clone());
+    if let Err(e) = crate::config::store_repo_path(&app, &target) {
+        eprintln!("import: could not save the new location: {e}");
+    }
     Ok(MovedRepo {
         from,
         to: target.to_string_lossy().into_owned(),
@@ -1046,6 +1121,9 @@ pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, 
     .await
     .map_err(|e| format!("git task: {e}"))??;
     remember_repo(&app, to.clone());
+    if let Err(e) = crate::config::store_repo_path(&app, &to) {
+        eprintln!("move: could not save the new location: {e}");
+    }
     Ok(MovedRepo {
         from: from.to_string_lossy().into_owned(),
         to: to.to_string_lossy().into_owned(),
@@ -1391,6 +1469,78 @@ mod tests {
 
         assert!(err.to_string().contains("already exists"), "unexpected: {err}");
         assert!(from.join("a.md").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn stage_copy_swaps_in_a_verified_copy() {
+        let root = tmp("stage-copy");
+        let from = root.join("notes");
+        let repo = Repository::init(&from).unwrap();
+        commit_file(&repo, "a.md", "1");
+        drop(repo);
+
+        let to = root.join("elsewhere").join("notes");
+        std::fs::create_dir_all(to.parent().unwrap()).unwrap();
+        stage_copy(&from, &to).unwrap();
+
+        assert!(to.join("a.md").exists());
+        // Removing the source is the caller's job, after the swap.
+        assert!(from.join("a.md").exists());
+        let leftovers: Vec<String> = std::fs::read_dir(to.parent().unwrap())
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+            .filter(|name| name.starts_with('.'))
+            .collect();
+        assert!(leftovers.is_empty(), "left behind: {leftovers:?}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn move_clone_keeps_uncommitted_changes() {
+        let root = tmp("move-dirty");
+        let from = root.join("notes");
+        let repo = Repository::init(&from).unwrap();
+        commit_file(&repo, "a.md", "committed");
+        std::fs::write(from.join("a.md"), "dirty").unwrap();
+        drop(repo);
+
+        let to = root.join("moved").join("notes");
+        std::fs::create_dir_all(to.parent().unwrap()).unwrap();
+        move_clone(&from, &to).unwrap();
+
+        assert_eq!(std::fs::read_to_string(to.join("a.md")).unwrap(), "dirty");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn copy_verification_rejects_a_truncated_copy() {
+        let root = tmp("verify-copy");
+        let from = root.join("notes");
+        let repo = Repository::init(&from).unwrap();
+        commit_file(&repo, "a.md", "1");
+        commit_file(&repo, "b.md", "2");
+        drop(repo);
+
+        let to = root.join("copy");
+        copy_tree(&from, &to).unwrap();
+        verify_copy(&from, &to).unwrap();
+
+        std::fs::remove_file(to.join("b.md")).unwrap();
+        let err = verify_copy(&from, &to).unwrap_err();
+        assert!(err.to_string().contains("missing files"), "unexpected: {err}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn import_refuses_a_folder_that_already_holds_a_clone() {
+        let root = tmp("import-taken");
+        Repository::init(root.join("notes")).unwrap();
+
+        let err = fresh_clone_target(&root, "notes").unwrap_err();
+        assert!(err.to_string().contains("already cloned"), "unexpected: {err}");
+        assert_eq!(fresh_clone_target(&root, "other").unwrap(), root.join("other"));
         let _ = std::fs::remove_dir_all(&root);
     }
 
