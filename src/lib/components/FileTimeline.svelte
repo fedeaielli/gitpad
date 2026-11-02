@@ -8,6 +8,7 @@
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
   import { monacoTheme } from '../utils/themes'
+  import { tip } from '../utils/tooltip'
 
   interface CommitEntry {
     hash: string
@@ -188,7 +189,7 @@
           <button
             class="commit"
             class:active={selected === commit.hash}
-            title={commit.author}
+            use:tip={commit.author}
             onclick={() => void select(commit)}
           >
             <code>{commit.shortHash}</code>

@@ -3,6 +3,7 @@
   import { invoke } from '@tauri-apps/api/core'
   import { ui } from '../stores/ui.svelte'
   import { gitStatus } from '../stores/git.svelte'
+  import { tip } from '../utils/tooltip'
 
   interface UserInfo {
     login: string
@@ -45,7 +46,7 @@
     class="item"
     class:active={ui.activeView === 'files'}
     class:open={ui.sidebarOpen}
-    title="Explorer"
+    use:tip={'Explorer'}
     aria-label="Explorer"
     aria-pressed={ui.activeView === 'files' && ui.sidebarOpen}
     onclick={() => select('files')}
@@ -59,7 +60,7 @@
     class="item"
     class:active={ui.activeView === 'git'}
     class:open={ui.sidebarOpen}
-    title="Source control"
+    use:tip={'Source control'}
     aria-label="Source control"
     aria-pressed={ui.activeView === 'git' && ui.sidebarOpen}
     onclick={() => select('git')}
@@ -79,7 +80,7 @@
     class="item"
     class:active={ui.activeView === 'history'}
     class:open={ui.sidebarOpen}
-    title="History"
+    use:tip={'History'}
     aria-label="History"
     aria-pressed={ui.activeView === 'history' && ui.sidebarOpen}
     onclick={() => select('history')}
@@ -95,7 +96,7 @@
   <button
     type="button"
     class="item avatar"
-    title={user ? `Account: ${user.login}` : 'Account'}
+    use:tip={user ? `Account: ${user.login}` : 'Account'}
     aria-label="Account"
     onclick={() => (ui.settingsOpen = true)}
   >
@@ -111,7 +112,7 @@
   <button
     type="button"
     class="item settings"
-    title="Settings"
+    use:tip={'Settings'}
     aria-label="Settings"
     onclick={() => (ui.settingsOpen = true)}
   >

@@ -4,6 +4,7 @@
   import HistoryPanel from './HistoryPanel.svelte'
   import { ui } from '../stores/ui.svelte'
   import { defaultDesc, SORT_MODES, type SortMode } from '../utils/file-sort'
+  import { tip } from '../utils/tooltip'
 
   const SORT_LABELS: Record<SortMode, string> = {
     name: 'Name',
@@ -81,7 +82,7 @@
         <button
           class="options"
           bind:this={trigger}
-          title="Tree options"
+          use:tip={'Tree options'}
           aria-label="Tree options"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
