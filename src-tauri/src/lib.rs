@@ -194,6 +194,7 @@ pub fn run() {
             fs::fs_import,
             git::git_clone,
             git::git_move_repo,
+            git::git_import_repo,
             git::git_pull,
             git::git_push,
             git::git_discard_file,

@@ -925,7 +925,35 @@ pub async fn git_clone(
             existing.display()
         )));
     }
-    let target_task = target.clone();
+    clone_into(&app, &url, &target).await?;
+    remember_repo(&app, target.clone());
+    Ok(target.to_string_lossy().into_owned())
+}
+
+/// Clone another repository and make it the active one; the old clone stays on disk.
+#[tauri::command]
+pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Result<MovedRepo, GitError> {
+    // Empty when nothing was configured yet: the caller then has no tabs to close.
+    let from = repo_dir(&app)
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let name = repo_name_from_url(&url)?;
+    let target = clone_target(Path::new(parent.trim()), &name)?;
+    // Already cloned there: switching is instant and needs no network.
+    if !target.join(".git").exists() {
+        clone_into(&app, &url, &target).await?;
+    }
+    remember_repo(&app, target.clone());
+    Ok(MovedRepo {
+        from,
+        to: target.to_string_lossy().into_owned(),
+    })
+}
+
+/// Shared clone body: the caller owns target resolution and the repo cache.
+async fn clone_into(app: &AppHandle, url: &str, target: &Path) -> Result<(), GitError> {
+    let url = url.to_string();
+    let target_task = target.to_path_buf();
     let gate = app.state::<crate::AppState>().repo_gate.clone();
     tokio::task::spawn_blocking(move || {
         let token = auth::token().ok();
@@ -940,9 +968,7 @@ pub async fn git_clone(
             .map_err(git_err)
     })
     .await
-    .map_err(|e| format!("git task: {e}"))??;
-    remember_repo(&app, target.clone());
-    Ok(target.to_string_lossy().into_owned())
+    .map_err(|e| format!("git task: {e}"))?
 }
 
 /// Where a move took the clone: open tabs need the old prefix to follow it.
