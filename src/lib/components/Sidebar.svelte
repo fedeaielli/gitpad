@@ -3,12 +3,33 @@
   import GitPanel from './GitPanel.svelte'
   import HistoryPanel from './HistoryPanel.svelte'
   import { ui } from '../stores/ui.svelte'
+  import { defaultDesc, SORT_MODES, type SortMode } from '../utils/file-sort'
 
-  const SORTS = ['name', 'folders', 'modified'] as const
+  const SORT_LABELS: Record<SortMode, string> = {
+    name: 'Name',
+    modified: 'Modified',
+    folders: 'Folders first',
+  }
 
-  function cycleSort() {
-    const next = SORTS[(SORTS.indexOf(ui.sortMode) + 1) % SORTS.length]
-    ui.sortMode = next
+  let menuOpen = $state(false)
+  let trigger = $state<HTMLButtonElement>()
+
+  /// Picking a mode also snaps the direction back to that mode's natural one.
+  function chooseSort(mode: SortMode) {
+    ui.sortMode = mode
+    ui.sortDesc = defaultDesc(mode)
+  }
+
+  function closeMenu(refocus = false) {
+    menuOpen = false
+    if (refocus) trigger?.focus()
+  }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && menuOpen) {
+      e.stopPropagation()
+      closeMenu(true)
+    }
   }
 
   let resizing = $state(false)
@@ -29,6 +50,8 @@
     resizing = false
   }
 </script>
+
+<svelte:window onkeydown={onKeydown} />
 
 <aside class="panel" style="flex: 0 0 {ui.sidebarWidth}px">
   <div
@@ -56,15 +79,73 @@
     {#if ui.activeView === 'files'}
       <div class="actions">
         <button
-          title={ui.showHidden ? 'Hide dot files' : 'Show dot files'}
-          aria-pressed={ui.showHidden}
-          onclick={() => (ui.showHidden = !ui.showHidden)}
+          class="options"
+          bind:this={trigger}
+          title="Tree options"
+          aria-label="Tree options"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          onclick={() => (menuOpen = !menuOpen)}
         >
-          {ui.showHidden ? '◉' : '◌'}
+          ⋯
         </button>
-        <button title="Sort by {ui.sortMode} (click to change)" onclick={cycleSort}>⇅</button>
-        <button title="Collapse all folders" onclick={() => (ui.expanded = [])}>⊟</button>
       </div>
+      {#if menuOpen}
+          <!-- Click-anywhere-else closes the menu without stealing the click. -->
+          <button class="scrim" aria-label="Close menu" onclick={() => closeMenu()}></button>
+          <div class="menu" role="menu" aria-label="Tree options">
+            <p class="menu-head">Sort by</p>
+            {#each SORT_MODES as mode (mode)}
+              <button
+                type="button"
+                class="menu-item"
+                role="menuitemradio"
+                aria-checked={ui.sortMode === mode}
+                onclick={() => {
+                  chooseSort(mode)
+                  closeMenu()
+                }}
+              >
+                <span class="tick">{ui.sortMode === mode ? '✓' : ''}</span>
+                {SORT_LABELS[mode]}
+              </button>
+            {/each}
+            <button
+              type="button"
+              class="menu-item"
+              role="menuitemcheckbox"
+              aria-checked={ui.sortDesc}
+              onclick={() => (ui.sortDesc = !ui.sortDesc)}
+            >
+              <span class="tick">{ui.sortDesc ? '✓' : ''}</span>
+              Descending
+            </button>
+            <hr />
+            <button
+              type="button"
+              class="menu-item"
+              role="menuitemcheckbox"
+              aria-checked={ui.showHidden}
+              onclick={() => (ui.showHidden = !ui.showHidden)}
+            >
+              <span class="tick">{ui.showHidden ? '✓' : ''}</span>
+              Show hidden files
+            </button>
+            <button
+              type="button"
+              class="menu-item"
+              role="menuitem"
+              disabled={ui.expanded.length === 0}
+              onclick={() => {
+                ui.expanded = []
+                closeMenu()
+              }}
+            >
+              <span class="tick"></span>
+              Collapse all
+            </button>
+          </div>
+      {/if}
     {/if}
   </div>
   <div class="scroll">
@@ -102,6 +183,7 @@
     background: var(--accent);
   }
   .head {
+    position: relative;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -134,7 +216,61 @@
     color: var(--text);
     background: var(--surface-2);
   }
-  .actions button[aria-pressed='true'] {
+  .scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    border: 0;
+    background: transparent;
+  }
+  .menu {
+    position: absolute;
+    top: calc(100% - 2px);
+    right: 6px;
+    z-index: 41;
+    min-width: 180px;
+    padding: var(--sp-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-3);
+    box-shadow: var(--shadow-2);
+    font-size: var(--fs-sm);
+    letter-spacing: normal;
+    text-transform: none;
+  }
+  .menu-head {
+    margin: 0;
+    padding: var(--sp-1) var(--sp-2);
+    color: var(--muted);
+    font-size: var(--fs-xs);
+  }
+  .menu hr {
+    margin: var(--sp-1) 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-1) var(--sp-2);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text);
+    font-size: var(--fs-sm);
+    text-align: left;
+  }
+  .menu-item:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+  .menu-item:disabled {
+    color: var(--muted);
+    cursor: default;
+  }
+  .tick {
+    width: 12px;
     color: var(--accent-fg);
   }
   .scroll {

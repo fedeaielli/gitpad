@@ -47,6 +47,7 @@ export const ui = $state({
   treeVersion: 0,
   showHidden: false,
   sortMode: 'name' as 'name' | 'folders' | 'modified',
+  sortDesc: false,
   /// Expanded folders live here so they survive tree reloads and view switches.
   expanded: [] as string[],
   conflictsHidden: false,
