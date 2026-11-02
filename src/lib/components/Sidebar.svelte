@@ -14,6 +14,10 @@
 
   let menuOpen = $state(false)
   let trigger = $state<HTMLButtonElement>()
+  let tree = $state<{ createAtRoot: (kind: 'file' | 'folder') => void }>()
+
+  /// Below this width the header cannot hold the title and three buttons on one line.
+  const NARROW = 200
 
   /// Picking a mode also snaps the direction back to that mode's natural one.
   function chooseSort(mode: SortMode) {
@@ -48,6 +52,25 @@
     </span>
     {#if ui.activeView === 'files'}
       <div class="actions">
+        {#if ui.sidebarWidth >= NARROW}
+          <button use:tip={'New file'} aria-label="New file" onclick={() => tree?.createAtRoot('file')}>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4 1.8h5.4l2.8 2.8v9.6H4z" />
+              <path d="M9.4 1.8v2.8h2.8" />
+              <path d="M8.1 8.2v4.2M6 10.3h4.2" />
+            </svg>
+          </button>
+          <button
+            use:tip={'New folder'}
+            aria-label="New folder"
+            onclick={() => tree?.createAtRoot('folder')}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M1.8 3.8h4.4l1.4 1.8h6.6v6.8H1.8z" />
+              <path d="M8.3 7.4v3.4M6.6 9.1h3.4" />
+            </svg>
+          </button>
+        {/if}
         <button
           class="options"
           bind:this={trigger}
@@ -120,7 +143,7 @@
   </div>
   <div class="scroll">
     {#if ui.activeView === 'files'}
-      <FileTree />
+      <FileTree bind:this={tree} />
     {:else if ui.activeView === 'git'}
       <GitPanel />
     {:else}
@@ -165,6 +188,10 @@
     margin-left: auto;
   }
   .actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
     border: 0;
     border-radius: var(--r-sm);
     background: transparent;
@@ -172,6 +199,16 @@
     font-size: 15px;
     line-height: 22px;
     padding: 0 5px;
+  }
+  .actions svg {
+    display: block;
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .actions button:hover {
     color: var(--text);
