@@ -42,6 +42,7 @@ export const ui = $state({
   /// Set by a global shortcut so the palette opens with this text typed.
   paletteQuery: null as string | null,
   settingsOpen: false,
+  shortcutsOpen: false,
   fileTree: [] as FileNode[],
   /** Bumped after clone/rename so the tree reloads without prop drilling. */
   treeVersion: 0,

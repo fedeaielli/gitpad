@@ -64,6 +64,8 @@
     { id: 'import-file', label: 'Import file…', hint: 'Ctrl+O' },
     { id: 'import-folder', label: 'Import folder…' },
     { id: 'search', label: 'Search in files' },
+    { id: 'history', label: 'File history', hint: 'Ctrl+H' },
+    { id: 'shortcuts', label: 'Keyboard shortcuts', hint: 'Ctrl+K' },
     { id: 'settings', label: 'Open settings' },
   ])
 
@@ -182,6 +184,14 @@
     if (id === 'import-file' || id === 'import-folder') return void importFrom(id === 'import-folder')
     if (id === 'settings') {
       ui.settingsOpen = true
+      return close()
+    }
+    if (id === 'history') {
+      if (tabs.activeTabId) ui.timelineOpen = !ui.timelineOpen
+      return close()
+    }
+    if (id === 'shortcuts') {
+      ui.shortcutsOpen = true
       return close()
     }
     if (id === 'search') {
