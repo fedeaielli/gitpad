@@ -22,6 +22,10 @@ pub struct Config {
     pub extensions: BTreeMap<String, String>,
     /// Hex accent override; empty means "use the theme's own accent".
     pub accent: String,
+    /// File tree ordering: "name", "modified" or "folders".
+    pub sort_mode: String,
+    pub sort_desc: bool,
+    pub show_hidden: bool,
 }
 
 impl Default for Config {
@@ -56,6 +60,9 @@ impl Default for Config {
             keybindings: "vscode".into(),
             extensions,
             accent: String::new(),
+            sort_mode: "name".into(),
+            sort_desc: false,
+            show_hidden: false,
         }
     }
 }
@@ -135,6 +142,9 @@ mod tests {
             keybindings: "vim".into(),
             extensions: [("md".to_string(), "markdown".to_string())].into(),
             accent: "#10b981".into(),
+            sort_mode: "modified".into(),
+            sort_desc: true,
+            show_hidden: true,
         };
         write_config(&path, &config).unwrap();
         assert!(!dir.join("config.json.tmp").exists());
@@ -146,6 +156,9 @@ mod tests {
         assert_eq!(loaded.sidebar_width, 300);
         assert!(!loaded.sidebar_open);
         assert_eq!(loaded.last_open_path, "/tmp/test.md");
+        assert_eq!(loaded.sort_mode, "modified");
+        assert!(loaded.sort_desc);
+        assert!(loaded.show_hidden);
         assert!(!loaded.auto_sync);
         assert_eq!(loaded.keybindings, "vim");
         assert_eq!(loaded.extensions.len(), 1);

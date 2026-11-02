@@ -15,6 +15,9 @@ export interface Config {
   keybindings: string
   extensions: Record<string, string>
   accent: string
+  sortMode: string
+  sortDesc: boolean
+  showHidden: boolean
 }
 
 export const loadConfig = () => invoke<Config>('config_get')

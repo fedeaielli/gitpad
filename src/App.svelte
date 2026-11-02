@@ -66,6 +66,9 @@
       extensions: { ...ui.extensions },
       accent: ui.accent,
       lastOpenPath: tabs.tabs.find((t) => t.id === tabs.activeTabId)?.path ?? '',
+      sortMode: ui.sortMode,
+      sortDesc: ui.sortDesc,
+      showHidden: ui.showHidden,
     }
     if (!configLoaded) return
     pendingConfig = config
@@ -246,6 +249,11 @@
           ui.keybindings = config.keybindings as Keybinding
         }
         if (config.extensions) ui.extensions = config.extensions
+        if (config.sortMode === 'name' || config.sortMode === 'folders' || config.sortMode === 'modified') {
+          ui.sortMode = config.sortMode
+        }
+        if (typeof config.sortDesc === 'boolean') ui.sortDesc = config.sortDesc
+        if (typeof config.showHidden === 'boolean') ui.showHidden = config.showHidden
         if (config.lastOpenPath) {
           try {
             await openFileInTab(config.lastOpenPath)

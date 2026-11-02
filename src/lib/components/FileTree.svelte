@@ -4,6 +4,7 @@
   import { tabs, discardUnder, retarget } from '../stores/tabs.svelte'
   import { openFileInTab } from '../utils/open-file'
   import { pickAndImport } from '../utils/import'
+  import { sortNodes, visibleNodes } from '../utils/file-sort'
   import { errorMessage, isNoRepoError } from '../stores/git.svelte'
 
   type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'delete'
@@ -16,27 +17,13 @@
   let renaming = $state<string | null>(null)
   let renameValue = $state('')
 
-  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
-
-  /// Dot files stay hidden unless the header toggle is on.
+  /// Dot files stay hidden unless the options menu enables them.
   function visible(nodes: FileNode[]): FileNode[] {
-    return ui.showHidden ? nodes : nodes.filter((node) => !node.name.startsWith('.'))
+    return visibleNodes(nodes, ui.showHidden)
   }
 
   function sorted(nodes: FileNode[]): FileNode[] {
-    const list = [...visible(nodes)]
-    if (ui.sortMode === 'modified') {
-      return list.sort(
-        (a, b) => (b.modified ?? 0) - (a.modified ?? 0) || collator.compare(a.name, b.name),
-      )
-    }
-    if (ui.sortMode === 'folders') {
-      return list.sort(
-        (a, b) =>
-          Number(b.type === 'dir') - Number(a.type === 'dir') || collator.compare(a.name, b.name),
-      )
-    }
-    return list.sort((a, b) => collator.compare(a.name, b.name))
+    return sortNodes(visible(nodes), ui.sortMode, ui.sortDesc)
   }
 
   function focusInput(node: HTMLElement) {
