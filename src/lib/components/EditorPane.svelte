@@ -425,6 +425,8 @@
       fontFamily: ui.fontFamily,
       scrollBeyondLastLine: false,
       renderWhitespace: 'selection',
+      // Keeps the first line off the tab bar so tab and document read as one surface.
+      padding: { top: 6 },
       scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
     })
     setEditor(editor)
@@ -473,9 +475,6 @@
       <div class="editor" bind:this={host}></div>
       {#if ui.keybindings === 'vim'}
         <div class="vim" bind:this={vimStatus}></div>
-      {/if}
-      {#if !activeTab()}
-        <p class="empty">No file open</p>
       {/if}
     </div>
     {#if previewVisible}
@@ -538,16 +537,6 @@
     flex: 1;
     min-width: 0;
     box-shadow: inset 1px 0 0 var(--border);
-  }
-  .empty {
-    position: absolute;
-    top: 40%;
-    right: 0;
-    left: 0;
-    margin: 0;
-    color: var(--muted);
-    text-align: center;
-    pointer-events: none;
   }
   .error {
     position: absolute;

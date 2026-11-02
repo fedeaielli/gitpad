@@ -7,6 +7,7 @@
   import Sidebar from './lib/components/Sidebar.svelte'
   import ActivityBar from './lib/components/ActivityBar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
+  import Breadcrumb from './lib/components/Breadcrumb.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
   import type { Component } from 'svelte'
   import { flushPendingSave, reloadOpenTabs } from './lib/editor/bridge'
@@ -279,6 +280,7 @@
       {/if}
       <section class="editor">
         <TabBar />
+        <Breadcrumb />
         {#if EditorPane}
           <EditorPane />
         {/if}
