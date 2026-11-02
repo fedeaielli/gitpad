@@ -64,6 +64,8 @@
   })
   let user = $state<UserInfo | null>(null)
   let accountError = $state('')
+  let pat = $state('')
+  let signingIn = $state(false)
   let newExt = $state('')
   let newLang = $state('plaintext')
   let extMessage = $state('')
@@ -177,8 +179,27 @@
       pushToast(`logout: ${e}`)
       return
     }
-    ui.onboardingComplete = false
-    ui.settingsOpen = false
+    // Stay on the form: the onboarding wizard is for the first run, not for
+    // signing back in.
+    user = null
+    accountError = ''
+  }
+
+  async function signIn() {
+    const token = pat.trim()
+    if (!token || signingIn) return
+    signingIn = true
+    try {
+      // Validate before storing: a bad token must never reach the keyring.
+      user = await invoke<UserInfo>('github_validate_token', { token })
+      await invoke('auth_set_pat', { token })
+      pat = ''
+      accountError = ''
+    } catch (e) {
+      pushToast(`sign in: ${e}`)
+    } finally {
+      signingIn = false
+    }
   }
 </script>
 
@@ -424,7 +445,23 @@
             <button class="danger" onclick={logout}>Logout</button>
           </div>
         {:else}
-          <p class="note">{accountError || 'loading…'}</p>
+          <div class="field">
+            <span>Personal access token</span>
+            <div class="inline">
+              <input
+                type="password"
+                placeholder="ghp_…"
+                bind:value={pat}
+                onkeydown={(e) => e.key === 'Enter' && signIn()}
+              />
+              <button class="primary" disabled={!pat.trim() || signingIn} onclick={signIn}>
+                {signingIn ? 'Signing in…' : 'Sign in'}
+              </button>
+            </div>
+          </div>
+          {#if accountError}
+            <p class="note">{accountError}</p>
+          {/if}
         {/if}
       {/if}
     </div>
