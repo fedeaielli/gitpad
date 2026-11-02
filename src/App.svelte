@@ -53,7 +53,9 @@
 
   // Dragging the gap between the left panel and the editor resizes the sidebar.
   const MIN_SIDEBAR = 150
-  const MAX_SIDEBAR = 900
+  /// The editor always keeps this much room, so the sidebar cannot swallow it.
+  const MIN_EDITOR = 260
+  const maxSidebar = () => Math.max(MIN_SIDEBAR, window.innerWidth - MIN_EDITOR)
   let resizing = $state(false)
   let resizeX = 0
   let resizeWidth = 0
@@ -70,7 +72,7 @@
     if (!resizing) return
     // Rounded: config_save takes a u32, and a fractional width fails the save.
     ui.sidebarWidth = Math.round(
-      Math.min(MAX_SIDEBAR, Math.max(MIN_SIDEBAR, resizeWidth + e.clientX - resizeX)),
+      Math.min(maxSidebar(), Math.max(MIN_SIDEBAR, resizeWidth + e.clientX - resizeX)),
     )
   }
   function endResize() {
@@ -286,7 +288,7 @@
         if (Number.isFinite(config.fontSize)) ui.fontSize = clamp(config.fontSize, 8, 32)
         if (config.fontFamily) ui.fontFamily = config.fontFamily
         if (Number.isFinite(config.sidebarWidth))
-          ui.sidebarWidth = clamp(config.sidebarWidth, MIN_SIDEBAR, MAX_SIDEBAR)
+          ui.sidebarWidth = clamp(config.sidebarWidth, MIN_SIDEBAR, 4000)
         if (typeof config.sidebarOpen === 'boolean') ui.sidebarOpen = config.sidebarOpen
         ui.autoSync = config.autoSync
         ui.accent =
@@ -346,7 +348,7 @@
         aria-orientation={ui.sidebarOpen ? 'vertical' : undefined}
         aria-label="Resize sidebar"
         aria-valuemin={MIN_SIDEBAR}
-        aria-valuemax={MAX_SIDEBAR}
+        aria-valuemax={Math.round(maxSidebar())}
         aria-valuenow={Math.round(ui.sidebarWidth)}
         use:tip={`${Math.round(ui.sidebarWidth)}px`}
         onpointerdown={startResize}
