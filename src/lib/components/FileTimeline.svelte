@@ -255,6 +255,7 @@
     gap: 2px;
   }
   .commit {
+    position: relative;
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -268,7 +269,16 @@
   }
   .commit.active {
     background: var(--surface-2);
-    box-shadow: inset 2px 0 0 var(--accent);
+  }
+  /* Inset past the corners: a box-shadow would follow the button radius. */
+  .commit.active::before {
+    position: absolute;
+    top: var(--r-md);
+    bottom: var(--r-md);
+    left: 0;
+    width: 2px;
+    background: var(--accent);
+    content: '';
   }
   code {
     color: var(--muted);

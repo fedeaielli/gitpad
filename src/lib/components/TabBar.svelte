@@ -73,6 +73,7 @@
     overflow-y: hidden;
   }
   .tab {
+    position: relative;
     display: flex;
     align-items: center;
     flex: 0 0 auto;
@@ -84,7 +85,16 @@
     background: var(--surface-0);
     /* No separator on the tab that merges into the editor below. */
     border-right-color: transparent;
-    box-shadow: inset 0 2px 0 var(--accent);
+  }
+  /* Inset past the corners: a box-shadow would follow the radius and bow. */
+  .tab.active::after {
+    position: absolute;
+    top: 0;
+    right: var(--r-md);
+    left: var(--r-md);
+    height: 2px;
+    background: var(--accent);
+    content: '';
   }
   .label {
     display: flex;
