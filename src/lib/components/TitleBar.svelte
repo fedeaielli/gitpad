@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { getCurrentWindow } from '@tauri-apps/api/window'
   import { ui } from '../stores/ui.svelte'
+  import MenuBar from './MenuBar.svelte'
   import { tip } from '../utils/tooltip'
 
   const appWindow = getCurrentWindow()
@@ -21,6 +22,7 @@
     <span class="logo" aria-hidden="true"></span>
     GitPad
   </span>
+  <MenuBar />
   <button
     type="button"
     class="search"

@@ -51,6 +51,10 @@
       text = ui.paletteQuery
       ui.paletteQuery = null
     }
+    if (ui.paletteSearch) {
+      searching = true
+      ui.paletteSearch = false
+    }
     return () => previousFocus?.focus()
   })
 
