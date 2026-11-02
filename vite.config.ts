@@ -11,9 +11,14 @@ export default defineConfig({
   plugins: [svelte()],
   resolve: {
     alias: [
-      // Same ESM build our own import resolves to; without it the CJS require in
-      // monaco-emacs picks monaco-editor's AMD bundle.
-      { find: /^monaco-editor$/, replacement: monaco('editor.api.js') },
+      // The full ESM entry, not editor.api.js: the API-only build registers no
+      // contributions, so find, undo, clipboard and comment actions vanish.
+      {
+        find: /^monaco-editor$/,
+        replacement: fileURLToPath(
+          new URL('./node_modules/monaco-editor/esm/vs/index.js', import.meta.url),
+        ),
+      },
       {
         find: 'monaco-editor/esm/vs/editor/editor.api',
         replacement: monaco('editor.api.js'),
