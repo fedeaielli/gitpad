@@ -13,6 +13,8 @@ pub struct Config {
     pub font_family: String,
     pub sidebar_width: u32,
     pub sidebar_open: bool,
+    /// Path of the tab that was active when the app last saved its config.
+    pub last_open_path: String,
     pub auto_sync: bool,
     pub save_debounce_ms: u32,
     pub push_idle_ms: u32,
@@ -47,6 +49,7 @@ impl Default for Config {
             font_family: "ui-monospace, monospace".into(),
             sidebar_width: 240,
             sidebar_open: true,
+            last_open_path: String::new(),
             auto_sync: true,
             save_debounce_ms: 2000,
             push_idle_ms: 30_000,
@@ -125,6 +128,7 @@ mod tests {
             font_family: "monospace".into(),
             sidebar_width: 300,
             sidebar_open: false,
+            last_open_path: "/tmp/test.md".into(),
             auto_sync: false,
             save_debounce_ms: 1500,
             push_idle_ms: 60_000,
@@ -141,6 +145,7 @@ mod tests {
         assert_eq!(loaded.font_size, 16);
         assert_eq!(loaded.sidebar_width, 300);
         assert!(!loaded.sidebar_open);
+        assert_eq!(loaded.last_open_path, "/tmp/test.md");
         assert!(!loaded.auto_sync);
         assert_eq!(loaded.keybindings, "vim");
         assert_eq!(loaded.extensions.len(), 1);

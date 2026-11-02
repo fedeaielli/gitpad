@@ -18,6 +18,8 @@
   import { pushToast } from './lib/stores/toasts.svelte'
   import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
+  import { tabs } from './lib/stores/tabs.svelte'
+  import { openFileInTab } from './lib/utils/open-file'
   import { setCustomLanguages } from './lib/utils/langmap'
   import { applyTheme, applyAccent } from './lib/utils/themes'
   import {
@@ -30,7 +32,6 @@
     type GitStatus,
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
-  import { tabs } from './lib/stores/tabs.svelte'
 
   let configLoaded = $state(false)
   // Monaco is heavy: load it after the shell paints.
@@ -64,6 +65,7 @@
       keybindings: ui.keybindings,
       extensions: { ...ui.extensions },
       accent: ui.accent,
+      lastOpenPath: tabs.tabs.find((t) => t.id === tabs.activeTabId)?.path ?? '',
     }
     if (!configLoaded) return
     pendingConfig = config
@@ -244,6 +246,13 @@
           ui.keybindings = config.keybindings as Keybinding
         }
         if (config.extensions) ui.extensions = config.extensions
+        if (config.lastOpenPath) {
+          try {
+            await openFileInTab(config.lastOpenPath)
+          } catch {
+            // The file may have been deleted or moved outside GitPad.
+          }
+        }
       }
       configLoaded = true
       clearTimeout(showTimer)
