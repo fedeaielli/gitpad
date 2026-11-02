@@ -56,7 +56,7 @@
   let resizeWidth = 0
 
   function startResize(e: PointerEvent) {
-    if (!ui.sidebarOpen) return
+    if (!ui.sidebarOpen || e.button !== 0) return
     // Without this the drag selects the text of the panel under the cursor.
     e.preventDefault()
     resizeX = e.clientX
@@ -418,8 +418,16 @@
   /* The gap between the panels, made grabbable: it is the only place where the
      sidebar edge can be dragged without fighting the panel content. */
   .gutter {
+    position: relative;
+    z-index: 1;
     flex: 0 0 var(--sp-1);
     touch-action: none;
+  }
+  /* 6px is too thin to hit, so the grab area leans into the sidebar. */
+  .gutter::before {
+    position: absolute;
+    inset: 0 -4px 0 -10px;
+    content: '';
   }
   .gutter.open {
     cursor: col-resize;
