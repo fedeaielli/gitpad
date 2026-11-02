@@ -469,8 +469,9 @@
   .gutter.open:hover {
     background: var(--border-strong);
   }
-  /* Accent only while dragging, so the two states are told apart at a glance. */
-  .gutter.active {
+  /* Accent only while dragging, so the two states are told apart at a glance.
+     Two classes to match :hover, which is still on during the drag. */
+  .gutter.open.active {
     background: var(--accent);
   }
   .editor {
