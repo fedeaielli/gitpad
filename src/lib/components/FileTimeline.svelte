@@ -83,7 +83,9 @@
     diff = next
     for (const model of models) model.dispose()
     models = []
-    if (!next || !diffEditor) return
+    if (!next) return
+    ensureDiff()
+    if (!diffEditor) return
     const original = monaco.editor.createModel(
       next.original,
       language,
@@ -205,7 +207,10 @@
     splitting = false
   }
 
-  onMount(() => {
+  /// Created on first use: an empty diff editor draws a sash between two blank
+  /// panes, which reads as a black seam on some compositors.
+  function ensureDiff() {
+    if (diffEditor || !host) return
     diffEditor = monaco.editor.createDiffEditor(host, {
       theme: monacoTheme(ui.editorTheme),
       readOnly: true,
@@ -215,7 +220,9 @@
       scrollBeyondLastLine: false,
       scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
     })
-    if (diff) setDiff(diff, selected)
+  }
+
+  onMount(() => {
     return () => {
       for (const model of models) model.dispose()
       diffEditor?.dispose()

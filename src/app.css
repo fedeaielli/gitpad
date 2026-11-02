@@ -183,6 +183,10 @@ select {
    Keep the same neutral as our own handles, accent only while dragging. */
 .monaco-sash {
   --vscode-sash-hoverBorder: var(--border-strong);
+  /* Monaco leaves the sash unpainted at rest, so the seam shows whatever sits
+     behind it (black on some compositors). Its ::before stays transparent
+     until hover, which keeps painting on top of this. */
+  background: var(--surface-0) !important;
 }
 
 .monaco-sash.active:before {
