@@ -100,6 +100,15 @@ pub fn configured_repo_path(app: &AppHandle) -> Option<PathBuf> {
     (!configured.is_empty()).then(|| PathBuf::from(configured))
 }
 
+/// Saves the clone location from Rust: the frontend's debounced save can be
+/// lost if the app closes right after a move.
+pub fn store_repo_path(app: &AppHandle, path: &Path) -> Result<(), String> {
+    let file = config_path(app)?;
+    let mut config = read_config(&file);
+    config.repo_path = path.to_string_lossy().into_owned();
+    write_config(&file, &config)
+}
+
 #[tauri::command]
 pub fn config_get(app: AppHandle) -> Result<Config, String> {
     Ok(read_config(&config_path(&app)?))
