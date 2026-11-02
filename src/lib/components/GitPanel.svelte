@@ -15,11 +15,13 @@
   import { tip } from '../utils/tooltip'
   import { tabs, openTab, activateTab, discardUnder } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
+  import FileIcon from './FileIcon.svelte'
 
   let commitMessage = $state('')
   let cloneUrl = $state('')
   let cloning = $state(false)
-  let showClone = $state(false)
+
+  const blocked = $derived(gitStatus.syncing || gitStatus.conflicts.length > 0)
 
   async function commit() {
     if (!commitMessage.trim()) return
@@ -69,7 +71,6 @@
       await invoke('git_clone', { url: cloneUrl.trim() })
       ui.treeVersion += 1
       cloneUrl = ''
-      showClone = false
       applyGitStatus(await invoke<GitStatus>('git_status'))
     } catch (e) {
       gitStatus.error = errorMessage(e)
@@ -80,189 +81,291 @@
 </script>
 
 <div class="panel">
-  {#if gitStatus.configured}
-    <p class="branch" use:tip={'Current branch from git_status'}>⎇ {gitStatus.branch || '—'}</p>
-  {/if}
-
-  <div class="row">
-    <button
-      disabled={gitStatus.syncing || gitStatus.conflicts.length > 0}
-      title={gitStatus.conflicts.length > 0 ? 'Resolve the conflicts first' : undefined}
-      onclick={() => pullOnly()}
-    >
-      Pull
-    </button>
-    <button
-      disabled={gitStatus.syncing || gitStatus.conflicts.length > 0}
-      title={gitStatus.conflicts.length > 0 ? 'Resolve the conflicts first' : undefined}
-      onclick={() => pushOnly()}
-    >
-      Push
-    </button>
-    <button
-      class="primary"
-      disabled={gitStatus.syncing || gitStatus.conflicts.length > 0}
-      title={gitStatus.conflicts.length > 0 ? 'Resolve the conflicts first' : undefined}
-      onclick={() => syncNow(null)}
-    >
-      {gitStatus.syncing ? 'Syncing…' : 'Sync'}
-    </button>
-    <button onclick={() => (showClone = !showClone)}>Clone</button>
-  </div>
-
-  {#if showClone && !gitStatus.configured}
+  {#if !gitStatus.configured}
     <form
-      class="row"
+      class="clone"
       onsubmit={(e) => {
         e.preventDefault()
         void clone()
       }}
     >
       <input bind:value={cloneUrl} placeholder="https://github.com/user/repo.git" />
-      <button type="submit" disabled={cloning}>OK</button>
+      <button type="submit" class="commit" disabled={cloning}>
+        {cloning ? 'Cloning…' : 'Clone'}
+      </button>
     </form>
-  {/if}
+  {:else}
+    <div class="head">
+      <p class="branch" use:tip={'Current branch: ' + (gitStatus.branch || 'unknown')}>
+        ⎇ {gitStatus.branch || '—'}
+      </p>
+      <div class="acts">
+        <button disabled={blocked} aria-label="Pull" use:tip={'Pull'} onclick={() => pullOnly()}>
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 2.5v7.2m0 0 2.5-2.5M8 9.7 5.5 7.2" />
+            <path d="M3.5 12.5h9" />
+          </svg>
+        </button>
+        <button disabled={blocked} aria-label="Push" use:tip={'Push'} onclick={() => pushOnly()}>
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 10.5V3.3m0 0 2.5 2.5M8 3.3 5.5 5.8" />
+            <path d="M3.5 12.5h9" />
+          </svg>
+        </button>
+        <button
+          class="sync"
+          class:spinning={gitStatus.syncing}
+          disabled={blocked}
+          aria-label="Sync"
+          use:tip={'Sync'}
+          onclick={() => syncNow(null)}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M13 8a5 5 0 0 1-9.2 2.7" />
+            <path d="M3 8a5 5 0 0 1 9.2-2.7" />
+            <path d="M12.7 2.7v2.8h-2.8" />
+            <path d="M3.3 13.3v-2.8h2.8" />
+          </svg>
+        </button>
+      </div>
+    </div>
 
-  <form
-    class="row"
-    onsubmit={(e) => {
-      e.preventDefault()
-      void commit()
-    }}
-  >
-    <input bind:value={commitMessage} placeholder="Commit message" />
-    <button type="submit" disabled={gitStatus.syncing || gitStatus.conflicts.length > 0}>
-      Commit
-    </button>
-  </form>
+    <form
+      class="commit-form"
+      onsubmit={(e) => {
+        e.preventDefault()
+        void commit()
+      }}
+    >
+      <textarea bind:value={commitMessage} placeholder="Commit message" rows="2"></textarea>
+      <button
+        type="submit"
+        class="commit"
+        disabled={blocked || !commitMessage.trim()}
+      >
+        Commit
+      </button>
+    </form>
 
-  {#if gitStatus.changes.length > 0}
-    <ul class="changes">
-      {#each gitStatus.changes as change (change.path)}
-        <li>
-          <button
-            class="change"
-            disabled={change.status === 'D'}
-            title={change.status === 'D' ? `${change.path} (deleted)` : undefined}
-            use:tip={change.status === 'D' ? `${change.path} (deleted)` : change.path}
-            onclick={() => openChange(change)}
-          >
-            <span class="badge {change.status}">{change.status}</span>
-            <span class="path">{change.path}</span>
-          </button>
-          <button class="discard" use:tip={'Discard changes'} onclick={() => discard(change)}>×</button>
-        </li>
-      {/each}
-    </ul>
-  {/if}
+    {#if gitStatus.conflicts.length > 0}
+      <p class="conflicts">⚠ {gitStatus.conflicts.length} conflict(s)</p>
+    {/if}
+    {#if gitStatus.error}
+      <p class="error">{gitStatus.error}</p>
+    {/if}
 
-  {#if gitStatus.conflicts.length > 0}
-    <p class="conflicts">⚠ {gitStatus.conflicts.length} conflict(s)</p>
-  {/if}
-  {#if gitStatus.error}
-    <p class="error">{gitStatus.error}</p>
-  {/if}
+    <div class="section">Changes {gitStatus.changes.length}</div>
+    {#if gitStatus.changes.length === 0}
+      <p class="none">No changes</p>
+    {:else}
+      <ul class="changes">
+        {#each gitStatus.changes as change (change.path)}
+          <li>
+            <button
+              class="change"
+              disabled={change.status === 'D'}
+              title={change.status === 'D' ? `${change.path} (deleted)` : undefined}
+              use:tip={change.status === 'D' ? `${change.path} (deleted)` : change.path}
+              onclick={() => openChange(change)}
+            >
+              <span class="badge {change.status}">{change.status}</span>
+              <FileIcon name={change.path} />
+              <span class="path">{change.path}</span>
+            </button>
+            <button
+              class="discard"
+              aria-label="Discard changes"
+              use:tip={'Discard changes'} onclick={() => discard(change)}>
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M4.5 4.5l7 7m0-7-7 7" />
+              </svg>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
 
-  <p class="meta">
-    {gitStatus.modifiedFiles.length} changed · {gitStatus.ahead} ahead · {gitStatus.behind} behind
-  </p>
+    <p class="meta">
+      {gitStatus.modifiedFiles.length} changed · {gitStatus.ahead} ahead · {gitStatus.behind} behind
+    </p>
+  {/if}
 </div>
 
 <style>
   .panel {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 6px 8px 8px;
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2) var(--sp-2);
   }
-  .row {
+  .head {
     display: flex;
-    gap: 6px;
-  }
-  .row input {
-    flex: 1;
+    align-items: center;
+    gap: var(--sp-1);
     min-width: 0;
   }
-  button {
-    padding: 3px 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--r-sm);
-    background: var(--surface-2);
-  }
-  button:hover:not(:disabled) {
-    border-color: var(--accent);
-  }
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-  .primary {
-    color: var(--ok);
-  }
-  .conflicts {
-    margin: 0;
-    color: var(--err);
-    font-size: 11px;
-  }
-  .error {
-    margin: 0;
-    color: var(--err);
-    font-size: 11px;
-    overflow-wrap: anywhere;
-  }
-  .meta {
-    margin: 0;
-    color: var(--muted);
-    font-size: 11px;
-  }
   .branch {
+    flex: 1;
+    min-width: 0;
     margin: 0;
-    color: var(--muted);
-    font-size: 11px;
     overflow: hidden;
+    color: var(--muted);
+    font-size: var(--fs-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .changes {
-    list-style: none;
-    margin: 0;
+  .acts {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 2px;
+  }
+  .acts button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
     padding: 0;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .acts button:hover:not(:disabled) {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .acts button:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+  .acts button.spinning svg {
+    animation: spin 900ms linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  /* Same stroke language as FileIcon, so the panel reads as one icon set. */
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .commit-form,
+  .clone {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+  }
+  textarea,
+  .clone input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: var(--sp-1) var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-0);
+    color: var(--text);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+  }
+  textarea {
+    min-height: 46px;
+    resize: none;
+  }
+  textarea:focus,
+  .clone input:focus {
+    border-color: var(--accent-fg);
+    outline: none;
+  }
+  textarea::placeholder,
+  .clone input::placeholder {
+    color: var(--muted);
+  }
+  .commit {
+    padding: var(--sp-1) var(--sp-2);
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    cursor: pointer;
+  }
+  .commit:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+  .commit:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+  .section {
+    padding-top: var(--sp-1);
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .none {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  .changes {
     display: flex;
     flex-direction: column;
     gap: 1px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .changes li {
     display: flex;
     align-items: center;
     gap: 2px;
+    border-radius: var(--r-sm);
+  }
+  .changes li:hover {
+    background: var(--surface-2);
   }
   .change {
-    flex: 1;
-    min-width: 0;
     display: flex;
+    flex: 1;
     align-items: center;
-    gap: 6px;
-    text-align: left;
-    border-color: transparent;
+    gap: var(--sp-1);
+    min-width: 0;
+    height: 22px;
+    padding: 0 var(--sp-1);
+    border: 0;
     background: transparent;
-    padding: 2px 4px;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
   }
   .change:disabled {
-    opacity: 1;
     color: var(--muted);
+    cursor: default;
     text-decoration: line-through;
   }
   .path {
     overflow: hidden;
+    font-size: var(--fs-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 12px;
   }
   .badge {
     flex: 0 0 auto;
-    width: 12px;
-    border-radius: var(--r-pill);
-    font-size: 10px;
+    width: 10px;
+    color: var(--muted);
+    font-size: var(--fs-xs);
     font-weight: 600;
   }
   .badge.M {
@@ -275,13 +378,39 @@
     color: var(--err);
   }
   .discard {
-    border-color: transparent;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
-    padding: 0 5px;
+    cursor: pointer;
+    opacity: 0;
   }
-  .discard:hover:not(:disabled) {
+  /* Hidden until the row is hovered, but not from the keyboard. */
+  .changes li:hover .discard,
+  .discard:focus-visible {
+    opacity: 1;
+  }
+  .discard:hover {
+    background: var(--surface-3);
     color: var(--err);
-    border-color: var(--err);
+  }
+  .conflicts,
+  .error {
+    margin: 0;
+    color: var(--err);
+    font-size: var(--fs-xs);
+    overflow-wrap: anywhere;
+  }
+  .meta {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-xs);
   }
 </style>
