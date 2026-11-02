@@ -50,7 +50,7 @@
     error = null
     try {
       const info = await invoke<UserInfo>('github_validate_token', { token: token.trim() })
-      await invoke('auth_store', { key: 'github_token', value: token.trim() })
+      await invoke('auth_set_pat', { token: token.trim() })
       user = info
       goRepo()
     } catch (e) {
