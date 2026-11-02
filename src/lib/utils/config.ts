@@ -14,6 +14,7 @@ export interface Config {
   keybindings: string
   extensions: Record<string, string>
   accent: string
+  repoPath: string
   sortMode: string
   sortDesc: boolean
   showHidden: boolean

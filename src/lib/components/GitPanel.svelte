@@ -68,7 +68,7 @@
     cloning = true
     gitStatus.error = null
     try {
-      await invoke('git_clone', { url: cloneUrl.trim() })
+      ui.repoPath = await invoke<string>('git_clone', { url: cloneUrl.trim() })
       ui.treeVersion += 1
       cloneUrl = ''
       applyGitStatus(await invoke<GitStatus>('git_status'))

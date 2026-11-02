@@ -3,6 +3,7 @@
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
   import { openUrl } from '@tauri-apps/plugin-opener'
+  import { open } from '@tauri-apps/plugin-dialog'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
 
@@ -34,6 +35,8 @@
   let device = $state<DeviceCode | null>(null)
   let deviceAvailable = $state(false)
   let repo = $state<RepoInfo | null>(null)
+  /// Folder that will hold the clone; empty keeps the app data dir.
+  let folder = $state('')
   let busy = $state(false)
   let error = $state<string | null>(null)
 
@@ -80,12 +83,18 @@
     }
   }
 
+  async function chooseFolder() {
+    const picked = await open({ directory: true, multiple: false, title: 'Repository folder' })
+    if (typeof picked === 'string') folder = picked
+  }
+
   async function clone() {
     if (!repo) return
     busy = true
     error = null
     try {
-      await invoke('git_clone', { url: repo.cloneUrl })
+      const parent = folder.trim()
+      ui.repoPath = await invoke<string>('git_clone', { url: repo.cloneUrl, parent: parent || null })
       applyGitStatus(await invoke<GitStatus>('git_status'))
       ui.treeVersion += 1
       step = 'done'
@@ -156,6 +165,10 @@
       {:else if repo}
         <p><code>{repo.fullName}</code> {repo.private ? '(private)' : ''}</p>
         <p class="muted">{repo.cloneUrl}</p>
+        <div class="folder">
+          <p class="muted">{folder || 'Default app folder'}</p>
+          <button disabled={busy} onclick={chooseFolder}>{folder ? 'Change…' : 'Choose…'}</button>
+        </div>
         <button class="primary" disabled={busy} onclick={clone}>Clone &amp; Open</button>
       {:else}
         <p>Could not set up the repository.</p>
@@ -244,6 +257,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
+  }
+  .folder {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .folder p {
+    flex: 1;
+    min-width: 0;
   }
   .divider {
     color: var(--muted);

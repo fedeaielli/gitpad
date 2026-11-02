@@ -154,6 +154,12 @@ pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
     if let Some(path) = cached.as_ref().filter(|p| p.join(".git").exists()) {
         return Ok(path.clone());
     }
+    // A location picked by the user wins over scanning the default folder.
+    if let Some(path) = crate::config::configured_repo_path(app).filter(|p| p.join(".git").exists())
+    {
+        *cached = Some(path.clone());
+        return Ok(path);
+    }
     let root = repos_root(app)?;
     let mut dirs: Vec<PathBuf> = std::fs::read_dir(&root)
         .map_err(|e| GitError::IoError(format!("read repos dir: {e}")))?
@@ -867,13 +873,51 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
     (if month <= 2 { y + 1 } else { y }, month, day)
 }
 
+/// The clone always lands in `<parent>/<repo name>`: the picker only chooses the folder around it.
+fn clone_target(parent: &Path, name: &str) -> Result<PathBuf, GitError> {
+    if !parent.is_absolute() {
+        return Err(format!("clone folder must be absolute: {}", parent.display()).into());
+    }
+    let meta = std::fs::metadata(parent)
+        .map_err(|e| GitError::IoError(format!("clone folder {}: {e}", parent.display())))?;
+    if !meta.is_dir() {
+        return Err(format!("clone folder is not a folder: {}", parent.display()).into());
+    }
+    Ok(parent.join(name))
+}
+
+/// Recursive copy for moving a clone across filesystems; symlinks are skipped.
+fn copy_tree(src: &Path, dst: &Path) -> Result<(), GitError> {
+    let io = |what: &Path, e: std::io::Error| GitError::IoError(format!("{}: {e}", what.display()));
+    std::fs::create_dir_all(dst).map_err(|e| io(dst, e))?;
+    for entry in std::fs::read_dir(src).map_err(|e| io(src, e))? {
+        let entry = entry.map_err(|e| io(src, e))?;
+        let path = entry.path();
+        let target = dst.join(entry.file_name());
+        let kind = entry.file_type().map_err(|e| io(&path, e))?;
+        if kind.is_dir() {
+            copy_tree(&path, &target)?;
+        } else if kind.is_file() {
+            std::fs::copy(&path, &target).map_err(|e| io(&path, e))?;
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
-pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
+pub async fn git_clone(
+    app: AppHandle,
+    url: String,
+    parent: Option<String>,
+) -> Result<String, GitError> {
     let name = repo_name_from_url(&url)?;
-    let target = repos_root(&app)?.join(name);
+    let target = match parent.as_deref().map(str::trim).filter(|p| !p.is_empty()) {
+        Some(parent) => clone_target(Path::new(parent), &name)?,
+        None => repos_root(&app)?.join(name),
+    };
     if target.join(".git").exists() {
         remember_repo(&app, target.clone());
-        return Ok(());
+        return Ok(target.to_string_lossy().into_owned());
     }
     if let Ok(existing) = repo_dir(&app) {
         return Err(GitError::Other(format!(
@@ -881,7 +925,7 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
             existing.display()
         )));
     }
-    let clone_target = target.clone();
+    let target_task = target.clone();
     let gate = app.state::<crate::AppState>().repo_gate.clone();
     tokio::task::spawn_blocking(move || {
         let token = auth::token().ok();
@@ -890,12 +934,63 @@ pub async fn git_clone(app: AppHandle, url: String) -> Result<(), GitError> {
         let mut opts = FetchOptions::new();
         opts.remote_callbacks(callbacks(token));
         builder.fetch_options(opts);
-        builder.clone(&url, &clone_target).map(|_| ()).map_err(git_err)
+        builder
+            .clone(&url, &target_task)
+            .map(|_| ())
+            .map_err(git_err)
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
-    remember_repo(&app, target);
-    Ok(())
+    remember_repo(&app, target.clone());
+    Ok(target.to_string_lossy().into_owned())
+}
+
+/// Where a move took the clone: open tabs need the old prefix to follow it.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MovedRepo {
+    pub from: String,
+    pub to: String,
+}
+
+/// Moves the clone into another folder and returns its old and new path.
+#[tauri::command]
+pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, GitError> {
+    let from = repo_dir(&app)?;
+    let name = from
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .ok_or_else(|| GitError::Other("repository has no name".into()))?;
+    let to = clone_target(Path::new(parent.trim()), &name)?;
+    if to == from {
+        let path = from.to_string_lossy().into_owned();
+        return Ok(MovedRepo { from: path.clone(), to: path });
+    }
+    if to.exists() {
+        return Err(format!("a folder already exists at {}", to.display()).into());
+    }
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
+    let from_task = from.clone();
+    let to_task = to.clone();
+    tokio::task::spawn_blocking(move || -> Result<(), GitError> {
+        let _gate = gate.write().map_err(|e| e.to_string())?;
+        // Same filesystem: the rename is instant. Across filesystems copy first,
+        // so a failed copy leaves the old clone untouched.
+        if std::fs::rename(&from_task, &to_task).is_err() {
+            copy_tree(&from_task, &to_task)?;
+            open_repo(&to_task)?;
+            std::fs::remove_dir_all(&from_task)
+                .map_err(|e| GitError::IoError(format!("remove {}: {e}", from_task.display())))?;
+        }
+        open_repo(&to_task).map(|_| ())
+    })
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
+    remember_repo(&app, to.clone());
+    Ok(MovedRepo {
+        from: from.to_string_lossy().into_owned(),
+        to: to.to_string_lossy().into_owned(),
+    })
 }
 
 #[tauri::command]
@@ -1161,6 +1256,29 @@ mod tests {
     fn iso8601_matches_known_dates() {
         assert_eq!(iso8601(0), "1970-01-01T00:00:00Z");
         assert_eq!(iso8601(1_700_000_000), "2023-11-14T22:13:20Z");
+    }
+
+    #[test]
+    fn clone_target_requires_an_existing_absolute_folder() {
+        let parent = tmp("clone-target");
+        assert!(clone_target(Path::new("relative"), "notes").is_err());
+        assert!(clone_target(&parent.join("missing"), "notes").is_err());
+        assert_eq!(clone_target(&parent, "notes").unwrap(), parent.join("notes"));
+        let _ = std::fs::remove_dir_all(&parent);
+    }
+
+    #[test]
+    fn copy_tree_copies_files_and_nested_folders() {
+        let src = tmp("copy-src");
+        let dst = tmp("copy-dst");
+        std::fs::write(src.join("a.md"), "a").unwrap();
+        std::fs::create_dir_all(src.join("sub")).unwrap();
+        std::fs::write(src.join("sub/b.md"), "b").unwrap();
+        copy_tree(&src, &dst).unwrap();
+        assert!(dst.join("a.md").exists());
+        assert!(dst.join("sub/b.md").exists());
+        let _ = std::fs::remove_dir_all(&src);
+        let _ = std::fs::remove_dir_all(&dst);
     }
 
     #[test]
