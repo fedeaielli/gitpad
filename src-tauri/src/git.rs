@@ -925,6 +925,21 @@ fn copy_tree(src: &Path, dst: &Path) -> Result<(), GitError> {
     Ok(())
 }
 
+/// Rename when possible, copy otherwise; both paths end with the destination
+/// opened, so a half-move never reports success.
+fn move_clone(from: &Path, to: &Path) -> Result<(), GitError> {
+    if to.exists() {
+        return Err(format!("a folder already exists at {}", to.display()).into());
+    }
+    if std::fs::rename(from, to).is_err() {
+        copy_tree(from, to)?;
+        open_repo(to)?;
+        std::fs::remove_dir_all(from)
+            .map_err(|e| GitError::IoError(format!("remove {}: {e}", from.display())))?;
+    }
+    open_repo(to).map(|_| ())
+}
+
 #[tauri::command]
 pub async fn git_clone(
     app: AppHandle,
@@ -979,17 +994,19 @@ async fn clone_into(app: &AppHandle, url: &str, target: &Path) -> Result<(), Git
     tokio::task::spawn_blocking(move || {
         let token = auth::token().ok();
         let _gate = gate.write().map_err(|e| e.to_string())?;
-        let mut builder = RepoBuilder::new();
-        let mut opts = FetchOptions::new();
-        opts.remote_callbacks(callbacks(token));
-        builder.fetch_options(opts);
-        builder
-            .clone(&url, &target_task)
-            .map(|_| ())
-            .map_err(git_err)
+        clone_repo(&url, &target_task, token)
     })
     .await
     .map_err(|e| format!("git task: {e}"))?
+}
+
+/// Sync clone body: the caller owns the gate, the token and the target.
+fn clone_repo(url: &str, target: &Path, token: Option<String>) -> Result<(), GitError> {
+    let mut builder = RepoBuilder::new();
+    let mut opts = FetchOptions::new();
+    opts.remote_callbacks(callbacks(token));
+    builder.fetch_options(opts);
+    builder.clone(url, target).map(|_| ()).map_err(git_err)
 }
 
 /// Where a move took the clone: open tabs need the old prefix to follow it.
@@ -1016,20 +1033,15 @@ pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, 
     if to.exists() {
         return Err(format!("a folder already exists at {}", to.display()).into());
     }
+    if to.exists() {
+        return Err(format!("a folder already exists at {}", to.display()).into());
+    }
     let gate = app.state::<crate::AppState>().repo_gate.clone();
     let from_task = from.clone();
     let to_task = to.clone();
     tokio::task::spawn_blocking(move || -> Result<(), GitError> {
         let _gate = gate.write().map_err(|e| e.to_string())?;
-        // Same filesystem: the rename is instant. Across filesystems copy first,
-        // so a failed copy leaves the old clone untouched.
-        if std::fs::rename(&from_task, &to_task).is_err() {
-            copy_tree(&from_task, &to_task)?;
-            open_repo(&to_task)?;
-            std::fs::remove_dir_all(&from_task)
-                .map_err(|e| GitError::IoError(format!("remove {}: {e}", from_task.display())))?;
-        }
-        open_repo(&to_task).map(|_| ())
+        move_clone(&from_task, &to_task)
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
@@ -1307,6 +1319,79 @@ mod tests {
         record_push(&repo);
         assert!(last_push_secs(&repo).unwrap() > 0);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn clone_repo_copies_a_bare_remote() {
+        let root = tmp("clone-repo");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let seed = Repository::clone(remote_path.to_str().unwrap(), root.join("seed")).unwrap();
+        commit_file(&seed, "a.md", "hello");
+        push_current(&seed);
+        drop(seed);
+
+        let target = root.join("clone");
+        clone_repo(remote_path.to_str().unwrap(), &target, None).unwrap();
+
+        assert!(target.join("a.md").exists());
+        assert_eq!(log_entries(&open_repo(&target).unwrap()).unwrap().len(), 1);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn clone_repo_rejects_a_non_empty_folder() {
+        let root = tmp("clone-taken");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let target = root.join("taken");
+        std::fs::create_dir_all(&target).unwrap();
+        std::fs::write(target.join("keep.txt"), "mine").unwrap();
+
+        let err = clone_repo(remote_path.to_str().unwrap(), &target, None).unwrap_err();
+
+        assert!(err.to_string().contains("not an empty"), "unexpected: {err}");
+        assert_eq!(std::fs::read_to_string(target.join("keep.txt")).unwrap(), "mine");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn move_clone_moves_the_clone_and_keeps_the_history() {
+        let root = tmp("move-clone");
+        let from = root.join("notes");
+        let repo = Repository::init(&from).unwrap();
+        commit_file(&repo, "a.md", "1");
+        commit_file(&repo, "b.md", "2");
+        drop(repo);
+
+        let parent = root.join("elsewhere");
+        std::fs::create_dir_all(&parent).unwrap();
+        let to = parent.join("notes");
+        move_clone(&from, &to).unwrap();
+
+        assert!(!from.exists());
+        assert!(to.join(".git").exists());
+        assert_eq!(log_entries(&open_repo(&to).unwrap()).unwrap().len(), 2);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn move_clone_refuses_an_existing_target() {
+        let root = tmp("move-taken");
+        let from = root.join("notes");
+        let repo = Repository::init(&from).unwrap();
+        commit_file(&repo, "a.md", "1");
+        drop(repo);
+
+        let to = root.join("taken");
+        std::fs::create_dir_all(&to).unwrap();
+        std::fs::write(to.join("keep.txt"), "mine").unwrap();
+
+        let err = move_clone(&from, &to).unwrap_err();
+
+        assert!(err.to_string().contains("already exists"), "unexpected: {err}");
+        assert!(from.join("a.md").exists());
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
