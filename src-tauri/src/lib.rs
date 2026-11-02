@@ -5,6 +5,8 @@ mod git;
 mod github;
 mod search;
 
+use tauri_plugin_log::log;
+
 #[cfg(test)]
 pub(crate) mod test_util {
     use std::sync::{mpsc, Arc, RwLock};
@@ -146,6 +148,24 @@ fn app_closing_ack() {
     CLOSE_ACK.store(true, Ordering::SeqCst);
 }
 
+/// The webview reports what the user was shown, so one log carries both sides.
+#[tauri::command]
+fn app_log(level: String, message: String) {
+    match level_of(&level) {
+        log::Level::Error => log::error!("ui: {message}"),
+        log::Level::Warn => log::warn!("ui: {message}"),
+        _ => log::info!("ui: {message}"),
+    }
+}
+
+fn level_of(name: &str) -> log::Level {
+    match name {
+        "error" => log::Level::Error,
+        "warn" => log::Level::Warn,
+        _ => log::Level::Info,
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Must happen before Tauri spawns threads: they inherit the mask.
@@ -153,7 +173,21 @@ pub fn run() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            // One file plus the previous one: enough for a bug report, no growth.
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("gitpad".into()),
+                    }),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                ])
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+                .level(tauri_plugin_log::log::LevelFilter::Info)
+                .build(),
+        )
         .setup(move |app| {
+            log::info!("gitpad {} starting", env!("CARGO_PKG_VERSION"));
             let http = Client::builder()
                 .user_agent("GitPad")
                 .timeout(Duration::from_secs(15))
@@ -219,6 +253,7 @@ pub fn run() {
             config::config_save,
             app_exit,
             app_closing_ack,
+            app_log,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -245,7 +280,7 @@ pub fn run() {
         .run(tauri::generate_context!());
 
     if let Err(err) = result {
-        eprintln!("gitpad: {err}");
+        log::error!("startup: {err}");
         std::process::exit(1);
     }
 }
@@ -253,6 +288,16 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::watchdog_should_exit;
+    use super::level_of;
+    use tauri_plugin_log::log;
+
+    #[test]
+    fn level_of_maps_the_names_the_webview_sends() {
+        assert_eq!(level_of("error"), log::Level::Error);
+        assert_eq!(level_of("warn"), log::Level::Warn);
+        assert_eq!(level_of("info"), log::Level::Info);
+        assert_eq!(level_of("nonsense"), log::Level::Info);
+    }
 
     #[test]
     fn watchdog_exits_for_its_own_unacked_close() {

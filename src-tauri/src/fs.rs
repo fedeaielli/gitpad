@@ -3,6 +3,7 @@ use serde::Serialize;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_log::log;
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -347,7 +348,7 @@ pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), git::GitError
         }
         // The filesystem is the source of truth: a failed commit is retried by the next push.
         if let Err(e) = git::commit_all(&root_task, &format!("gitpad: delete {label}")) {
-            eprintln!("gitpad: commit after delete failed: {e}");
+            log::warn!("commit after delete failed: {e}");
         }
         Ok(())
     })
@@ -380,7 +381,7 @@ pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), g
         rename_in(&root_task, &from, &to)?;
         // The filesystem is the source of truth: a failed commit is retried by the next push.
         if let Err(e) = git::commit_all(&root_task, &format!("gitpad: rename {from}")) {
-            eprintln!("gitpad: commit after rename failed: {e}");
+            log::warn!("commit after rename failed: {e}");
         }
         Ok(())
     })
@@ -516,7 +517,7 @@ fn import_locked(
     let rel = dest_rel.join(name);
     // The copy already happened: a failed commit is retried by the next push.
     if let Err(e) = git::commit_all(root, &format!("gitpad: import {}", rel.display())) {
-        eprintln!("gitpad: commit after import failed: {e}");
+        log::warn!("commit after import failed: {e}");
     }
     Ok(rel)
 }
