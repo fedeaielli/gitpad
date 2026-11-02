@@ -30,3 +30,9 @@ PROJECT.md
 TASKS.md
 ARCHITECTURE.md
 image_aa638b75.jpg
+
+# makepkg
+/pkg/
+/src/gitpad-*/
+gitpad-*.tar.gz
+*.pkg.tar.zst
