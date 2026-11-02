@@ -2,6 +2,7 @@
   import { gitStatus } from '../stores/git.svelte'
   import { tabs } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
+  import { tip } from '../utils/tooltip'
 
   let now = $state(Date.now())
 
@@ -40,7 +41,7 @@
     <span class="spinner" aria-label="Syncing"></span>
   {/if}
   {#if badge === 'conflict'}
-    <button class="badge conflict" title="Open merge conflicts" onclick={() => (ui.conflictsHidden = false)}>
+    <button class="badge conflict" use:tip={'Open merge conflicts'} onclick={() => (ui.conflictsHidden = false)}>
       {badge}
     </button>
   {:else}

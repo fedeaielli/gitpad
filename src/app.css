@@ -163,6 +163,26 @@ select {
   outline-offset: -2px;
 }
 
+/* Shared hover hint, moved around by use:tip. Fixed to the viewport so a
+   scroll container cannot clip it. */
+.gitpad-tip {
+  position: fixed;
+  z-index: 100;
+  max-width: min(420px, 80vw);
+  overflow: hidden;
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  box-shadow: var(--shadow-1);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* Thin scrollbars: the thumb only shows while the area is hovered. */
 ::-webkit-scrollbar {
   width: 6px;

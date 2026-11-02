@@ -12,6 +12,7 @@
     type GitStatus,
   } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
+  import { tip } from '../utils/tooltip'
   import { tabs, openTab, activateTab, discardUnder } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
 
@@ -80,7 +81,7 @@
 
 <div class="panel">
   {#if gitStatus.configured}
-    <p class="branch" title="Current branch from git_status">⎇ {gitStatus.branch || '—'}</p>
+    <p class="branch" use:tip={'Current branch from git_status'}>⎇ {gitStatus.branch || '—'}</p>
   {/if}
 
   <div class="row">
@@ -148,7 +149,7 @@
             <span class="badge {change.status}">{change.status}</span>
             <span class="path">{change.path}</span>
           </button>
-          <button class="discard" title="Discard changes" onclick={() => discard(change)}>×</button>
+          <button class="discard" use:tip={'Discard changes'} onclick={() => discard(change)}>×</button>
         </li>
       {/each}
     </ul>

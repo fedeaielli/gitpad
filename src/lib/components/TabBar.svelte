@@ -2,6 +2,7 @@
   import { tabs, activateTab, closeTab } from '../stores/tabs.svelte'
   import { ui, cyclePreview } from '../stores/ui.svelte'
   import FileIcon from './FileIcon.svelte'
+  import { tip } from '../utils/tooltip'
 
   const isMarkdown = $derived(
     tabs.tabs.find((t) => t.id === tabs.activeTabId)?.language === 'markdown',
@@ -33,7 +34,7 @@
         <button
           class="icon"
           class:active={ui.timelineOpen}
-          title="History for this file"
+          use:tip={'History for this file'}
           aria-label="File history"
           aria-pressed={ui.timelineOpen}
           onclick={() => (ui.timelineOpen = !ui.timelineOpen)}
@@ -44,7 +45,7 @@
           </svg>
         </button>
         {#if isMarkdown}
-          <button class="preview" onclick={cyclePreview} title="Cycle preview (Ctrl+Shift+P)">
+          <button class="preview" onclick={cyclePreview} use:tip={'Cycle preview (Ctrl+Shift+P)'}>
             Preview · {ui.previewMode}
           </button>
         {/if}

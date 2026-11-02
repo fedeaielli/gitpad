@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { getCurrentWindow } from '@tauri-apps/api/window'
   import { ui } from '../stores/ui.svelte'
+  import { tip } from '../utils/tooltip'
 
   const appWindow = getCurrentWindow()
   let maximized = $state(false)
@@ -23,7 +24,7 @@
     type="button"
     class="search"
     aria-label="Search files, or type > for commands (Ctrl+P)"
-    title="Search files (Ctrl+P) — type > for commands"
+    use:tip={'Search files (Ctrl+P) — type > for commands'}
     onclick={() => (ui.commandPaletteOpen = true)}
   >
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -36,13 +37,13 @@
   </button>
   <div class="spacer" data-tauri-drag-region></div>
   <div class="controls">
-    <button class="win" aria-label="Minimize" title="Minimize" onclick={() => void appWindow.minimize()}>
+    <button class="win" aria-label="Minimize" use:tip={'Minimize'} onclick={() => void appWindow.minimize()}>
       <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5h10" /></svg>
     </button>
     <button
       class="win"
       aria-label={maximized ? 'Restore' : 'Maximize'}
-      title={maximized ? 'Restore' : 'Maximize'}
+      use:tip={maximized ? 'Restore' : 'Maximize'}
       onclick={() => void appWindow.toggleMaximize()}
     >
       <svg viewBox="0 0 10 10" aria-hidden="true">
@@ -54,7 +55,7 @@
         {/if}
       </svg>
     </button>
-    <button class="win close" aria-label="Close" title="Close" onclick={() => void appWindow.close()}>
+    <button class="win close" aria-label="Close" use:tip={'Close'} onclick={() => void appWindow.close()}>
       <svg viewBox="0 0 10 10" aria-hidden="true"><path d="M0 0l10 10M10 0L0 10" /></svg>
     </button>
   </div>
