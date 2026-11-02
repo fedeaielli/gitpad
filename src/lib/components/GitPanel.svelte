@@ -143,7 +143,8 @@
           <button
             class="change"
             disabled={change.status === 'D'}
-            title={change.status === 'D' ? `${change.path} (deleted)` : change.path}
+            title={change.status === 'D' ? `${change.path} (deleted)` : undefined}
+            use:tip={change.status === 'D' ? `${change.path} (deleted)` : change.path}
             onclick={() => openChange(change)}
           >
             <span class="badge {change.status}">{change.status}</span>
