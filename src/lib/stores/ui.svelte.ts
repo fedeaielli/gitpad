@@ -36,6 +36,7 @@ export const ui = $state({
   timelineOpen: false,
   /// Height of the per-file history panel in px.
   timelineHeight: 200,
+  timelineListWidth: 300,
   commandPaletteOpen: false,
   /// Set by a global shortcut so the palette opens straight in its prompt.
   palettePrompt: null as 'file' | 'folder' | null,

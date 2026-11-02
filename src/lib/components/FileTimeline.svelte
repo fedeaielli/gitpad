@@ -182,6 +182,29 @@
     dragging = false
   }
 
+  let splitting = $state(false)
+  let splitX = 0
+  let splitWidth = 0
+
+  function startSplit(e: PointerEvent) {
+    e.preventDefault()
+    splitting = true
+    splitX = e.clientX
+    splitWidth = ui.timelineListWidth
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  function moveSplit(e: PointerEvent) {
+    if (!splitting) return
+    ui.timelineListWidth = Math.round(
+      Math.min(560, Math.max(180, splitWidth + e.clientX - splitX)),
+    )
+  }
+
+  function endSplit() {
+    splitting = false
+  }
+
   onMount(() => {
     diffEditor = monaco.editor.createDiffEditor(host, {
       theme: monacoTheme(ui.editorTheme),
@@ -231,7 +254,7 @@
   {/if}
 
   <div class="body">
-    <ul class="commits">
+    <ul class="commits" style="flex: 0 0 {ui.timelineListWidth}px">
       {#if loading && commits.length === 0}
         <li class="skeleton"></li>
         <li class="skeleton"></li>
@@ -263,6 +286,20 @@
         {/each}
       {/if}
     </ul>
+    <div
+      class="split"
+      class:active={splitting}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize file history list"
+      aria-valuemin="180"
+      aria-valuemax="560"
+      aria-valuenow={ui.timelineListWidth}
+      onpointerdown={startSplit}
+      onpointermove={moveSplit}
+      onpointerup={endSplit}
+      onpointercancel={endSplit}
+    ></div>
     <div class="diff">
       <div class="editor" bind:this={host}></div>
       {#if !diff}
@@ -278,9 +315,8 @@
     display: flex;
     flex: 0 0 auto;
     flex-direction: column;
+    gap: var(--sp-1);
     min-height: 0;
-    border-radius: var(--r-lg);
-    background: var(--surface-1);
   }
   .resize {
     position: absolute;
@@ -301,8 +337,10 @@
     flex: 0 0 26px;
     gap: var(--sp-2);
     padding: 0 var(--sp-2);
-    border-bottom: 1px solid var(--border);
-    background: var(--surface-0);
+    /* Rounded like every other panel: the container clips nothing, so each
+       child carries its own corners and the gutter shows the pane behind. */
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
     color: var(--muted);
     font-size: var(--fs-xs);
   }
@@ -340,7 +378,7 @@
     align-items: center;
     gap: var(--sp-2);
     padding: 3px var(--sp-2);
-    border-bottom: 1px solid var(--border);
+    border-radius: var(--r-md);
     background: var(--surface-2);
     color: var(--err);
     font-size: var(--fs-xs);
@@ -365,11 +403,23 @@
     min-height: 0;
   }
   .commits {
-    flex: 0 0 clamp(260px, 34%, 360px);
+    flex: 0 0 auto;
     margin: 0;
     padding: 4px 0;
     overflow: auto;
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
     list-style: none;
+  }
+  /* The gap between the two panels, made grabbable, like the sidebar gutter. */
+  .split {
+    flex: 0 0 var(--sp-1);
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .split:hover,
+  .split.active {
+    background: var(--accent);
   }
   .row {
     display: flex;
@@ -459,7 +509,9 @@
     position: relative;
     flex: 1;
     min-width: 0;
-    border-left: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    background: var(--surface-0);
   }
   .editor {
     position: absolute;
