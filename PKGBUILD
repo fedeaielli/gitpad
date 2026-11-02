@@ -11,6 +11,8 @@ depends=('webkit2gtk-4.1' 'gtk3' 'libsoup3' 'openssl' 'libsecret' 'libgit2' 'hic
 makedepends=('rust' 'nodejs' 'npm')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
 sha256sums=('da4a4f0c579e254ed772acafe1bfeb09a70577a619f0a3229dd0309746eccd67')
+# ring ships assembly that LTO turns into bitcode ld cannot resolve.
+options=('!lto')
 
 prepare() {
   cd "$pkgname-$pkgver"
