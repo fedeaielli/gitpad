@@ -462,6 +462,9 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
+    /* Clipped so Monaco cannot paint a square corner over the radius. */
+    border-radius: var(--r-lg);
+    overflow: hidden;
   }
   .empty {
     position: absolute;
