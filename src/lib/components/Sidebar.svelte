@@ -37,7 +37,7 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<aside class="panel" style="flex: 0 0 {ui.sidebarWidth}px">
+<aside class="panel">
   <div class="head">
     <span>
       {ui.activeView === 'files'
@@ -133,8 +133,11 @@
   .panel {
     position: relative;
     display: flex;
-    flex: 0 0 260px;
+    /* Fills the wrapper, which owns the width; min-width keeps long names from
+       pushing the panel wider than the drag asked for. */
+    flex: 1 1 auto;
     flex-direction: column;
+    min-width: 0;
     min-height: 0;
     /* Rounded by the wrapper that also holds the activity bar. */
     border-radius: 0;
