@@ -4,7 +4,7 @@
   import { ui, THEMES, KEYBINDINGS } from '../stores/ui.svelte'
   import { pushToast } from '../stores/toasts.svelte'
   import { contrast } from '../utils/color'
-  import { surfaceForTheme } from '../utils/themes'
+  import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
   import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
@@ -77,7 +77,6 @@
     Object.entries(ui.extensions).sort(([a], [b]) => a.localeCompare(b)),
   )
 
-  const DEFAULT_FONT = 'ui-monospace, monospace'
 
   /// Installed families, filled in by fc-list; the select falls back to the
   /// saved value when the list is empty or the font was uninstalled.
