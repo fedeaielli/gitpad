@@ -6,8 +6,9 @@
   import { contrast } from '../utils/color'
   import { surfaceForTheme } from '../utils/themes'
   import { open } from '@tauri-apps/plugin-dialog'
-  import { errorMessage } from '../stores/git.svelte'
-  import { retarget } from '../stores/tabs.svelte'
+  import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
+  import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
+  import { flushPendingSave } from '../editor/bridge'
 
   interface UserInfo {
     login: string
@@ -67,6 +68,10 @@
   let newLang = $state('plaintext')
   let extMessage = $state('')
   let moving = $state(false)
+  let importOpen = $state(false)
+  let importUrl = $state('')
+  let importFolder = $state('')
+  let importing = $state(false)
 
   const extensions = $derived(
     Object.entries(ui.extensions).sort(([a], [b]) => a.localeCompare(b)),
@@ -111,6 +116,39 @@
       pushToast(`move repository: ${errorMessage(e)}`)
     } finally {
       moving = false
+    }
+  }
+
+  async function chooseImportFolder() {
+    const picked = await open({ directory: true, multiple: false, title: 'Clone repository into' })
+    if (typeof picked === 'string' && picked) importFolder = picked
+  }
+
+  async function importRepo() {
+    const url = importUrl.trim()
+    if (!url || !importFolder || importing) return
+    // Unsaved edits belong to the repo being replaced, so they must land first.
+    if (!(await flushPendingSave())) return
+    importing = true
+    try {
+      const result = await invoke<{ from: string; to: string }>('git_import_repo', {
+        url,
+        parent: importFolder,
+      })
+      // Open tabs point into the old clone: they close instead of retargeting.
+      for (const tab of [...tabs.tabs]) closeTab(tab.id)
+      ui.repoPath = result.to
+      ui.expanded = []
+      ui.treeVersion += 1
+      void invoke<GitStatus>('git_status').then(applyGitStatus).catch(() => {})
+      importOpen = false
+      importUrl = ''
+      importFolder = ''
+      pushToast('Repository imported')
+    } catch (e) {
+      pushToast(`import repository: ${errorMessage(e)}`)
+    } finally {
+      importing = false
     }
   }
 
@@ -248,6 +286,52 @@
             </button>
           </div>
         </div>
+        <div class="field">
+          <span>Import repository</span>
+          <div class="inline">
+            <span class="hint">Clone another repo and switch to it</span>
+            <button
+              type="button"
+              class="change"
+              aria-expanded={importOpen}
+              onclick={() => (importOpen = !importOpen)}
+            >
+              {importOpen ? 'Cancel' : 'Import…'}
+            </button>
+          </div>
+        </div>
+        {#if importOpen}
+          <div class="import">
+            <input
+              type="text"
+              class="wide"
+              placeholder="https://github.com/user/repo.git"
+              bind:value={importUrl}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') void importRepo()
+              }}
+            />
+            <div class="inline">
+              <span class="hint path">
+                {importFolder || 'Choose the folder that will hold the clone'}
+              </span>
+              <button type="button" class="change" disabled={importing} onclick={chooseImportFolder}>
+                Choose…
+              </button>
+            </div>
+            <div class="inline">
+              <button
+                type="button"
+                class="change go"
+                disabled={importing || !importUrl.trim() || !importFolder}
+                onclick={importRepo}
+              >
+                {importing ? 'Cloning…' : 'Clone as active repository'}
+              </button>
+              <span class="hint">Open tabs close: they belong to the current repository.</span>
+            </div>
+          </div>
+        {/if}
         <div class="field">
           <span>Save debounce</span>
           <div class="inline">
@@ -530,6 +614,24 @@
   }
   .field button.change:hover:not(:disabled) {
     border-color: var(--accent-fg);
+  }
+  .import {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+  }
+  .import .go {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+  .import .go:hover:not(:disabled) {
+    border-color: var(--accent-fg);
+    filter: brightness(1.1);
   }
   .accent-picker {
     display: flex;
