@@ -5,6 +5,9 @@
   import { pushToast } from '../stores/toasts.svelte'
   import { contrast } from '../utils/color'
   import { surfaceForTheme } from '../utils/themes'
+  import { open } from '@tauri-apps/plugin-dialog'
+  import { errorMessage } from '../stores/git.svelte'
+  import { retarget } from '../stores/tabs.svelte'
 
   interface UserInfo {
     login: string
@@ -63,6 +66,7 @@
   let newExt = $state('')
   let newLang = $state('plaintext')
   let extMessage = $state('')
+  let moving = $state(false)
 
   const extensions = $derived(
     Object.entries(ui.extensions).sort(([a], [b]) => a.localeCompare(b)),
@@ -90,6 +94,24 @@
     ui.extensions = { ...ui.extensions, [ext]: newLang }
     extMessage = `Added .${ext} (${newLang})`
     newExt = ''
+  }
+
+  async function moveRepo() {
+    const picked = await open({ directory: true, multiple: false, title: 'Repository folder' })
+    if (typeof picked !== 'string' || !picked) return
+    moving = true
+    try {
+      const moved = await invoke<{ from: string; to: string }>('git_move_repo', { parent: picked })
+      // Open tabs follow the clone, else their saves would land in the old folder.
+      retarget(moved.from, moved.to)
+      ui.repoPath = moved.to
+      ui.treeVersion += 1
+      pushToast('Repository moved')
+    } catch (e) {
+      pushToast(`move repository: ${errorMessage(e)}`)
+    } finally {
+      moving = false
+    }
   }
 
   function removeExtension(ext: string) {
@@ -216,6 +238,15 @@
             <input type="checkbox" bind:checked={ui.autoSync} />
             Push automatically after edits
           </label>
+        </div>
+        <div class="field">
+          <span>Repository folder</span>
+          <div class="inline">
+            <span class="hint path">{ui.repoPath || 'Default app folder'}</span>
+            <button type="button" class="change" disabled={moving} onclick={moveRepo}>
+              {moving ? 'Moving…' : 'Change…'}
+            </button>
+          </div>
         </div>
         <div class="field">
           <span>Save debounce</span>
@@ -486,6 +517,19 @@
   .note {
     color: var(--muted);
     font-size: 11px;
+  }
+  .path {
+    overflow-wrap: anywhere;
+  }
+  .field button.change {
+    padding: var(--sp-1) var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-0);
+    color: var(--text);
+  }
+  .field button.change:hover:not(:disabled) {
+    border-color: var(--accent-fg);
   }
   .accent-picker {
     display: flex;

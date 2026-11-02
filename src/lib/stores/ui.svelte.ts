@@ -46,6 +46,8 @@ export const ui = $state({
   fileTree: [] as FileNode[],
   /** Bumped after clone/rename so the tree reloads without prop drilling. */
   treeVersion: 0,
+  /** Folder that holds the clone; empty means the app data dir. */
+  repoPath: '',
   showHidden: false,
   sortMode: 'name' as 'name' | 'folders' | 'modified',
   sortDesc: false,

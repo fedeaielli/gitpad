@@ -24,6 +24,8 @@ pub struct Config {
     pub sort_mode: String,
     pub sort_desc: bool,
     pub show_hidden: bool,
+    /// Clone location picked by the user; empty means "the default repos dir".
+    pub repo_path: String,
 }
 
 impl Default for Config {
@@ -60,6 +62,7 @@ impl Default for Config {
             sort_mode: "name".into(),
             sort_desc: false,
             show_hidden: false,
+            repo_path: String::new(),
         }
     }
 }
@@ -90,11 +93,17 @@ fn write_config(path: &Path, config: &Config) -> Result<(), String> {
     crate::fs::write_atomic(path, &tmp, raw.as_bytes()).map_err(|e| format!("write config: {e}"))
 }
 
+/// Clone path chosen by the user; `None` when the config keeps the default.
+pub fn configured_repo_path(app: &AppHandle) -> Option<PathBuf> {
+    let path = config_path(app).ok()?;
+    let configured = read_config(&path).repo_path;
+    (!configured.is_empty()).then(|| PathBuf::from(configured))
+}
+
 #[tauri::command]
 pub fn config_get(app: AppHandle) -> Result<Config, String> {
     Ok(read_config(&config_path(&app)?))
 }
-
 #[tauri::command]
 pub fn config_save(app: AppHandle, config: Config) -> Result<(), String> {
     write_config(&config_path(&app)?, &config)
@@ -141,6 +150,7 @@ mod tests {
             sort_mode: "modified".into(),
             sort_desc: true,
             show_hidden: true,
+            repo_path: "/tmp/notes".into(),
         };
         write_config(&path, &config).unwrap();
         assert!(!dir.join("config.json.tmp").exists());
@@ -154,6 +164,7 @@ mod tests {
         assert_eq!(loaded.sort_mode, "modified");
         assert!(loaded.sort_desc);
         assert!(loaded.show_hidden);
+        assert_eq!(loaded.repo_path, "/tmp/notes");
         assert!(!loaded.auto_sync);
         assert_eq!(loaded.keybindings, "vim");
         assert_eq!(loaded.extensions.len(), 1);

@@ -85,6 +85,10 @@
   function endResize() {
     resizing = false
   }
+  /// Shrinking the window must not let the saved width swallow the editor.
+  function clampSidebar() {
+    if (ui.sidebarWidth > maxSidebar()) ui.sidebarWidth = Math.round(maxSidebar())
+  }
 
   // Persist user-level settings whenever they change; skip the initial load.
   $effect(() => {
@@ -105,6 +109,7 @@
       sortMode: ui.sortMode,
       sortDesc: ui.sortDesc,
       showHidden: ui.showHidden,
+      repoPath: ui.repoPath,
     }
     if (!configLoaded) return
     pendingConfig = config
@@ -295,7 +300,7 @@
         if (Number.isFinite(config.fontSize)) ui.fontSize = clamp(config.fontSize, 8, 32)
         if (config.fontFamily) ui.fontFamily = config.fontFamily
         if (Number.isFinite(config.sidebarWidth))
-          ui.sidebarWidth = clamp(config.sidebarWidth, MIN_SIDEBAR, 4000)
+          ui.sidebarWidth = clamp(config.sidebarWidth, MIN_SIDEBAR, maxSidebar())
         if (typeof config.sidebarOpen === 'boolean') ui.sidebarOpen = config.sidebarOpen
         ui.autoSync = config.autoSync
         ui.accent =
@@ -315,6 +320,7 @@
         }
         if (typeof config.sortDesc === 'boolean') ui.sortDesc = config.sortDesc
         if (typeof config.showHidden === 'boolean') ui.showHidden = config.showHidden
+        if (typeof config.repoPath === 'string') ui.repoPath = config.repoPath
       }
       configLoaded = true
       clearTimeout(showTimer)
@@ -335,6 +341,7 @@
   onpointermove={moveResize}
   onpointerup={endResize}
   onpointercancel={endResize}
+  onresize={clampSidebar}
 />
 
 <div class="shell">

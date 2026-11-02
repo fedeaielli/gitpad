@@ -193,6 +193,7 @@ pub fn run() {
             fs::reveal_in_filemanager,
             fs::fs_import,
             git::git_clone,
+            git::git_move_repo,
             git::git_pull,
             git::git_push,
             git::git_discard_file,
