@@ -18,6 +18,7 @@
   import Toasts from './lib/components/Toasts.svelte'
   import TitleBar from './lib/components/TitleBar.svelte'
   import { pushToast } from './lib/stores/toasts.svelte'
+  import { tip } from './lib/utils/tooltip'
   import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { tabs } from './lib/stores/tabs.svelte'
@@ -347,6 +348,7 @@
         aria-valuemin={MIN_SIDEBAR}
         aria-valuemax={MAX_SIDEBAR}
         aria-valuenow={Math.round(ui.sidebarWidth)}
+        use:tip={`${Math.round(ui.sidebarWidth)}px`}
         onpointerdown={startResize}
       ></div>
       <section class="editor">
@@ -437,7 +439,10 @@
   .gutter.open {
     cursor: col-resize;
   }
-  .gutter.open:hover,
+  .gutter.open:hover {
+    background: var(--divider);
+  }
+  /* Accent only while dragging, so the two states are told apart at a glance. */
   .gutter.active {
     background: var(--accent);
   }
