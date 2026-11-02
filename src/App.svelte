@@ -14,6 +14,7 @@
   import Onboarding from './lib/components/Onboarding.svelte'
   import CommandPalette from './lib/components/CommandPalette.svelte'
   import Settings from './lib/components/Settings.svelte'
+  import Shortcuts from './lib/components/Shortcuts.svelte'
   import Toasts from './lib/components/Toasts.svelte'
   import TitleBar from './lib/components/TitleBar.svelte'
   import { pushToast } from './lib/stores/toasts.svelte'
@@ -155,6 +156,22 @@
       return
     }
     if (ui.settingsOpen) return
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
+      e.preventDefault()
+      if (e.repeat) return
+      // Never stack the two modals.
+      ui.commandPaletteOpen = false
+      ui.shortcutsOpen = !ui.shortcutsOpen
+      return
+    }
+    if (ui.shortcutsOpen) return
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'h') {
+      e.preventDefault()
+      if (e.repeat) return
+      // The panel only exists for an open file, so the key does nothing without one.
+      if (tabs.activeTabId) ui.timelineOpen = !ui.timelineOpen
+      return
+    }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'n') {
       // Vim and Emacs own Ctrl+N (completion / next line) while the editor has focus.
       if (editorOwnsKey()) return
@@ -320,6 +337,10 @@
 
 {#if ui.settingsOpen}
   <Settings />
+{/if}
+
+{#if ui.shortcutsOpen}
+  <Shortcuts />
 {/if}
 
 <Toasts />
