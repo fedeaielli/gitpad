@@ -7,4 +7,4 @@ Exec=gitpad
 Icon=gitpad
 Terminal=false
 Categories=Utility;TextEditor;
-StartupWMClass=Gitpad
+StartupWMClass=gitpad

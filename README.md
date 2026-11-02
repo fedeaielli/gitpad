@@ -9,7 +9,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
-> **Status:** early development (`v0.1.x`). GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository while the app is still young.
+> **Status:** early development (`v0.1.5`). GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository while the app is still young.
 
 ---
 
@@ -29,7 +29,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 
 - **Monaco editor** with syntax highlighting for the languages Monaco supports, tabs, find/replace, and a dark default theme.
 - **Automatic save and sync.** Edits are written after a short debounce (2 s by default), committed locally, and pushed after you stop typing (30 s by default), on window blur, or on close. `Ctrl+S` does both immediately.
-- **GitHub integration.** Connect with a personal access token, create a private `gitpad_notes` repository by default or clone an existing one, pull at startup, and push from the Git panel.
+- **GitHub integration.** Sign in with GitHub (OAuth device flow) or a personal access token, create a private `gitpad_notes` repository by default or clone an existing one, pull at startup, and push from the Git panel.
 - **Conflict resolution.** When a pull conflicts, GitPad opens a diff dialog with local and remote versions. Accept one side, edit manually, then confirm the merge.
 - **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and editor/preview scroll sync.
 - **File tree.** Create, rename, delete, import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`.

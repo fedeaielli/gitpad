@@ -1,7 +1,7 @@
 # Maintainer: https://github.com/fedeaielli
 # The v$pkgver tag must exist on the remote.
 pkgname=gitpad
-pkgver=0.1.4
+pkgver=0.1.5
 pkgrel=1
 pkgdesc="Markdown notes in a Git repository you own"
 arch=('x86_64')
@@ -28,6 +28,12 @@ package() {
   cd "$pkgname-$pkgver"
   install -Dm755 src-tauri/target/release/gitpad "$pkgdir/usr/bin/gitpad"
   install -Dm644 gitpad.desktop "$pkgdir/usr/share/applications/gitpad.desktop"
+  install -Dm644 src-tauri/icons/32x32.png \
+    "$pkgdir/usr/share/icons/hicolor/32x32/apps/gitpad.png"
+  install -Dm644 src-tauri/icons/64x64.png \
+    "$pkgdir/usr/share/icons/hicolor/64x64/apps/gitpad.png"
   install -Dm644 src-tauri/icons/128x128.png \
     "$pkgdir/usr/share/icons/hicolor/128x128/apps/gitpad.png"
+  install -Dm644 src-tauri/icons/128x128@2x.png \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/gitpad.png"
 }
