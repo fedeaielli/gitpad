@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tabs, activateTab, closeTab } from '../stores/tabs.svelte'
   import { ui, cyclePreview } from '../stores/ui.svelte'
+  import FileIcon from './FileIcon.svelte'
 
   const isMarkdown = $derived(
     tabs.tabs.find((t) => t.id === tabs.activeTabId)?.language === 'markdown',
@@ -19,6 +20,7 @@
       >
         <button class="label" onclick={() => activateTab(tab.id)}>
           {#if tab.modified}<span class="dot" aria-label="modified"></span>{/if}
+          <FileIcon name={tab.path} />
           <span class="name">{tab.path}</span>
         </button>
         <button class="close" aria-label="Close {tab.path}" onclick={() => closeTab(tab.id)}>×</button>
@@ -79,6 +81,8 @@
   }
   .tab.active {
     background: var(--surface-0);
+    /* No separator on the tab that merges into the editor below. */
+    border-right-color: transparent;
     box-shadow: inset 0 2px 0 var(--accent);
   }
   .label {

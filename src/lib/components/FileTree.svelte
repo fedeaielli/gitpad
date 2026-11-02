@@ -4,6 +4,7 @@
   import { tabs, discardUnder, retarget } from '../stores/tabs.svelte'
   import { openFileInTab } from '../utils/open-file'
   import { pickAndImport } from '../utils/import'
+  import FileIcon from './FileIcon.svelte'
   import { sortNodes, visibleNodes } from '../utils/file-sort'
   import { errorMessage, isNoRepoError } from '../stores/git.svelte'
 
@@ -55,28 +56,6 @@
     } catch (e) {
       error = errorMessage(e)
     }
-  }
-
-  // Keyed by the language in ui.extensions so a custom extension inherits its
-  // icon; the extension keys cover files the default list does not map.
-  const ICONS: Record<string, string> = {
-    markdown: '📝',
-    plaintext: '📄',
-    python: '🐍',
-    rust: '⚙️',
-    javascript: '⚡',
-    typescript: '⚡',
-    json: '{}',
-    yaml: '⚙',
-    toml: '⚙',
-    shell: '$',
-    css: '🎨',
-    html: '🌐',
-  }
-
-  function iconFor(file: string): string {
-    const ext = file.split('.').pop()?.toLowerCase() ?? ''
-    return ICONS[ui.extensions[ext] ?? ext] ?? '📄'
   }
 
   function toggle(path: string) {
@@ -245,7 +224,7 @@
             onclick={() => toggle(node.path)}
           >
             <span class="chevron">{ui.expanded.includes(node.path) ? '▾' : '▸'}</span>
-            <span class="icon" aria-hidden="true">▤</span>
+            <span class="icon"><FileIcon name={node.name} dir /></span>
             <span class="name">{node.name}</span>
           </button>
           {#if ui.expanded.includes(node.path)}
@@ -268,7 +247,7 @@
             }}
             onclick={() => openFile(node)}
           >
-            <span class="icon" aria-hidden="true">{iconFor(node.name)}</span>
+            <span class="icon"><FileIcon name={node.name} /></span>
             <span class="name">{node.name}</span>
           </button>
         {/if}
@@ -369,8 +348,6 @@
     justify-content: center;
     width: 18px;
     color: var(--muted);
-    font-family: ui-monospace, monospace;
-    font-size: 12px;
   }
   .name {
     overflow: hidden;

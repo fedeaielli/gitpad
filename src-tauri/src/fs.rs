@@ -70,6 +70,16 @@ fn resolve(app: &AppHandle, path: &str) -> Result<(PathBuf, PathBuf), String> {
     Ok((root, rel))
 }
 
+/// Name of the clone folder, used as the breadcrumb root.
+#[tauri::command]
+pub fn fs_repo_name(app: AppHandle) -> Result<String, String> {
+    let path = git::repo_dir(&app)?;
+    Ok(path
+        .file_name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_default())
+}
+
 fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
     let mut entries = Vec::new();
     for entry in std::fs::read_dir(dir).map_err(|e| format!("read dir {}: {e}", dir.display()))? {
