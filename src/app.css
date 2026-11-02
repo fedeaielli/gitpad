@@ -167,6 +167,14 @@ select {
   outline-offset: -2px;
 }
 
+/* Monaco paints its focus rings and the diff divider with the VS blue default.
+   Point that variable at the app accent so the editor matches the chrome.
+   Important because Monaco declares the same variable on an ancestor at runtime. */
+.monaco-editor,
+.monaco-diff-editor {
+  --vscode-focusBorder: var(--accent) !important;
+}
+
 /* Shared hover hint, moved around by use:tip. Fixed to the viewport so a
    scroll container cannot clip it. */
 .gitpad-tip {

@@ -327,7 +327,9 @@
     height: 4px;
     cursor: row-resize;
   }
-  .resize:hover,
+  .resize:hover {
+    background: var(--border-strong);
+  }
   .resize.active {
     background: var(--accent);
   }
@@ -417,7 +419,9 @@
     cursor: col-resize;
     touch-action: none;
   }
-  .split:hover,
+  .split:hover {
+    background: var(--border-strong);
+  }
   .split.active {
     background: var(--accent);
   }

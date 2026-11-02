@@ -467,7 +467,7 @@
     cursor: col-resize;
   }
   .gutter.open:hover {
-    background: var(--divider);
+    background: var(--border-strong);
   }
   /* Accent only while dragging, so the two states are told apart at a glance. */
   .gutter.active {
