@@ -299,10 +299,12 @@
   <TitleBar />
   <div class="app">
     <main class="body">
-      <ActivityBar />
-      {#if ui.sidebarOpen}
-        <Sidebar />
-      {/if}
+      <div class="left">
+        <ActivityBar />
+        {#if ui.sidebarOpen}
+          <Sidebar />
+        {/if}
+      </div>
       <section class="editor">
         <TabBar />
         <Breadcrumb />
@@ -364,6 +366,15 @@
     gap: var(--sp-1);
     min-height: 0;
     padding: var(--sp-1);
+  }
+  .left {
+    display: flex;
+    flex: 0 0 auto;
+    min-width: 0;
+    /* One panel: the rail and the sidebar share the outer rounding. */
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    background: var(--surface-1);
   }
   .editor {
     position: relative;

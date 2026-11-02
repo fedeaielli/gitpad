@@ -167,14 +167,15 @@
     flex: 0 0 260px;
     flex-direction: column;
     min-height: 0;
-    border-radius: var(--r-lg);
+    /* Rounded by the wrapper that also holds the activity bar. */
+    border-radius: 0;
     background: var(--surface-1);
   }
   .resize {
     position: absolute;
     top: 0;
-    right: -2px;
-    width: 4px;
+    right: 0;
+    width: 6px;
     height: 100%;
     cursor: col-resize;
     z-index: 2;
