@@ -10,7 +10,7 @@ license=('GPL-3.0-only')
 depends=('webkit2gtk-4.1' 'gtk3' 'libsoup3' 'openssl' 'libsecret' 'libgit2' 'hicolor-icon-theme')
 makedepends=('rust' 'nodejs' 'npm')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('0d4325993debaca561cdf0258e34c06cd0900a161a953c570c255aa4aa4ab9a8')
+sha256sums=('da4a4f0c579e254ed772acafe1bfeb09a70577a619f0a3229dd0309746eccd67')
 
 prepare() {
   cd "$pkgname-$pkgver"
