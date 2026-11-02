@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-    "tauri": "tauri"
+    "tauri": "GITHUB_CLIENT_ID=Ov23lilamnIFNDISE1uQ tauri"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

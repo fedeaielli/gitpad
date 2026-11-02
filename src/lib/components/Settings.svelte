@@ -7,6 +7,7 @@
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
+  import GithubLogin from './GithubLogin.svelte'
   import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
   import { flushPendingSave } from '../editor/bridge'
 
@@ -183,6 +184,15 @@
     // signing back in.
     user = null
     accountError = ''
+  }
+
+  async function refreshUser() {
+    try {
+      user = await invoke<UserInfo>('github_get_user')
+      accountError = ''
+    } catch (e) {
+      accountError = errorMessage(e)
+    }
   }
 
   async function signIn() {
@@ -445,6 +455,11 @@
             <button class="danger" onclick={logout}>Logout</button>
           </div>
         {:else}
+          <div class="field">
+            <span>GitHub login</span>
+            <GithubLogin onsuccess={refreshUser} />
+          </div>
+          <p class="note">Or paste a personal access token (scope: repo).</p>
           <div class="field">
             <span>Personal access token</span>
             <div class="inline">
