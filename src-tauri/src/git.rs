@@ -39,6 +39,8 @@ pub struct GitStatus {
     pub ahead: usize,
     pub behind: usize,
     pub diverged: bool,
+    /// Epoch seconds of the last push GitPad made from this clone.
+    pub last_push: Option<u64>,
 }
 
 #[derive(Serialize, Clone)]
@@ -450,6 +452,7 @@ fn status_of(repo: &Repository) -> Result<GitStatus, GitError> {
         ahead,
         behind,
         diverged: ahead > 0 && behind > 0,
+        last_push: last_push_secs(repo),
     })
 }
 
@@ -718,7 +721,25 @@ fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
     remote
         .push(&[refspec.as_str()], Some(&mut opts))
         .map_err(|e| format!("git push: {}", e.message()))?;
+    record_push(repo);
     Ok(())
+}
+
+/// The timestamp lives in the clone's own config: it survives restarts and
+/// moves with the clone, without ever being pushed to GitHub.
+fn record_push(repo: &Repository) {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    if let Ok(mut config) = repo.config() {
+        let _ = config.set_i64("gitpad.last-push", now);
+    }
+}
+
+fn last_push_secs(repo: &Repository) -> Option<u64> {
+    let value = repo.config().ok()?.get_i64("gitpad.last-push").ok()?;
+    (value > 0).then_some(value as u64)
 }
 
 fn resolve_conflict(
@@ -1276,6 +1297,16 @@ mod tests {
         let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
         let mut remote = repo.find_remote("origin").unwrap();
         remote.push(&[refspec.as_str()], None).unwrap();
+    }
+
+    #[test]
+    fn last_push_roundtrips_through_repo_config() {
+        let dir = tmp("last-push");
+        let repo = Repository::init(&dir).unwrap();
+        assert_eq!(last_push_secs(&repo), None);
+        record_push(&repo);
+        assert!(last_push_secs(&repo).unwrap() > 0);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
