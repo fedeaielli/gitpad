@@ -10,6 +10,7 @@
   } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
   import { closeIfClean, tabs } from '../stores/tabs.svelte'
+  import { tip } from '../utils/tooltip'
 
   interface CommitEntry {
     hash: string
@@ -126,7 +127,8 @@
                 <span class="path">{file.path}</span>
                 <button
                   disabled={busy || file.status === 'D'}
-                  title={file.status === 'D'
+                  title={file.status === 'D' ? `${file.path} does not exist in this commit` : undefined}
+                  use:tip={file.status === 'D'
                     ? `${file.path} does not exist in this commit`
                     : `Restore ${file.path}`}
                   onclick={() => restore(commit, file)}
