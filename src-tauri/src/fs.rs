@@ -80,6 +80,30 @@ pub fn fs_repo_name(app: AppHandle) -> Result<String, String> {
         .unwrap_or_default())
 }
 
+/// Installed font families from fontconfig; empty when fc-list is missing.
+#[tauri::command]
+pub fn fs_list_fonts() -> Result<Vec<String>, String> {
+    let output = std::process::Command::new("fc-list")
+        .arg(":")
+        .output()
+        .map_err(|e| format!("fc-list: {e}"))?;
+    Ok(parse_families(&String::from_utf8_lossy(&output.stdout)))
+}
+
+/// One family per line; a line can carry several aliases separated by commas.
+fn parse_families(stdout: &str) -> Vec<String> {
+    let mut families = std::collections::BTreeSet::new();
+    for line in stdout.lines() {
+        for name in line.split(',') {
+            let name = name.trim();
+            if !name.is_empty() {
+                families.insert(name.to_string());
+            }
+        }
+    }
+    families.into_iter().collect()
+}
+
 fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
     let mut entries = Vec::new();
     for entry in std::fs::read_dir(dir).map_err(|e| format!("read dir {}: {e}", dir.display()))? {
@@ -517,6 +541,16 @@ pub async fn fs_list_dir(app: AppHandle, path: Option<String>) -> Result<Vec<Fil
 mod tests {
     use super::*;
     use crate::test_util::assert_waits_for_gate;
+
+    #[test]
+    fn parse_families_splits_aliases_and_dedupes() {
+        let output = "Noto Sans,Noto Sans Light\nInter\n  Inter  \n\n";
+        assert_eq!(
+            parse_families(output),
+            vec!["Inter", "Noto Sans", "Noto Sans Light"]
+        );
+        assert!(parse_families("").is_empty());
+    }
 
     /// Path jail, exercised against a real temp root.
     #[test]

@@ -190,6 +190,7 @@ pub fn run() {
             fs::fs_rename,
             fs::fs_list_dir,
             fs::fs_repo_name,
+            fs::fs_list_fonts,
             fs::reveal_in_filemanager,
             fs::fs_import,
             git::git_clone,
