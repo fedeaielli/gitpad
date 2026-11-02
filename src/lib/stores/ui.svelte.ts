@@ -51,6 +51,8 @@ export const ui = $state({
   /// Expanded folders live here so they survive tree reloads and view switches.
   expanded: [] as string[],
   conflictsHidden: false,
+  /// True while the window is closing: suppresses blur-triggered work.
+  quitting: false,
   editorTheme: 'gitpad-dark',
   accent: '',
   fontSize: 13,

@@ -199,9 +199,17 @@
         }).catch(() => false)
         if (!exit) return
       }
+      // The window disappears once the local writes are done; the exit commit
+      // and push (up to 3 s) finish behind a hidden window, then the app quits.
+      ui.quitting = true
+      await getCurrentWindow().hide().catch(() => {})
       clearTimeout(saveTimer)
       if (pendingConfig) await saveConfig(pendingConfig).catch(() => {})
-      await invoke('app_exit').catch(() => {})
+      await invoke('app_exit').catch(async () => {
+        // If the exit command fails, do not leave an invisible process behind.
+        ui.quitting = false
+        await getCurrentWindow().show().catch(() => {})
+      })
     }).then((fn) => {
       unlistens.push(fn)
     })
