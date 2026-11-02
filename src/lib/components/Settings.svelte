@@ -438,6 +438,10 @@
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .body {
     background: #2c2c2c;
   }
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .field > span:first-child {
+    /* --muted is 4.27:1 on #2c2c2c; this is 4.96:1. */
+    color: #9a9a9a;
+  }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .close:hover {
     background: #3a3a3a;
   }
