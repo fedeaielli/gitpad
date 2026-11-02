@@ -10,7 +10,7 @@
   import Breadcrumb from './lib/components/Breadcrumb.svelte'
   import StatusBar from './lib/components/StatusBar.svelte'
   import type { Component } from 'svelte'
-  import { flushPendingSave, reloadOpenTabs } from './lib/editor/bridge'
+  import { flushPendingSave, getEditor, reloadOpenTabs } from './lib/editor/bridge'
   import Onboarding from './lib/components/Onboarding.svelte'
   import CommandPalette from './lib/components/CommandPalette.svelte'
   import Settings from './lib/components/Settings.svelte'
@@ -21,7 +21,7 @@
   import { tip } from './lib/utils/tooltip'
   import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
-  import { tabs } from './lib/stores/tabs.svelte'
+  import { tabs, closeTab } from './lib/stores/tabs.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
   import { applyTheme, applyAccent, applyUiFont, cleanFamily } from './lib/utils/themes'
   import {
@@ -200,6 +200,20 @@
       cyclePreview()
       return
     }
+    // WebKit would close the window on Ctrl+W, so this must never reach it.
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'w') {
+      e.preventDefault()
+      if (e.repeat) return
+      if (tabs.activeTabId) closeTab(tabs.activeTabId)
+      return
+    }
+    if (e.ctrlKey && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'f') {
+      e.preventDefault()
+      if (e.repeat) return
+      ui.paletteSearch = true
+      ui.commandPaletteOpen = true
+      return
+    }
     if (ui.settingsOpen) return
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
       e.preventDefault()
@@ -239,6 +253,25 @@
       if (e.repeat) return
       ui.paletteQuery = '>import'
       ui.commandPaletteOpen = true
+      return
+    }
+    // Comment toggles: Monaco only ships them as Ctrl+K chords, which the
+    // shortcut list already owns, so they get their own keys here.
+    if (
+      (e.ctrlKey && !e.shiftKey && !e.altKey && e.key === '/') ||
+      (e.shiftKey && e.altKey && !e.ctrlKey && e.key.toLowerCase() === 'a')
+    ) {
+      // Typing in a field must not toggle a comment behind the dialog.
+      if (document.activeElement?.closest('input, textarea, .find-widget')) return
+      e.preventDefault()
+      if (e.repeat) return
+      const editor = getEditor()
+      editor?.focus()
+      editor?.trigger(
+        'menu',
+        e.key === '/' ? 'editor.action.commentLine' : 'editor.action.blockComment',
+        null,
+      )
       return
     }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {

@@ -42,6 +42,8 @@ export const ui = $state({
   palettePrompt: null as 'file' | 'folder' | null,
   /// Set by a global shortcut so the palette opens with this text typed.
   paletteQuery: null as string | null,
+  /// Set by the menu so the palette opens already searching file contents.
+  paletteSearch: false,
   settingsOpen: false,
   shortcutsOpen: false,
   fileTree: [] as FileNode[],
