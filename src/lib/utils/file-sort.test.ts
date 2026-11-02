@@ -44,6 +44,35 @@ describe('sortNodes', () => {
     expect(names(input)).toEqual(['b.md', 'a.md'])
   })
 
+  it('groups files by extension under the folders, both directions', () => {
+    const mixed = [
+      node('notes', 'file'),
+      node('b.py', 'file'),
+      node('a.md', 'file'),
+      node('src', 'dir'),
+      node('z.rs', 'file'),
+    ]
+    expect(names(sortNodes(mixed, 'type', false))).toEqual([
+      'src',
+      'notes',
+      'a.md',
+      'b.py',
+      'z.rs',
+    ])
+    expect(names(sortNodes(mixed, 'type', true))).toEqual([
+      'src',
+      'z.rs',
+      'b.py',
+      'a.md',
+      'notes',
+    ])
+  })
+
+  it('sorts by name inside the same extension', () => {
+    const files = [node('b.md', 'file'), node('a.md', 'file')]
+    expect(names(sortNodes(files, 'type', false))).toEqual(['a.md', 'b.md'])
+  })
+
   it('defaults to newest first only for the modified mode', () => {
     expect(defaultDesc('modified')).toBe(true)
     expect(defaultDesc('name')).toBe(false)

@@ -319,8 +319,9 @@
           ui.keybindings = config.keybindings as Keybinding
         }
         if (config.extensions) ui.extensions = config.extensions
-        if (config.sortMode === 'name' || config.sortMode === 'folders' || config.sortMode === 'modified') {
-          ui.sortMode = config.sortMode
+        const mode = config.sortMode
+        if (mode === 'name' || mode === 'folders' || mode === 'modified' || mode === 'type') {
+          ui.sortMode = mode
         }
         if (typeof config.sortDesc === 'boolean') ui.sortDesc = config.sortDesc
         if (typeof config.showHidden === 'boolean') ui.showHidden = config.showHidden
