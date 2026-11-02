@@ -354,9 +354,12 @@
     width: 28px;
     height: 28px;
     padding: 0;
+    border: none;
     border-radius: var(--r-md);
+    background: transparent;
     color: var(--muted);
-    font-size: var(--fs-lg);
+    font-size: 18px;
+    cursor: pointer;
   }
   .close:hover {
     background: var(--surface-0);
@@ -365,26 +368,27 @@
   .tabs {
     display: flex;
     gap: 2px;
-    padding: 0 var(--sp-4);
+    padding: var(--sp-1) var(--sp-2) 0;
     border-bottom: 1px solid var(--border);
     background: var(--surface-1);
   }
   .tab {
-    padding: 7px 12px;
-    border-bottom: 2px solid transparent;
+    padding: var(--sp-2) var(--sp-3);
+    border: none;
+    border-top: 2px solid transparent;
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
     background: transparent;
     color: var(--muted);
+    cursor: pointer;
   }
   .tab:hover {
     background: var(--surface-2);
     color: var(--text);
-    opacity: 0.6;
   }
   .tab.active {
-    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    border-top-color: var(--accent);
     background: var(--surface-2);
     color: var(--text);
-    border-bottom-color: var(--accent);
   }
   .body {
     display: flex;
@@ -393,17 +397,45 @@
     gap: var(--sp-4);
     overflow-y: auto;
     padding: var(--sp-4);
+    background: var(--surface-2);
   }
   .field {
     display: flex;
     align-items: center;
     gap: var(--sp-4);
-    padding: var(--sp-2) 0;
     font-size: 13px;
   }
   .field > span:first-child {
     min-width: 120px;
-    color: var(--text);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  /* Dark only: the dark tokens sit too close in value to show any depth, so the
+     modal uses explicit surfaces here. Light and HC keep the token colours. */
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal {
+    background: #2c2c2c;
+    box-shadow:
+      0 24px 64px rgba(0, 0, 0, 0.7),
+      0 8px 24px rgba(0, 0, 0, 0.5);
+  }
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal header,
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tabs {
+    background: #1e1e1e;
+    border-bottom-color: #3a3a3a;
+  }
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab:hover,
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab.active,
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .body {
+    background: #2c2c2c;
+  }
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .close:hover {
+    background: #3a3a3a;
+  }
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal select,
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal input[type='text'],
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal input[type='number'] {
+    border-color: #3a3a3a;
+    background: #1a1a1a;
   }
   .modal select,
   .modal input[type='text'],
