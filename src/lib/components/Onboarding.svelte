@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
-  import { listen } from '@tauri-apps/api/event'
-  import { openUrl } from '@tauri-apps/plugin-opener'
+
   import { open } from '@tauri-apps/plugin-dialog'
+  import { openUrl } from '@tauri-apps/plugin-opener'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
+  import GithubLogin from './GithubLogin.svelte'
 
   interface UserInfo {
     login: string
@@ -17,14 +17,6 @@
     cloneUrl: string
     private: boolean
   }
-  interface DeviceCode {
-    deviceCode: string
-    userCode: string
-    verificationUri: string
-    expiresIn: number
-    interval: number
-  }
-
   type Step = 'welcome' | 'auth' | 'repo' | 'done'
 
   let { onskip }: { onskip: () => void } = $props()
@@ -32,8 +24,6 @@
   let step = $state<Step>('welcome')
   let token = $state('')
   let user = $state<UserInfo | null>(null)
-  let device = $state<DeviceCode | null>(null)
-  let deviceAvailable = $state(false)
   let repo = $state<RepoInfo | null>(null)
   /// Folder that will hold the clone; empty keeps the app data dir.
   let folder = $state('')
@@ -53,18 +43,6 @@
       await invoke('auth_set_pat', { token: token.trim() })
       user = info
       goRepo()
-    } catch (e) {
-      fail(e)
-    }
-  }
-
-  async function startDevice() {
-    busy = true
-    error = null
-    try {
-      device = await invoke<DeviceCode>('github_device_flow_start')
-      await openUrl(device.verificationUri)
-      await invoke('github_device_flow_poll', { deviceCode: device.deviceCode })
     } catch (e) {
       fail(e)
     }
@@ -110,23 +88,6 @@
     ui.treeVersion += 1
   }
 
-  onMount(() => {
-    const unlistens: Array<() => void> = []
-    void invoke<boolean>('github_device_flow_available')
-      .catch(() => false)
-      .then((ok) => (deviceAvailable = ok))
-    void listen('auth-success', async () => {
-      if (step !== 'auth') return
-      busy = false
-      goRepo()
-    }).then((fn) => unlistens.push(fn))
-    void listen<string>('auth-error', (e) => {
-      if (step !== 'auth') return
-      busy = false
-      error = e.payload
-    }).then((fn) => unlistens.push(fn))
-    return () => unlistens.forEach((fn) => fn())
-  })
 </script>
 
 <div class="overlay">
@@ -148,16 +109,8 @@
         <a href="https://github.com/settings/tokens" onclick={(e) => { e.preventDefault(); void openUrl('https://github.com/settings/tokens') }}>Create a token</a>
         <button class="primary" disabled={busy || !token.trim()} onclick={validatePat}>Validate</button>
       </div>
-      {#if deviceAvailable}
-        <div class="divider">or</div>
-        <button disabled={busy} onclick={startDevice}>
-          {device ? 'Waiting for GitHub…' : 'Login with GitHub'}
-        </button>
-      {/if}
-      {#if device}
-        <p class="code">Code: <strong>{device.userCode}</strong></p>
-        <p class="muted">Open the page and enter the code. Checking every {device.interval}s.</p>
-      {/if}
+      <div class="divider">or</div>
+      <GithubLogin label="Login with GitHub" onsuccess={goRepo} />
     {:else if step === 'repo'}
       <h1>Repository</h1>
       {#if busy}
@@ -273,12 +226,7 @@
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-  }
-  .code {
-    font-size: 14px;
-    letter-spacing: 0.1em;
-  }
-  a {
+  }  a {
     color: var(--accent-fg);
     font-size: 12px;
   }
