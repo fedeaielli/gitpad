@@ -77,12 +77,24 @@
     Object.entries(ui.extensions).sort(([a], [b]) => a.localeCompare(b)),
   )
 
+  const DEFAULT_FONT = 'ui-monospace, monospace'
+
+  /// Installed families, filled in by fc-list; the select falls back to the
+  /// saved value when the list is empty or the font was uninstalled.
+  let fonts = $state<string[]>([])
+  const fontOptions = $derived(
+    fonts.includes(ui.fontFamily) || ui.fontFamily === DEFAULT_FONT
+      ? fonts
+      : [ui.fontFamily, ...fonts],
+  )
+
   onMount(async () => {
     try {
       user = await invoke<UserInfo>('github_get_user')
     } catch {
       accountError = 'not connected'
     }
+    fonts = (await invoke<string[]>('fs_list_fonts').catch(() => [])) ?? []
   })
 
   function clamp(value: number, min: number, max: number, apply: (n: number) => void) {
@@ -263,11 +275,12 @@
         </div>
         <div class="field">
           <span>Font family</span>
-          <input
-            class="wide"
-            value={ui.fontFamily}
-            onchange={(e) => (ui.fontFamily = e.currentTarget.value)}
-          />
+          <select class="wide" bind:value={ui.fontFamily}>
+            <option value={DEFAULT_FONT}>Default (monospace)</option>
+            {#each fontOptions as font (font)}
+              <option value={font}>{font}</option>
+            {/each}
+          </select>
         </div>
       {:else if tab === 'sync'}
         <div class="field">
