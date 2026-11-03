@@ -45,7 +45,7 @@
     min-width: 0;
     overflow: hidden;
     padding: 3px 10px;
-    background: var(--surface-0);
+    background: var(--editor-surface);
     color: var(--muted);
     font-size: var(--fs-sm);
     white-space: nowrap;

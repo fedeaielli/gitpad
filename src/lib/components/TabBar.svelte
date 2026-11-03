@@ -69,6 +69,9 @@
     display: flex;
     flex: 1;
     min-width: 0;
+    /* Keep the first tab in place while leaving room for its outward curve. */
+    margin-left: calc(-1 * var(--r-lg));
+    padding-left: var(--r-lg);
     overflow-x: auto;
     overflow-y: hidden;
   }
@@ -79,22 +82,35 @@
     flex: 0 0 auto;
     max-width: 200px;
     border-right: 1px solid var(--border);
-    border-radius: var(--r-md) var(--r-md) 0 0;
+    border-radius: var(--r-md);
   }
   .tab.active {
-    background: var(--surface-0);
-    /* No separator on the tab that merges into the editor below. */
+    background:
+      linear-gradient(var(--accent), var(--accent)) center top / calc(100% - var(--r-md) - var(--r-md)) 2px no-repeat,
+      var(--editor-surface);
+    border-radius: var(--r-md) var(--r-md) 0 0;
     border-right-color: transparent;
   }
-  /* Inset past the corners: a box-shadow would follow the radius and bow. */
+  /* The active surface continues into the editor below. These outward curves
+     carve the tab-strip colour around its lower corners, matching VS Code. */
+  .tab.active::before,
   .tab.active::after {
     position: absolute;
-    top: 0;
-    right: var(--r-md);
-    left: var(--r-md);
-    height: 2px;
-    background: var(--accent);
+    bottom: 0;
+    width: var(--r-lg);
+    height: var(--r-lg);
     content: '';
+    pointer-events: none;
+  }
+  .tab.active::before {
+    left: calc(-1 * var(--r-lg));
+    border-bottom-right-radius: var(--r-lg);
+    box-shadow: 4px 4px 0 4px var(--editor-surface);
+  }
+  .tab.active::after {
+    right: calc(-1 * var(--r-lg));
+    border-bottom-left-radius: var(--r-lg);
+    box-shadow: -4px 4px 0 4px var(--editor-surface);
   }
   .label {
     display: flex;

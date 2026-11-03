@@ -599,36 +599,35 @@
     color: var(--muted);
     font-size: var(--fs-sm);
   }
-  /* Dark only: the dark tokens sit too close in value to show any depth, so the
-     modal uses explicit surfaces here. Light and HC keep the token colours. */
+  /* Keep the layered dialog surfaces aligned with the shared dark palette. */
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal {
-    background: #2c2c2c;
+    background: var(--surface-3);
     box-shadow:
       0 24px 64px rgba(0, 0, 0, 0.7),
       0 8px 24px rgba(0, 0, 0, 0.5);
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal header,
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tabs {
-    background: #1e1e1e;
-    border-bottom-color: #3a3a3a;
+    background: var(--surface-0);
+    border-bottom-color: var(--border);
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab:hover,
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab.active,
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .body {
-    background: #2c2c2c;
+    background: var(--surface-3);
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .field > span:first-child {
-    /* --muted is 4.27:1 on #2c2c2c; this is 4.96:1. */
+    /* Keep muted labels readable on the lighter dialog surface. */
     color: #9a9a9a;
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .close:hover {
-    background: #3a3a3a;
+    background: var(--surface-2);
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal select,
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal input[type='text'],
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal input[type='number'] {
-    border-color: #3a3a3a;
-    background: #1a1a1a;
+    border-color: var(--border);
+    background: var(--surface-0);
   }
   .modal select,
   .modal input[type='text'],

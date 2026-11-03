@@ -517,11 +517,14 @@
   }
   .left {
     display: flex;
+    box-sizing: border-box;
     /* The inline flex-basis carries the sidebar width; see leftWidth. */
     flex: 0 0 auto;
     min-width: 0;
     /* One panel: the rail and the sidebar share the outer rounding. */
     border-radius: var(--r-lg);
+    border: 1px solid var(--border);
+    border-right: 0;
     overflow: hidden;
     background: var(--surface-1);
   }
@@ -553,11 +556,13 @@
   .editor {
     position: relative;
     display: flex;
+    box-sizing: border-box;
     flex: 1;
     flex-direction: column;
     min-width: 0;
     /* Clipped so Monaco cannot paint a square corner over the radius. */
     border-radius: var(--r-lg);
+    border: 1px solid var(--border);
     overflow: hidden;
   }
   .empty {

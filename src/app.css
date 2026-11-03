@@ -3,23 +3,23 @@
 :root {
   color-scheme: dark;
 
-  /* Surfaces, from the editor outwards. Dark Modern: the floor is darkest, the
-     panels share one lighter tone, modals sit on top. */
-  --surface-0: #1a1a1a;
+  /* VS Code Dark+ surfaces: editor, side panels, controls and overlays. */
+  --surface-0: #1e1e1e;
   --surface-1: #252526;
-  --surface-2: #252526;
-  --surface-3: #2d2d30;
-  /* The window floor: shows through the gaps between the floating panels. */
+  --surface-2: #2d2d30;
+  --surface-3: #3c3c3c;
+  /* Window chrome and the floor behind floating panels. */
   --surface-base: #181818;
+  --editor-surface: #171717;
 
   --text: #cccccc;
-  --muted: #8e8e8e;
+  --muted: #9d9d9d;
   --disabled: #6e6e6e;
 
-  --border: #262626;
-  --border-strong: #6b6b6b;
+  --border: #3c3c3c;
+  --border-strong: #6e6e6e;
   /* Visible against the panel surfaces, where --border is not. */
-  --divider: #333333;
+  --divider: #454545;
 
   --accent: #0078d4;
   --on-accent: #ffffff;
@@ -73,6 +73,7 @@
   --surface-2: #e7e7e7;
   --surface-3: #ffffff;
   --surface-base: #f0f0f0;
+  --editor-surface: #ffffff;
 
   --text: #1f1f1f;
   --muted: #616161;
@@ -102,6 +103,7 @@
   --surface-2: #1a1a1a;
   --surface-3: #0a0a0a;
   --surface-base: #000000;
+  --editor-surface: #000000;
 
   --text: #ffffff;
   --muted: #d4d4d4;
