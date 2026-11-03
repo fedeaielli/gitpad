@@ -235,6 +235,12 @@ select {
   background: transparent;
 }
 
+/* Monaco leaves the find widget shadow unset; a deeper selector beats its own
+   .monaco-editor .find-widget rule regardless of stylesheet order. */
+.editor .monaco-editor .find-widget {
+  box-shadow: var(--shadow-2);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
