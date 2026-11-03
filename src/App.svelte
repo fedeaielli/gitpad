@@ -214,6 +214,20 @@
       ui.commandPaletteOpen = true
       return
     }
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'r') {
+      // WebKit would reload the webview, so this must never reach it.
+      e.preventDefault()
+      // Vim and Emacs own Ctrl+R (redo / isearch) while the editor has focus.
+      if (editorOwnsKey()) return
+      e.stopPropagation()
+      if (e.repeat) return
+      if (ui.settingsOpen || ui.shortcutsOpen) return
+      if (!tabs.activeTabId) return
+      const editor = getEditor()
+      editor?.focus()
+      editor?.trigger('menu', 'editor.action.startFindReplaceAction', null)
+      return
+    }
     if (ui.settingsOpen) return
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
       e.preventDefault()
