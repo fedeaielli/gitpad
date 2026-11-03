@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
+  import { openUrl } from '@tauri-apps/plugin-opener'
   import { ui } from '../stores/ui.svelte'
   import { gitStatus } from '../stores/git.svelte'
+  import { pushToast } from '../stores/toasts.svelte'
   import { tip } from '../utils/tooltip'
 
   interface UserInfo {
@@ -11,6 +13,58 @@
   }
 
   let user = $state<UserInfo | null>(null)
+
+  // The panel clips its content, so the menu is fixed and placed by hand.
+  let menuOpen = $state(false)
+  let menuPos = $state({ left: 0, bottom: 0 })
+  let account: HTMLButtonElement | undefined
+
+  // Keyboard users land on the first item, Escape brings them back.
+  function focusFirst(node: HTMLElement) {
+    node.querySelector<HTMLButtonElement>('.menu-item')?.focus()
+  }
+
+  function closeMenu(refocus = false) {
+    menuOpen = false
+    if (refocus) account?.focus()
+  }
+
+  function toggleMenu() {
+    // Signed out: the account form is the only thing worth showing.
+    if (!user) {
+      ui.settingsOpen = true
+      return
+    }
+    if (menuOpen) {
+      closeMenu()
+      return
+    }
+    const rect = account?.getBoundingClientRect()
+    if (!rect) return
+    menuPos = { left: Math.round(rect.right + 6), bottom: Math.round(window.innerHeight - rect.bottom) }
+    menuOpen = true
+  }
+
+  async function gotoAccount() {
+    closeMenu()
+    if (!user) return
+    try {
+      await openUrl(`https://github.com/${user.login}`)
+    } catch (e) {
+      pushToast(`open account: ${e}`)
+    }
+  }
+
+  async function logout() {
+    closeMenu()
+    try {
+      await invoke('auth_clear')
+    } catch (e) {
+      pushToast(`logout: ${e}`)
+      return
+    }
+    user = null
+  }
 
   async function loadUser() {
     user = await invoke<UserInfo>('github_get_user').catch(() => null)
@@ -39,6 +93,15 @@
 
   const changed = $derived(gitStatus.modifiedFiles.length)
 </script>
+
+<svelte:window
+  onkeydown={(e) => {
+    if (e.key === 'Escape' && menuOpen) {
+      e.stopPropagation()
+      closeMenu(true)
+    }
+  }}
+/>
 
 <nav class="rail" class:separated={ui.sidebarOpen} aria-label="Primary">
   <button
@@ -98,9 +161,12 @@
   <button
     type="button"
     class="item avatar"
+    bind:this={account}
     use:tip={user ? `Account: ${user.login}` : 'Account'}
     aria-label="Account"
-    onclick={() => (ui.settingsOpen = true)}
+    aria-haspopup={user ? 'menu' : undefined}
+    aria-expanded={user ? menuOpen : undefined}
+    onclick={toggleMenu}
   >
     {#if user}
       <img src={user.avatarUrl} alt={user.login} />
@@ -112,6 +178,22 @@
       </svg>
     {/if}
   </button>
+
+  {#if menuOpen && user}
+    <!-- Click-anywhere-else closes the menu without stealing the click. -->
+    <button class="scrim" aria-label="Close menu" onclick={() => closeMenu()}></button>
+    <div
+      class="menu"
+      role="menu"
+      aria-label="Account"
+      use:focusFirst
+      style:left="{menuPos.left}px"
+      style:bottom="{menuPos.bottom}px"
+    >
+      <button type="button" class="menu-item" role="menuitem" onclick={gotoAccount}>Go to account</button>
+      <button type="button" class="menu-item" role="menuitem" onclick={logout}>Logout</button>
+    </div>
+  {/if}
   <button
     type="button"
     class="item settings"
@@ -206,5 +288,40 @@
   }
   .spacer {
     flex: 1;
+  }
+  .scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    border: 0;
+    background: transparent;
+  }
+  .menu {
+    position: fixed;
+    z-index: 51;
+    display: flex;
+    flex-direction: column;
+    min-width: 190px;
+    padding: var(--sp-1);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-3);
+    box-shadow: var(--shadow-2);
+    font-size: var(--fs-sm);
+  }
+  .menu-item {
+    padding: var(--sp-1) var(--sp-2);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text);
+    font-size: var(--fs-sm);
+    text-align: left;
+  }
+  .menu-item:hover,
+  .menu-item:focus-visible {
+    background: var(--accent);
+    color: var(--on-accent);
+    outline: none;
   }
 </style>
