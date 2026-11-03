@@ -122,9 +122,15 @@ GitPad never force-pushes and never rebases. Pulls fast-forward when possible, o
 | Import a file or folder (into the repo root) | `Ctrl+O` |
 | Command palette | `Ctrl+P` |
 | Cycle Markdown preview: off → split → full | `Ctrl+Shift+P` |
+| Find in files | `Ctrl+Shift+F` |
+| Find / find and replace in the open file | `Ctrl+F` / `Ctrl+R` |
+| Toggle line / block comment | `Ctrl+/` / `Shift+Alt+A` |
+| File history | `Ctrl+H` |
+| Close tab | `Ctrl+W` |
+| Keyboard shortcut list | `Ctrl+K` |
 | Move selection in the palette | `Up` / `Down` |
 | Open, run, or submit | `Enter` |
-| Close the palette | `Esc` |
+| Close the palette or a dialog | `Esc` |
 
 Saving is automatic (2 s debounce) and pushing is automatic too (30 s idle,
 window blur, or close). `Ctrl+S` only skips those two waits; it does not disable

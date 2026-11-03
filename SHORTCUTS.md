@@ -13,7 +13,21 @@ open file now and pushes immediately. Autosave keeps running as before.
 | `Ctrl+O` | Import: opens the palette on `Import file…` / `Import folder…` |
 | `Ctrl+P` | Open the command palette (files, `>` commands, `>search`) |
 | `Ctrl+Shift+P` | Cycle the markdown preview: off → split → full (markdown tabs only) |
-| `↑` / `↓` | Move the palette selection |
+| `Ctrl+Shift+F` | Find in files: opens the palette on full-text search |
+| `Ctrl+F` | Open or close find in the current file |
+| `Ctrl+R` | Open or close find and replace in the current file |
+| `Ctrl+/` | Toggle a line comment |
+| `Shift+Alt+A` | Toggle a block comment |
+| `Ctrl+H` | Open or close the file history |
+| `Ctrl+W` | Close the current tab |
+| `Ctrl+K` | Show or hide the keyboard shortcut list |
+| `Esc` | Close the palette, the file history, or a dialog |
+
+In the palette:
+
+| Key | Action |
+|---|---|
+| `↑` / `↓` | Move the selection |
 | `Enter` | Open the selected file, run the selected command, or submit a prompt |
 | `Esc` | Close the palette |
 
@@ -46,4 +60,6 @@ Type `>` first to list them:
 - `Import file…` / `Import folder…` — copy into the repository root; same names
   are renamed to `name (1).ext`, nothing is overwritten
 - `Search in files` — global search across the repository
+- `File history` — same as `Ctrl+H`
+- `Keyboard shortcuts` — same as `Ctrl+K`
 - `Open settings` — same as the `⚙` button
