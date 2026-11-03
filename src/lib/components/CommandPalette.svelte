@@ -381,25 +381,27 @@
   .backdrop {
     position: absolute;
     inset: 0;
-    background: var(--scrim);
+    /* The panel floats over the editor, like VS Code's quick pick: no dimming. */
+    background: transparent;
   }
   .palette {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 620px;
+    width: 600px;
     max-width: calc(100vw - 32px);
     max-height: 60vh;
-    background: var(--surface-3);
+    overflow: hidden;
+    background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: var(--r-md);
+    border-radius: var(--r-lg);
     box-shadow: var(--shadow-2);
     animation: drop var(--t-fast) ease-out;
   }
   @keyframes drop {
     from {
       opacity: 0;
-      transform: translateY(-4px);
+      transform: translateY(-6px) scale(0.99);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -408,31 +410,38 @@
     }
   }
   input {
-    padding: 10px 12px;
-    border: 0;
-    border-bottom: 1px solid var(--border);
-    background: transparent;
+    margin: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
     color: var(--text);
     font: inherit;
   }
-  input:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: -2px;
+  input:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--selection);
   }
   .list {
+    padding: 0 6px 6px;
     overflow: auto;
   }
   .item {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 10px;
     width: 100%;
-    padding: 6px 12px;
+    padding: 6px 8px;
+    border-radius: var(--r-sm);
     text-align: left;
   }
+  .item:hover {
+    background: var(--surface-2);
+  }
   .item.active {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--selection);
+    color: var(--text);
   }
   .item:focus-visible {
     outline: 1px solid var(--accent);
@@ -455,7 +464,7 @@
   }
   .item.active .snippet {
     color: inherit;
-    opacity: 0.8;
+    opacity: 0.85;
   }
   .hint-key {
     color: var(--muted);
@@ -463,10 +472,11 @@
   }
   .item.active .hint-key {
     color: inherit;
+    opacity: 0.85;
   }
   .hint,
   .error {
-    margin: 10px 12px;
+    margin: 12px 16px;
     font-size: 12px;
   }
   .hint {
