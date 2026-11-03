@@ -186,6 +186,10 @@
     return ui.keybindings !== 'vscode' && !!document.activeElement?.closest('.monaco-editor')
   }
 
+  function findWidgetOpen(): boolean {
+    return !!document.querySelector('.find-widget.visible')
+  }
+
   function onKeydown(e: KeyboardEvent) {
     // Ctrl+S is always global: it must never reach the webview's save-page dialog.
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 's') {
@@ -214,6 +218,24 @@
       ui.commandPaletteOpen = true
       return
     }
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'f') {
+      // Monaco's own Ctrl+F only refocuses the widget; this toggles it.
+      e.preventDefault()
+      // Vim and Emacs own Ctrl+F (page down / forward char) in the editor.
+      if (editorOwnsKey()) return
+      e.stopPropagation()
+      if (e.repeat) return
+      if (ui.settingsOpen || ui.shortcutsOpen || ui.commandPaletteOpen) return
+      if (!tabs.activeTabId) return
+      const editor = getEditor()
+      if (findWidgetOpen()) {
+        editor?.trigger('menu', 'closeFindWidget', null)
+        return
+      }
+      editor?.focus()
+      editor?.trigger('menu', 'actions.find', null)
+      return
+    }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'r') {
       // WebKit would reload the webview, so this must never reach it.
       e.preventDefault()
@@ -224,6 +246,10 @@
       if (ui.settingsOpen || ui.shortcutsOpen) return
       if (!tabs.activeTabId) return
       const editor = getEditor()
+      if (findWidgetOpen()) {
+        editor?.trigger('menu', 'closeFindWidget', null)
+        return
+      }
       editor?.focus()
       editor?.trigger('menu', 'editor.action.startFindReplaceAction', null)
       return
