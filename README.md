@@ -34,7 +34,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 - **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and editor/preview scroll sync.
 - **File tree.** Create, rename, delete, import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`.
 - **Commit history.** Browse the repository log, inspect changed files, restore a file from a commit, or revert a commit.
-- **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search.
+- **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search; press it again to close.
 - **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings.
 - **Credentials in the OS keyring.** The GitHub token is never written to `config.json`.
 
@@ -124,7 +124,7 @@ A repository without an `origin` remote skips the fetch and push steps: commits 
 | Save every open file now, then push | `Ctrl+S` |
 | New file (type `name.ext`) | `Ctrl+N` |
 | Import a file or folder (into the repo root) | `Ctrl+O` |
-| Command palette | `Ctrl+P` |
+| Command palette (toggle) | `Ctrl+P` |
 | Cycle Markdown preview: off → split → full | `Ctrl+Shift+P` |
 | Find in files | `Ctrl+Shift+F` |
 | Find / find and replace in the open file | `Ctrl+F` / `Ctrl+R` |
