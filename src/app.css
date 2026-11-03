@@ -243,6 +243,33 @@ select {
   box-shadow: var(--shadow-2);
 }
 
+/* Monaco's quick access (Ctrl+G, F1) ships as a bare floating panel; give it
+   the same surface, border, radius and accent as the GitPad command palette. */
+.monaco-editor .quick-input-widget {
+  --vscode-quickInput-background: var(--surface-3);
+  --vscode-quickInput-foreground: var(--text);
+  --vscode-quickInputList-focusBackground: var(--accent);
+  --vscode-quickInputList-focusForeground: var(--on-accent);
+  --vscode-quickInputList-focusHighlightForeground: var(--on-accent);
+  --vscode-list-hoverBackground: var(--surface-2);
+  --vscode-input-background: var(--surface-2);
+  --vscode-input-foreground: var(--text);
+  --vscode-input-border: var(--border);
+  --vscode-focusBorder: var(--accent);
+  overflow: hidden;
+  border: 1px solid var(--border) !important; /* Monaco sets this inline */
+  border-radius: var(--r-md);
+  background: var(--surface-3) !important;
+  box-shadow: var(--shadow-2);
+}
+.monaco-editor .quick-input-widget .monaco-list-row {
+  border-radius: var(--r-sm);
+}
+/* Monaco writes this radius inline, so the stylesheet needs to insist. */
+.monaco-editor .quick-input-widget .monaco-inputbox {
+  border-radius: var(--r-sm) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
