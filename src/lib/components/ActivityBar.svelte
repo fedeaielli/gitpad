@@ -140,9 +140,9 @@
     box-sizing: border-box;
     background: var(--surface-1);
   }
-  /* Only when the sidebar follows: alone, the rail keeps clean rounded edges. */
+  /* Follows the panel borders; only when the sidebar is there to divide. */
   .rail.separated {
-    border-right: 1px solid var(--divider);
+    border-right: 1px solid var(--border);
   }
   .item {
     position: relative;

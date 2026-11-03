@@ -52,7 +52,7 @@
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#1a1a1a',
+      'editor.background': '#171717',
       'editor.foreground': '#cccccc',
       'editorLineNumber.foreground': '#8e8e8e',
       'editorLineNumber.activeForeground': '#cccccc',
@@ -441,7 +441,7 @@
       renderWhitespace: 'selection',
       // Keeps the first line off the tab bar so tab and document read as one surface.
       padding: { top: 6 },
-      scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+      scrollbar: { vertical: 'hidden', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
       // Without this Monaco adds a view zone on top and pushes the first lines
       // down whenever find or replace opens.
       find: { addExtraSpaceOnTop: false },

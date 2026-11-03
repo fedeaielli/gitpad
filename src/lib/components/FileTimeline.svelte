@@ -218,7 +218,7 @@
       renderSideBySide: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
-      scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+      scrollbar: { vertical: 'hidden', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
     })
   }
 
