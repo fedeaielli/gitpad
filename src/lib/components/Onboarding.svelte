@@ -17,6 +17,12 @@
     cloneUrl: string
     private: boolean
   }
+  interface LocalRepo {
+    from: string
+    to: string
+    initialized: boolean
+    remote: boolean
+  }
   type Step = 'welcome' | 'auth' | 'repo' | 'done'
 
   let { onskip }: { onskip: () => void } = $props()
@@ -27,6 +33,8 @@
   let repo = $state<RepoInfo | null>(null)
   /// Folder that will hold the clone; empty keeps the app data dir.
   let folder = $state('')
+  /// Set when the user opened a folder instead of cloning from GitHub.
+  let localRepo = $state<LocalRepo | null>(null)
   let busy = $state(false)
   let error = $state<string | null>(null)
 
@@ -88,6 +96,26 @@
     ui.treeVersion += 1
   }
 
+  /// Use an existing folder: initialized in place when it is not a repository.
+  async function useLocal() {
+    const picked = await open({ directory: true, multiple: false, title: 'Open a local repository' })
+    if (typeof picked !== 'string' || !picked) return
+    busy = true
+    error = null
+    try {
+      const result = await invoke<LocalRepo>('git_use_local', { path: picked })
+      ui.repoPath = result.to
+      localRepo = result
+      applyGitStatus(await invoke<GitStatus>('git_status'))
+      ui.treeVersion += 1
+      step = 'done'
+    } catch (e) {
+      fail(e)
+    } finally {
+      busy = false
+    }
+  }
+
 </script>
 
 <div class="overlay">
@@ -101,6 +129,10 @@
         <li><kbd>Esc</kbd> close palette</li>
       </ul>
       <button class="primary" onclick={() => (step = 'auth')}>Get Started</button>
+      <button disabled={busy} onclick={useLocal}>{busy ? 'Opening…' : 'Use a local folder…'}</button>
+      <p class="muted">
+        An existing folder works too; GitPad initializes it when it is not a repository yet.
+      </p>
     {:else if step === 'auth'}
       <h1>Connect GitHub</h1>
       <p>GitPad stores the credential in your OS keyring.</p>
@@ -129,7 +161,16 @@
       {/if}
     {:else}
       <h1>You're set</h1>
-      <p>Edits commit locally right away. Pushes happen on idle, when the window loses focus and on close.</p>
+      {#if localRepo}
+        <p><code>{localRepo.to}</code></p>
+        <p class="muted">
+          {localRepo.remote
+            ? 'Pushes go to its origin remote.'
+            : 'No remote: commits stay on this machine until you add one.'}
+        </p>
+      {:else}
+        <p>Edits commit locally right away. Pushes happen on idle, when the window loses focus and on close.</p>
+      {/if}
       <p class="muted">Ctrl+Shift+P toggles the markdown preview.</p>
       <button class="primary" onclick={finish}>Start Editing</button>
     {/if}

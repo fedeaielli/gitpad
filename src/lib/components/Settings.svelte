@@ -71,6 +71,7 @@
   let newLang = $state('plaintext')
   let extMessage = $state('')
   let moving = $state(false)
+  let localBusy = $state(false)
   let importOpen = $state(false)
   let importUrl = $state('')
   let importFolder = $state('')
@@ -163,6 +164,32 @@
       pushToast(`import repository: ${errorMessage(e)}`)
     } finally {
       importing = false
+    }
+  }
+
+  async function useLocalRepo() {
+    const picked = await open({ directory: true, multiple: false, title: 'Open a local repository' })
+    if (typeof picked !== 'string' || !picked || localBusy) return
+    // Edits pending in the current repo must land before switching away.
+    if (!(await flushPendingSave())) return
+    localBusy = true
+    try {
+      const result = await invoke<{ from: string; to: string; remote: boolean }>('git_use_local', {
+        path: picked,
+      })
+      // Tabs point into the folder being replaced, so they close like on import.
+      if (result.to !== result.from) {
+        for (const tab of [...tabs.tabs]) closeTab(tab.id)
+        ui.expanded = []
+      }
+      ui.repoPath = result.to
+      ui.treeVersion += 1
+      void invoke<GitStatus>('git_status').then(applyGitStatus).catch(() => {})
+      pushToast(result.remote ? 'Local repository opened' : 'Local repository opened (no remote)')
+    } catch (e) {
+      pushToast(`open local repository: ${errorMessage(e)}`)
+    } finally {
+      localBusy = false
     }
   }
 
@@ -326,6 +353,15 @@
             <span class="hint path">{ui.repoPath || 'Default app folder'}</span>
             <button type="button" class="change" disabled={moving} onclick={moveRepo}>
               {moving ? 'Moving…' : 'Change…'}
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <span>Open local folder</span>
+          <div class="inline">
+            <span class="hint">Use an existing folder; it is initialized when needed</span>
+            <button type="button" class="change" disabled={localBusy} onclick={useLocalRepo}>
+              {localBusy ? 'Opening…' : 'Use local…'}
             </button>
           </div>
         </div>
