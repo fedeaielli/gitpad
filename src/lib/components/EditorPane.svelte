@@ -438,14 +438,6 @@
     const cursorSub = editor.onDidChangeCursorPosition((e) => {
       ui.cursor = { line: e.position.lineNumber, column: e.position.column }
     })
-    editor.addAction({
-      id: 'gitpad.findReplace',
-      label: 'Find and Replace',
-      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyH],
-      run: () => {
-        void editor?.getAction('editor.action.startFindReplaceAction')?.run()
-      },
-    })
     window.addEventListener('blur', onBlur)
     registerFlush(flushAll)
     registerSaveAll(async () => {
@@ -501,7 +493,6 @@
     flex: 1;
     gap: var(--sp-1);
     min-height: 0;
-    overflow: hidden;
     border-radius: 0 0 var(--r-lg) var(--r-lg);
     background: var(--surface-base);
   }
@@ -509,7 +500,6 @@
     display: flex;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
     border-radius: 0 0 var(--r-lg) var(--r-lg);
     background: var(--surface-0);
   }
