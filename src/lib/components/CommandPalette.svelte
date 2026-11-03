@@ -421,7 +421,6 @@
   input:focus {
     border-color: var(--accent);
     outline: none;
-    box-shadow: 0 0 0 2px var(--selection);
   }
   .list {
     padding: 0 6px 6px;
@@ -440,8 +439,8 @@
     background: var(--surface-2);
   }
   .item.active {
-    background: var(--selection);
-    color: var(--text);
+    background: var(--accent);
+    color: var(--on-accent);
   }
   .item:focus-visible {
     outline: 1px solid var(--accent);
