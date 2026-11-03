@@ -37,6 +37,17 @@
     if (ui.activeView === 'history' && !gitStatus.syncing) void load()
   })
 
+  /// Clicking a commit shows its own diff in the bottom panel, like Ctrl+H does
+  /// for the file's history.
+  function open(commit: CommitEntry) {
+    ui.timelineCommit = {
+      hash: commit.hash,
+      shortHash: commit.shortHash,
+      message: commit.message,
+    }
+    ui.timelineOpen = true
+  }
+
   async function toggle(commit: CommitEntry) {
     if (expanded === commit.hash) {
       expanded = ''
@@ -108,14 +119,29 @@
 {:else}
   <ul class="commits">
     {#each commits as commit (commit.hash)}
-      <li class="commit" class:open={expanded === commit.hash}>
-        <button class="row" onclick={() => toggle(commit)}>
-          <code>{commit.shortHash}</code>
-          <span class="msg">{commit.message}</span>
-          <span class="meta">
-            {day(commit.timestamp)} · {commit.author} · {commit.filesChanged}
-          </span>
-        </button>
+      <li
+        class="commit"
+        class:open={expanded === commit.hash}
+        class:active={ui.timelineCommit?.hash === commit.hash}
+      >
+        <div class="head-row">
+          <button class="row" onclick={() => open(commit)}>
+            <code>{commit.shortHash}</code>
+            <span class="msg">{commit.message}</span>
+            <span class="meta">
+              {day(commit.timestamp)} · {commit.author} · {commit.filesChanged}
+            </span>
+          </button>
+          <button
+            class="expand"
+            class:open={expanded === commit.hash}
+            aria-expanded={expanded === commit.hash}
+            aria-label="Show files"
+            onclick={() => toggle(commit)}
+          >
+            ›
+          </button>
+        </div>
         {#if expanded === commit.hash}
           <div class="actions">
             <button disabled={busy} onclick={() => revert(commit)}>Revert commit</button>
@@ -168,7 +194,16 @@
   .commit.open {
     background: var(--surface-2);
   }
+  .commit.active {
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+  .head-row {
+    display: flex;
+    align-items: center;
+  }
   .row {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -177,6 +212,25 @@
     border-color: transparent;
     background: transparent;
     text-align: left;
+  }
+  .expand {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    margin-right: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+    transition: transform var(--t-fast);
+  }
+  .expand.open {
+    transform: rotate(90deg);
+  }
+  .expand:hover {
+    color: var(--text);
   }
   .row code {
     color: var(--accent-fg);
