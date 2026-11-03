@@ -7,6 +7,7 @@
     { label: 'Import file', keys: ['Ctrl', 'O'] },
     { label: 'Save and sync', keys: ['Ctrl', 'S'] },
     { label: 'Toggle markdown preview', keys: ['Ctrl', 'Shift', 'P'] },
+    { label: 'Find', keys: ['Ctrl', 'F'] },
     { label: 'Find in files', keys: ['Ctrl', 'Shift', 'F'] },
     { label: 'Find and replace', keys: ['Ctrl', 'R'] },
     { label: 'Toggle line comment', keys: ['Ctrl', '/'] },
