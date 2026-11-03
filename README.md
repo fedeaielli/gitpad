@@ -95,6 +95,8 @@ The AppImage is written to `src-tauri/target/release/bundle/`.
 2. **Choose a repository.** By default GitPad looks for a private repository named `gitpad_notes`, creates it if it does not exist, and clones it into the app data directory.
 3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically. You can also skip the wizard and clone an existing repository from the Git panel.
 
+No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Open local folder*. GitPad opens an existing repository or initializes one in place when the folder is not a repository yet. A repository without an `origin` remote commits locally and skips sync until you add one.
+
 GitHub sign-in currently uses a PAT; the OAuth device-flow code path is present but not configured in the app yet.
 
 ---
@@ -110,6 +112,8 @@ With auto-sync enabled (the default):
 4. The Git panel also exposes manual **Sync**, **Pull**, **Push**, and **Commit** actions.
 
 GitPad never force-pushes and never rebases. Pulls fast-forward when possible, otherwise they create a merge commit.
+
+A repository without an `origin` remote skips the fetch and push steps: commits stay on this machine and nothing else changes.
 
 ---
 
@@ -165,7 +169,8 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 
 ## Limits worth knowing
 
-- **One repository at a time.** Switching repositories currently means removing the existing clone by hand.
+- **One repository at a time.** *Settings → Sync* switches to another local folder, but there is no "close repository" state and picking a folder inside the current one creates a nested repository.
+- **Only `origin` is recognized.** A repository whose remote has another name is treated as local-only.
 - **External edits are focus-based.** Changes made outside GitPad appear after the window regains focus; an open tab is not reloaded automatically.
 - **Remote images are blocked in preview.** The content security policy allows local/data images and GitHub avatars, not arbitrary remote images.
 - **No filesystem watcher.** The file tree refreshes on focus, not through inotify.
