@@ -2,11 +2,21 @@
   import { onMount } from 'svelte'
   import { getCurrentWindow } from '@tauri-apps/api/window'
   import { ui } from '../stores/ui.svelte'
+  import { tabs } from '../stores/tabs.svelte'
+  import { getEditor } from '../editor/bridge'
   import MenuBar from './MenuBar.svelte'
   import { tip } from '../utils/tooltip'
 
   const appWindow = getCurrentWindow()
   let maximized = $state(false)
+  const hasTab = $derived(tabs.tabs.length > 0)
+
+  /// Undo/redo run through the shared editor bridge, like the Edit menu does.
+  function step(action: 'undo' | 'redo') {
+    const editor = getEditor()
+    editor?.focus()
+    editor?.trigger('titlebar', action, null)
+  }
 
   onMount(() => {
     const sync = () => void appWindow.isMaximized().then((v) => (maximized = v))
@@ -23,21 +33,45 @@
     GitPad
   </span>
   <MenuBar />
-  <button
-    type="button"
-    class="search"
-    aria-label="Search files, or type > for commands (Ctrl+P)"
-    use:tip={'Search files (Ctrl+P) — type > for commands'}
-    onclick={() => (ui.commandPaletteOpen = true)}
-  >
-    <svg viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="7" cy="7" r="4.2" />
-      <path d="M10.2 10.2 13.5 13.5" />
-    </svg>
-    <span class="label">Search files</span>
-    <span class="chip">&gt; commands</span>
-    <kbd>Ctrl+P</kbd>
-  </button>
+  <div class="center">
+    <button
+      type="button"
+      class="search"
+      aria-label="Search files, or type > for commands (Ctrl+P)"
+      use:tip={'Search files (Ctrl+P) — type > for commands'}
+      onclick={() => (ui.commandPaletteOpen = true)}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.2" />
+        <path d="M10.2 10.2 13.5 13.5" />
+      </svg>
+      <span class="label">Search files</span>
+      <span class="chip">&gt; commands</span>
+      <kbd>Ctrl+P</kbd>
+    </button>
+    <div class="nav">
+      <button
+        type="button"
+        class="step"
+        aria-label="Undo (Ctrl+Z)"
+        use:tip={'Undo (Ctrl+Z)'}
+        disabled={!hasTab}
+        onclick={() => step('undo')}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
+      </button>
+      <button
+        type="button"
+        class="step"
+        aria-label="Redo (Ctrl+Y)"
+        use:tip={'Redo (Ctrl+Y)'}
+        disabled={!hasTab}
+        onclick={() => step('redo')}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" /></svg>
+      </button>
+    </div>
+  </div>
   <div class="spacer" data-tauri-drag-region></div>
   <div class="controls">
     <button class="win" aria-label="Minimize" use:tip={'Minimize'} onclick={() => void appWindow.minimize()}>
@@ -76,17 +110,24 @@
     user-select: none;
   }
   /* Centred on the window, not on the space left by the title and controls. */
-  .search {
+  .center {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 6px;
-    box-sizing: border-box;
     width: 40%;
-    min-width: 200px;
-    max-width: 480px;
+    min-width: 240px;
+    max-width: 520px;
+  }
+  .search {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    box-sizing: border-box;
     height: 22px;
     padding: 0 6px;
     border: 1px solid var(--border);
@@ -103,6 +144,36 @@
   .search:focus-visible {
     outline: 1px solid var(--accent);
     outline-offset: 1px;
+  }
+  /* Undo / redo, bare chevrons beside the search field, as in the VS Code title bar. */
+  .nav {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 2px;
+  }
+  .step {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--r-sm);
+    color: var(--muted);
+  }
+  .step:hover:not(:disabled) {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .step:disabled {
+    opacity: 0.4;
+  }
+  .step svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .search svg {
     width: 12px;
@@ -135,6 +206,7 @@
   /* Narrow windows: icon only, so it cannot collide with the title or controls. */
   @media (max-width: 560px) {
     .search {
+      flex: 0 0 24px;
       width: 24px;
       min-width: 0;
       justify-content: center;
