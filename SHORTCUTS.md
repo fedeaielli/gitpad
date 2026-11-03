@@ -16,6 +16,7 @@ open file now and pushes immediately. Autosave keeps running as before.
 | `Ctrl+Shift+F` | Find in files: opens the palette on full-text search |
 | `Ctrl+F` | Open or close find in the current file |
 | `Ctrl+R` | Open or close find and replace in the current file |
+| `Ctrl+G` | Go to line (while the editor is focused) |
 | `Ctrl+/` | Toggle a line comment |
 | `Shift+Alt+A` | Toggle a block comment |
 | `Ctrl+H` | Open or close the file history |

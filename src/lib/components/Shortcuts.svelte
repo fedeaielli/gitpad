@@ -10,6 +10,7 @@
     { label: 'Find', keys: ['Ctrl', 'F'] },
     { label: 'Find in files', keys: ['Ctrl', 'Shift', 'F'] },
     { label: 'Find and replace', keys: ['Ctrl', 'R'] },
+    { label: 'Go to line', keys: ['Ctrl', 'G'] },
     { label: 'Toggle line comment', keys: ['Ctrl', '/'] },
     { label: 'Toggle block comment', keys: ['Shift', 'Alt', 'A'] },
     { label: 'Close tab', keys: ['Ctrl', 'W'] },
