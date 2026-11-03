@@ -576,7 +576,10 @@ fn pull_repo_with(
     message: Option<&str>,
 ) -> Result<(GitStatus, Vec<FileChange>), GitError> {
     // refs only: no worktree writes, readers must not wait for the network
-    fetch(repo, token)?;
+    // Local-only repositories have no origin: nothing to fetch.
+    if repo.find_remote("origin").is_ok() {
+        fetch(repo, token)?;
+    }
     // The gate covers commit + reset/merge: a read in between would see a
     // truncated file.
     let _gate = gate.write().map_err(|e| e.to_string())?;
@@ -714,6 +717,10 @@ pub fn push_only_blocking(
 }
 
 fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
+    // A local-only repository keeps its commits; there is no remote to send to.
+    if repo.find_remote("origin").is_err() {
+        return Ok(());
+    }
     let branch = current_branch(repo)?;
     let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
     let mut remote = repo.find_remote("origin").map_err(git_err)?;
@@ -1059,6 +1066,67 @@ pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Res
     Ok(MovedRepo {
         from,
         to: target.to_string_lossy().into_owned(),
+    })
+}
+
+/// Adopt a folder as the active repository, initializing it when needed.
+/// Returns the canonical path, whether `.git` was created, and whether an
+/// `origin` remote exists. Sync so the tests can call it without an AppHandle.
+fn use_local_repo(path: &Path) -> Result<(PathBuf, bool, bool), GitError> {
+    let path = path
+        .canonicalize()
+        .map_err(|e| GitError::IoError(format!("{}: {e}", path.display())))?;
+    if !path.is_dir() {
+        return Err(GitError::Other(format!(
+            "{} is not a folder",
+            path.display()
+        )));
+    }
+    let initialized = !path.join(".git").exists();
+    if initialized {
+        Repository::init(&path).map_err(git_err)?;
+    }
+    let repo = open_repo(&path)?;
+    let remote = repo.find_remote("origin").is_ok();
+    Ok((path, initialized, remote))
+}
+
+/// A folder the user picked, and what it turned out to be.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalRepo {
+    /// Previous active repository, empty when none was configured yet.
+    pub from: String,
+    pub to: String,
+    pub initialized: bool,
+    pub remote: bool,
+}
+
+/// Use `path` as the repository: an existing one is opened, a plain folder is
+/// initialized in place. Switching closes the caller's tabs, not ours.
+#[tauri::command]
+pub async fn git_use_local(app: AppHandle, path: String) -> Result<LocalRepo, GitError> {
+    let from = repo_dir(&app)
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
+    let chosen = PathBuf::from(path.trim());
+    let (to, initialized, remote) = tokio::task::spawn_blocking(move || {
+        let _gate = gate.write().map_err(|e| e.to_string())?;
+        use_local_repo(&chosen)
+    })
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
+    // repo_dir reads the cache first, so it must learn the new path.
+    remember_repo(&app, to.clone());
+    if let Err(e) = crate::config::store_repo_path(&app, &to) {
+        log::warn!("use_local: could not save the new location: {e}");
+    }
+    Ok(LocalRepo {
+        from,
+        to: to.to_string_lossy().into_owned(),
+        initialized,
+        remote,
     })
 }
 
@@ -2380,6 +2448,70 @@ mod tests {
         assert!(changes
             .iter()
             .any(|change| change.path == "new.txt" && change.status == "A"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn use_local_repo_initializes_a_plain_folder() {
+        let root = tmp("local-plain");
+        std::fs::write(root.join("note.md"), "hello").unwrap();
+
+        let (path, initialized, remote) = use_local_repo(&root).unwrap();
+
+        assert!(initialized);
+        assert!(!remote);
+        assert!(path.join(".git").exists());
+        // The folder content survives: init never rewrites the worktree.
+        assert_eq!(std::fs::read_to_string(path.join("note.md")).unwrap(), "hello");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn use_local_repo_reopens_an_existing_repository() {
+        let root = tmp("local-existing");
+        Repository::init(&root).unwrap();
+
+        let (_, initialized, remote) = use_local_repo(&root).unwrap();
+
+        assert!(!initialized);
+        assert!(!remote);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn push_without_origin_commits_locally() {
+        let root = tmp("local-push");
+        Repository::init(&root).unwrap();
+        std::fs::write(root.join("a.md"), "one").unwrap();
+
+        let (status, _, error) = push_blocking(
+            &root,
+            Some("gitpad: update a.md".into()),
+            None,
+            std::sync::Arc::new(std::sync::RwLock::new(())),
+        )
+        .unwrap();
+
+        // No remote is not an error: the commit is the whole sync.
+        assert!(error.is_none());
+        assert!(status.changes.is_empty());
+        let reopened = Repository::open(&root).unwrap();
+        let head = reopened.head().unwrap();
+        let commit = head.peel_to_commit().unwrap();
+        assert_eq!(commit.message(), Some("gitpad: update a.md"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn pull_without_origin_does_not_fetch() {
+        let root = tmp("local-pull");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "a.md", "one");
+
+        let (status, changes) = pull_repo(&repo, None, &std::sync::RwLock::new(())).unwrap();
+
+        assert!(status.conflicts.is_empty());
+        assert!(changes.is_empty());
         let _ = std::fs::remove_dir_all(&root);
     }
 }
