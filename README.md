@@ -124,6 +124,7 @@ GitPad never force-pushes and never rebases. Pulls fast-forward when possible, o
 | Cycle Markdown preview: off → split → full | `Ctrl+Shift+P` |
 | Find in files | `Ctrl+Shift+F` |
 | Find / find and replace in the open file | `Ctrl+F` / `Ctrl+R` |
+| Go to line (editor focused) | `Ctrl+G` |
 | Toggle line / block comment | `Ctrl+/` / `Shift+Alt+A` |
 | File history | `Ctrl+H` |
 | Close tab | `Ctrl+W` |
