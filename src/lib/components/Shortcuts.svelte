@@ -8,6 +8,7 @@
     { label: 'Save and sync', keys: ['Ctrl', 'S'] },
     { label: 'Toggle markdown preview', keys: ['Ctrl', 'Shift', 'P'] },
     { label: 'Find in files', keys: ['Ctrl', 'Shift', 'F'] },
+    { label: 'Find and replace', keys: ['Ctrl', 'R'] },
     { label: 'Toggle line comment', keys: ['Ctrl', '/'] },
     { label: 'Toggle block comment', keys: ['Shift', 'Alt', 'A'] },
     { label: 'Close tab', keys: ['Ctrl', 'W'] },

@@ -84,6 +84,7 @@
           { label: 'Find', keys: 'Ctrl+F', run: () => trigger('actions.find'), disabled: !hasTab },
           {
             label: 'Replace',
+            keys: 'Ctrl+R',
             run: () => trigger('editor.action.startFindReplaceAction'),
             disabled: !hasTab,
           },
