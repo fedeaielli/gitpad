@@ -217,6 +217,7 @@
       automaticLayout: true,
       renderSideBySide: true,
       minimap: { enabled: false },
+      overviewRulerBorder: false,
       scrollBeyondLastLine: false,
       scrollbar: { vertical: 'hidden', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
     })
