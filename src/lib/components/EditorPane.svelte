@@ -52,7 +52,7 @@
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#1f1f1f',
+      'editor.background': '#1a1a1a',
       'editor.foreground': '#cccccc',
       'editorLineNumber.foreground': '#8e8e8e',
       'editorLineNumber.activeForeground': '#cccccc',
