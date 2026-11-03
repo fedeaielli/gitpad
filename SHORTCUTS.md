@@ -11,7 +11,7 @@ open file now and pushes immediately. Autosave keeps running as before.
 | `Ctrl+S` | Save every open file now, then push |
 | `Ctrl+N` | New file: type a name like `notes.md` |
 | `Ctrl+O` | Import: opens the palette on `Import file…` / `Import folder…` |
-| `Ctrl+P` | Open the command palette (files, `>` commands, `>search`) |
+| `Ctrl+P` | Toggle the command palette (files, `>` commands, `>search`) |
 | `Ctrl+Shift+P` | Cycle the markdown preview: off → split → full (markdown tabs only) |
 | `Ctrl+Shift+F` | Find in files: opens the palette on full-text search |
 | `Ctrl+F` | Open or close find in the current file |

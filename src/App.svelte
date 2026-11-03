@@ -319,7 +319,9 @@
     }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p') {
       e.preventDefault()
-      ui.commandPaletteOpen = true
+      if (e.repeat) return
+      // Ctrl+P is the palette's own toggle; the other keys open it with content.
+      ui.commandPaletteOpen = !ui.commandPaletteOpen
     }
   }
 
