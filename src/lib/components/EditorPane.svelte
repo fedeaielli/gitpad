@@ -61,6 +61,10 @@
       'editorCursor.foreground': '#cccccc',
       'editorIndentGuide.background1': '#3c3c3c',
       'editorIndentGuide.activeBackground1': '#6b6b6b',
+      // Find/replace widget, clearly lighter than the editor surface.
+      'editorWidget.background': '#2d2d30',
+      'editorWidget.foreground': '#cccccc',
+      'widget.border': '#6b6b6b',
     },
   })
 
@@ -78,6 +82,9 @@
       'editorCursor.foreground': '#1f1f1f',
       'editorIndentGuide.background1': '#c8c8c8',
       'editorIndentGuide.activeBackground1': '#949494',
+      'editorWidget.background': '#e7e7e7',
+      'editorWidget.foreground': '#1f1f1f',
+      'widget.border': '#949494',
     },
   })
 
@@ -95,6 +102,9 @@
       'editorCursor.foreground': '#ffffff',
       'editorIndentGuide.background1': '#6fc3df',
       'editorIndentGuide.activeBackground1': '#6fc3df',
+      'editorWidget.background': '#1a1a1a',
+      'editorWidget.foreground': '#ffffff',
+      'widget.border': '#6fc3df',
     },
   })
 
