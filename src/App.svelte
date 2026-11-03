@@ -467,7 +467,7 @@
         {#if EditorPane}
           <EditorPane />
         {/if}
-        {#if tabs.tabs.length === 0}
+        {#if tabs.tabs.length === 0 && !ui.timelineCommit}
           <div class="empty">
             <p class="empty-title">No file open</p>
             <p class="empty-hint">
