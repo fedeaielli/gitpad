@@ -435,6 +435,8 @@
       theme: monacoTheme(ui.editorTheme),
       automaticLayout: true,
       minimap: { enabled: false },
+      // The 1 px ruler border reads as a stray line down the editor's right edge.
+      overviewRulerBorder: false,
       fontSize: ui.fontSize,
       fontFamily: ui.fontFamily,
       scrollBeyondLastLine: false,
