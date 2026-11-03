@@ -231,6 +231,9 @@
     }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'h') {
       e.preventDefault()
+      // Monaco's own Ctrl+H opens replace; stop it in the capture phase so the
+      // history shortcut never opens the find widget behind it.
+      e.stopPropagation()
       if (e.repeat) return
       // The panel only exists for an open file, so the key does nothing without one.
       if (tabs.activeTabId) ui.timelineOpen = !ui.timelineOpen
