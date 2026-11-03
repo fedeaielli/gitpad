@@ -5,7 +5,7 @@
 
   /* Surfaces, from the editor outwards. Dark Modern: the floor is darkest, the
      panels share one lighter tone, modals sit on top. */
-  --surface-0: #1f1f1f;
+  --surface-0: #1a1a1a;
   --surface-1: #252526;
   --surface-2: #252526;
   --surface-3: #2d2d30;
@@ -237,7 +237,7 @@ select {
 
 /* Monaco leaves the find widget shadow unset; a deeper selector beats its own
    .monaco-editor .find-widget rule regardless of stylesheet order. */
-.editor .monaco-editor .find-widget {
+.editor .monaco-editor .find-widget.visible {
   box-shadow: var(--shadow-2);
 }
 
