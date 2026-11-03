@@ -342,10 +342,11 @@
         </p>
       {:else}
         {#each items as item, i (item.kind === 'file' ? item.path : item.kind === 'result' ? `${item.path}:${item.line}` : item.id)}
+          <!-- Move, not enter: rows appearing under a still pointer must not steal the selection. -->
           <button
             class="item"
             class:active={i === selected}
-            onmouseenter={() => (selected = i)}
+            onmousemove={() => (selected = i)}
             onclick={() => activate(item)}
           >
             {#if item.kind === 'command'}
