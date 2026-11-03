@@ -6,7 +6,7 @@
   import { closeIfClean, discarded, openTab, tabs } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { ui } from '../stores/ui.svelte'
-  import { applyGitStatus, errorMessage, gitStatus, type GitStatus } from '../stores/git.svelte'
+  import { applyGitStatus, errorMessage, gitStatus, type FileChange, type GitStatus } from '../stores/git.svelte'
   import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { tip } from '../utils/tooltip'
@@ -28,6 +28,8 @@
   }
 
   const active = $derived(tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null)
+  /// Non-null moves the panel from one file's history to one commit's diff.
+  const commit = $derived(ui.timelineCommit)
   const path = $derived(active?.path ?? '')
   const name = $derived(path.split('/').pop() ?? path)
   const dirty = $derived(!!active?.modified)
@@ -38,6 +40,7 @@
   )
 
   let commits = $state<CommitEntry[]>([])
+  let files = $state<FileChange[]>([])
   let selected = $state('')
   let diff = $state<FileDiff | null>(null)
   let busy = $state(false)
@@ -57,14 +60,17 @@
   const refreshKey = $derived(
     `${path}|${ui.treeVersion}|${pending}|${gitStatus.changes.map((c) => c.path + c.status).join(',')}`,
   )
+  // A commit's diff never changes, so its hash alone is the reload key.
+  const loadKey = $derived(commit ? `commit:${commit.hash}` : refreshKey)
 
   $effect(() => {
-    const key = ui.timelineOpen ? refreshKey : ''
+    const key = ui.timelineOpen ? loadKey : ''
     if (!key || key === loadedKey) return
     loadedKey = key
     selected = ''
     setDiff(null, '')
-    void load()
+    if (commit) void loadCommit()
+    else void load()
   })
 
   async function load() {
@@ -79,7 +85,7 @@
     if (target === path) loading = false
   }
 
-  function setDiff(next: FileDiff | null, hash: string) {
+  function setDiff(next: FileDiff | null, key: string, lang = language) {
     diff = next
     for (const model of models) model.dispose()
     models = []
@@ -88,16 +94,49 @@
     if (!diffEditor) return
     const original = monaco.editor.createModel(
       next.original,
-      language,
-      monaco.Uri.parse(`gitpad-diff://old/${hash}`),
+      lang,
+      monaco.Uri.parse(`gitpad-diff://old/${key}`),
     )
     const modified = monaco.editor.createModel(
       next.modified,
-      language,
-      monaco.Uri.parse(`gitpad-diff://new/${hash}`),
+      lang,
+      monaco.Uri.parse(`gitpad-diff://new/${key}`),
     )
     models = [original, modified]
     diffEditor.setModel({ original, modified })
+  }
+
+  async function loadCommit() {
+    const target = ui.timelineCommit
+    if (!target) return
+    loading = true
+    error = null
+    files = await invoke<FileChange[]>('git_commit_files', { hash: target.hash }).catch((e) => {
+      error = errorMessage(e)
+      return []
+    })
+    loading = false
+    if (files.length) void pick(files[0])
+  }
+
+  /// Commit mode: the list picks which file of the commit to diff.
+  async function pick(file: FileChange) {
+    const target = ui.timelineCommit
+    if (!target || selected === file.path) return
+    selected = file.path
+    busy = true
+    error = null
+    try {
+      setDiff(
+        await invoke<FileDiff>('git_file_diff', { hash: target.hash, path: file.path }),
+        `${target.hash}/${file.path}`,
+        languageFor(file.path),
+      )
+    } catch (e) {
+      error = errorMessage(e)
+    } finally {
+      busy = false
+    }
   }
 
   async function select(commit: CommitEntry) {
@@ -159,6 +198,7 @@
 
   function close() {
     ui.timelineOpen = false
+    ui.timelineCommit = null
   }
 
   function when(timestamp: number) {
@@ -248,22 +288,39 @@
   ></div>
 
   <header class="head">
-    <FileIcon name={path} size={13} />
-    <span class="name">{name}</span>
-    {#if !loading}{commits.length} commit{commits.length === 1 ? '' : 's'}{/if}
-    <button class="close" aria-label="Close file history" onclick={close}>×</button>
+    {#if commit}
+      <code class="sha">{commit.shortHash}</code>
+      <span class="name">{commit.message}</span>
+      {#if !loading}{files.length} file{files.length === 1 ? '' : 's'}{/if}
+    {:else}
+      <FileIcon name={path} size={13} />
+      <span class="name">{name}</span>
+      {#if !loading}{commits.length} commit{commits.length === 1 ? '' : 's'}{/if}
+    {/if}
+    <button class="close" aria-label={commit ? 'Close commit diff' : 'Close file history'} onclick={close}>×</button>
   </header>
 
   {#if error}
     <div class="error">
       <span>{error}</span>
-      <button onclick={() => void load()}>Retry</button>
+      <button onclick={() => void (commit ? loadCommit() : load())}>Retry</button>
     </div>
   {/if}
 
   <div class="body">
     <ul class="commits" style="flex: 0 0 {ui.timelineListWidth}px">
-      {#if loading && commits.length === 0}
+      {#if commit}
+        {#each files as file (file.path)}
+          <li class="row" class:active={selected === file.path}>
+            <button class="commit" use:tip={file.path} onclick={() => void pick(file)}>
+              <span class="badge {file.status}">{file.status}</span>
+              <span class="msg">{file.path}</span>
+            </button>
+          </li>
+        {:else}
+          <li class="empty">{loading ? 'Loading…' : 'No files in this commit.'}</li>
+        {/each}
+      {:else if loading && commits.length === 0}
         <li class="skeleton"></li>
         <li class="skeleton"></li>
         <li class="skeleton"></li>
@@ -311,7 +368,7 @@
     <div class="diff">
       <div class="editor" bind:this={host}></div>
       {#if !diff}
-        <p class="hint">Pick a commit to see the diff.</p>
+        <p class="hint">Pick a {commit ? 'file' : 'commit'} to see the diff.</p>
       {/if}
     </div>
   </div>
@@ -486,6 +543,16 @@
     font-size: 10px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+  }
+  .badge.A {
+    color: var(--ok);
+  }
+  .badge.D {
+    color: var(--err);
+  }
+  .sha {
+    flex: 0 0 auto;
+    font-size: 11px;
   }
   .restore {
     flex: 0 0 auto;

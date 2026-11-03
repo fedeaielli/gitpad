@@ -34,6 +34,8 @@ export const ui = $state({
   activeView: 'files' as 'files' | 'git' | 'history',
   previewMode: 'off' as 'off' | 'split' | 'full',
   timelineOpen: false,
+  /// Non-null turns the bottom panel into that commit's diff.
+  timelineCommit: null as { hash: string; shortHash: string; message: string } | null,
   /// Height of the per-file history panel in px.
   timelineHeight: 200,
   timelineListWidth: 300,

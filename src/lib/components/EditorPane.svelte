@@ -492,7 +492,7 @@
       <div class="preview"><MarkdownPreview /></div>
     {/if}
   </div>
-  {#if ui.timelineOpen && activeTab()}
+  {#if ui.timelineOpen && (ui.timelineCommit || activeTab())}
     <FileTimeline />
   {/if}
   {#if saveError}

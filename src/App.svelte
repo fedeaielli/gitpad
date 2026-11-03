@@ -267,6 +267,7 @@
     // Escape closes the file history, but not while the palette is on top of it.
     if (e.key === 'Escape' && ui.timelineOpen && !ui.commandPaletteOpen) {
       ui.timelineOpen = false
+      ui.timelineCommit = null
       return
     }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'h') {
@@ -275,8 +276,13 @@
       // history shortcut never opens the find widget behind it.
       e.stopPropagation()
       if (e.repeat) return
+      // Ctrl+H always means file history: from a commit diff it switches panels
+      // instead of closing one, so the key never feels like a no-op.
+      const fromCommit = ui.timelineCommit !== null
+      ui.timelineCommit = null
       // The panel only exists for an open file, so the key does nothing without one.
-      if (tabs.activeTabId) ui.timelineOpen = !ui.timelineOpen
+      if (tabs.activeTabId) ui.timelineOpen = fromCommit || !ui.timelineOpen
+      else ui.timelineOpen = false
       return
     }
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'n') {
