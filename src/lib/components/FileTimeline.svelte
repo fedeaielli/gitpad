@@ -7,7 +7,7 @@
   import { languageFor } from '../utils/langmap'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, gitStatus, type FileChange, type GitStatus } from '../stores/git.svelte'
-  import { pushToast } from '../stores/toasts.svelte'
+  import { logLine, pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { tip } from '../utils/tooltip'
   import { isCurrentVersion } from '../utils/file-history'
@@ -68,6 +68,7 @@
     if (!key || key === loadedKey) return
     loadedKey = key
     selected = ''
+    loggedFailures.clear()
     setDiff(null, '')
     if (commit) void loadCommit()
     else void load()
@@ -85,8 +86,29 @@
     if (target === path) loading = false
   }
 
+  // Monaco throws when a model disappears under it: one log line per distinct
+  // failure, so a broken panel cannot flood the log.
+  let loggedFailures = new Set<string>()
+  function diffFailed(e: unknown) {
+    const message = errorMessage(e)
+    error = message
+    if (loggedFailures.has(message)) return
+    loggedFailures.add(message)
+    logLine('error', `diff: ${message}`, 'editor')
+  }
+
   function setDiff(next: FileDiff | null, key: string, lang = language) {
     diff = next
+    // An exception must never escape into a Svelte flush: that aborts the DOM
+    // update and leaves the whole panel half-painted.
+    try {
+      applyDiff(next, key, lang)
+    } catch (e) {
+      diffFailed(e)
+    }
+  }
+
+  function applyDiff(next: FileDiff | null, key: string, lang: string) {
     // Detach before disposing: the diff editor throws if its models vanish
     // under it, which used to abort the effect flush and break the layout.
     diffEditor?.setModel(null)
@@ -278,10 +300,14 @@
 
   onMount(() => {
     return () => {
-      // Same order as setDiff: the editor must let go before its models die.
-      diffEditor?.setModel(null)
-      diffEditor?.dispose()
-      for (const model of models) model.dispose()
+      try {
+        // Same order as setDiff: the editor must let go before its models die.
+        diffEditor?.setModel(null)
+        diffEditor?.dispose()
+        for (const model of models) model.dispose()
+      } catch (e) {
+        diffFailed(e)
+      }
     }
   })
 </script>
