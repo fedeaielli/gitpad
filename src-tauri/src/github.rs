@@ -214,7 +214,7 @@ pub fn github_device_flow_poll(
             };
             if let Some(token) = poll.access_token {
                 match auth::store_token(token).await {
-                    Ok(()) => {
+                    Ok(_) => {
                         log::info!(target: "app", "auth: device flow completed");
                         let _ = app.emit("auth-success", ());
                     }

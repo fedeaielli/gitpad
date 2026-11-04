@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
-  import { openUrl } from '@tauri-apps/plugin-opener'
+  import { openExternal } from '../utils/open'
   import { ui } from '../stores/ui.svelte'
   import { gitStatus } from '../stores/git.svelte'
   import { auth, forgetUser, loadUser } from '../stores/auth.svelte'
@@ -44,11 +44,7 @@
   async function gotoAccount() {
     closeMenu()
     if (!user) return
-    try {
-      await openUrl(`https://github.com/${user.login}`)
-    } catch (e) {
-      pushToast(`open account: ${e}`)
-    }
+    await openExternal(`https://github.com/${user.login}`)
   }
 
   async function logout() {

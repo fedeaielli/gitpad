@@ -269,8 +269,39 @@ fn level_of(name: &str) -> log::Level {
     }
 }
 
+/// Opens a link in the browser. `xdg-open` can exit without a browser on a bare
+/// desktop, so the two openers that exist there are tried in turn and every
+/// attempt is logged: the logs tab says which one failed.
+#[tauri::command]
+fn open_external(url: String) -> Result<(), String> {
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return Err("only http(s) links can be opened".into());
+    }
+    let mut failures = Vec::new();
+    for attempt in [("xdg-open", vec![url.as_str()]), ("gio", vec!["open", url.as_str()])] {
+        let (program, args) = attempt;
+        match std::process::Command::new(program).args(args).status() {
+            Ok(status) if status.success() => {
+                log::info!(target: "app", "open: {url} via {program}");
+                return Ok(());
+            }
+            Ok(status) => {
+                log::warn!(target: "app", "open: {program} exited with {status}");
+                failures.push(format!("{program}: {status}"));
+            }
+            Err(e) => {
+                log::warn!(target: "app", "open: {program} unavailable: {e}");
+                failures.push(format!("{program}: {e}"));
+            }
+        }
+    }
+    Err(format!("no browser found ({})", failures.join("; ")))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Before anything reaches for the keyring.
+    auth::ensure_session_bus();
     // Must happen before Tauri spawns threads: they inherit the mask.
     let sigterm = block_sigterm().ok();
     let result = tauri::Builder::default()
@@ -329,6 +360,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             auth::auth_set_pat,
             auth::auth_has_token,
+            auth::auth_keyring_ok,
             auth::auth_clear,
             fs::fs_read_file,
             fs::fs_write_file,
@@ -369,6 +401,7 @@ pub fn run() {
             app_exit,
             app_closing_ack,
             app_log,
+            open_external,
             logs_list,
             logs_read,
         ])
@@ -424,6 +457,14 @@ mod tests {
         assert_eq!(log_target("app"), "app");
         assert_eq!(log_target("editor"), "editor");
         assert_eq!(log_target("whatever"), "editor");
+    }
+
+    #[test]
+    fn open_external_only_takes_http_links() {
+        // The URL reaches a process argv: never let anything else through.
+        assert!(super::open_external("file:///etc/passwd".into()).is_err());
+        assert!(super::open_external("--help".into()).is_err());
+        assert!(super::open_external("javascript:alert(1)".into()).is_err());
     }
 
     #[test]
