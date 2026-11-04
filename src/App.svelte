@@ -45,7 +45,12 @@
   // import, so a race just resolves to the same module.
   $effect(() => {
     if (EditorPane) return
-    void import('./lib/components/EditorPane.svelte').then((m) => (EditorPane = m.default))
+    void import('./lib/components/EditorPane.svelte')
+      .then((m) => {
+        sessionStorage.removeItem('gitpad:chunk-reload')
+        EditorPane = m.default
+      })
+      .catch(() => reloadOnce())
   })
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let pendingConfig: Config | null = null
@@ -136,9 +141,22 @@
   $effect(() => {
     if (gitStatus.conflicts.length === 0) ui.conflictsHidden = false
     else if (!ConflictModal) {
-      void import('./lib/components/ConflictModal.svelte').then((m) => (ConflictModal = m.default))
+      void import('./lib/components/ConflictModal.svelte')
+        .then((m) => {
+          sessionStorage.removeItem('gitpad:chunk-reload')
+          ConflictModal = m.default
+        })
+        .catch(() => reloadOnce())
     }
   })
+
+  // A failed chunk import leaves the pane blank. In dev a rebuild renames the
+  // chunk while the page still asks for the old one: reload once, then stop.
+  function reloadOnce() {
+    if (sessionStorage.getItem('gitpad:chunk-reload')) return
+    sessionStorage.setItem('gitpad:chunk-reload', '1')
+    location.reload()
+  }
 
   function clamp(value: number, min: number, max: number) {
     return Math.min(max, Math.max(min, Math.round(value)))
