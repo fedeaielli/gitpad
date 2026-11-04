@@ -44,7 +44,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 
 ## Install
 
-### AppImage (recommended)
+### AppImage
 
 Download the latest AppImage from the [releases page](https://github.com/fedeaielli/gitpad/releases), then:
 
@@ -53,7 +53,7 @@ chmod +x GitPad_*.AppImage
 ./GitPad_*.AppImage
 ```
 
-The AppImage needs `webkit2gtk-4.1` and `libsecret` on the host.
+Nothing to install and no root: GTK and WebKitGTK travel inside the bundle. It does need a glibc at least as new as the one it was built against (see [Compatibility](#compatibility)), and the desktop's Secret Service for the keyring (`gnome-keyring`, or KWallet on KDE).
 
 ### Arch Linux
 
@@ -88,6 +88,29 @@ npm run tauri build    # release build
 ```
 
 The AppImage is written to `src-tauri/target/release/bundle/`.
+
+---
+
+## Compatibility
+
+An AppImage never contains glibc: it uses the one the host provides. The release
+AppImage is built on Arch, whose glibc is newer than every stable distribution's,
+so it runs only where glibc is at least as new as the build machine's.
+
+| Where | Install | Notes |
+|---|---|---|
+| Arch Linux, Manjaro | `makepkg -si`, or the AppImage | Both built from this repository |
+| Debian 13, Ubuntu 24.04+ | from source | AppImage fails with `GLIBC_2.43 not found`: those ship glibc 2.39–2.41 |
+| Fedora 41+, openSUSE Tumbleweed | from source | Same reason while the release is built on Arch |
+| Debian 11–12, Ubuntu 20.04–22.04, RHEL 8–9 | from source | glibc 2.28–2.36 |
+| Windows, macOS | not supported | Linux only for now |
+
+Building from source needs the dependencies listed above; the result is a native
+binary with no glibc constraint beyond your own distribution's.
+
+Raising the AppImage floor means building it on an older base (a CI runner on
+Ubuntu 22.04 gives glibc 2.35). Until then, "AppImage" and "runs on Arch" are the
+same sentence.
 
 ---
 
@@ -181,6 +204,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **Crash safety.** `SIGTERM` commits and pushes files already written before exit. `SIGKILL` or a crash cannot be caught; the last edits remain local until the next start.
 - **Logs stop at 5 files.** Rotation keeps five 5 MB files, so the oldest sessions are dropped once the folder reaches roughly 25 MB.
 - **Without a keyring, the login lasts one session.** If the OS keyring is missing or locked, GitPad keeps the token in memory, warns at startup, and asks you to sign in again after a restart.
+- **The AppImage is as new as its build host.** Bundled libraries need the glibc of the machine that built them, so the release AppImage runs on Arch and not on Debian 13 or Ubuntu 24.04. Build from source there; see [Compatibility](#compatibility).
 - **Linux only.** The current release bundles an AppImage. Windows is not supported yet.
 - **Not a full Git client.** There is no branch UI, terminal, plugin system, or multi-user collaboration.
 
