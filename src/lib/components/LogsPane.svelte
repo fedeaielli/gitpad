@@ -4,6 +4,7 @@
   import { errorMessage } from '../stores/git.svelte'
   import {
     buildSessions,
+    isStartOnly,
     matches,
     type LogCategory,
     type LogEntry,
@@ -52,10 +53,13 @@
       }))
       .filter((session) => session.entries.length > 0),
   )
-  const total = $derived(visible.reduce((sum, session) => sum + session.entries.length, 0))
+  // Quiet sessions collapse to their header, so they do not count a line.
+  const total = $derived(
+    visible.reduce((sum, session) => sum + session.entries.length - (isStartOnly(session) ? 1 : 0), 0),
+  )
 
   type Row =
-    | { kind: 'session'; key: string; startedAt: number; running: boolean }
+    | { kind: 'session'; key: string; startedAt: number; running: boolean; quiet: boolean }
     | { kind: 'line'; key: string; entry: LogEntry }
 
   // One flat list so the render cap counts lines, not sessions.
@@ -64,12 +68,16 @@
     let count = 0
     for (const session of visible) {
       if (count >= limit) break
+      const quiet = isStartOnly(session)
       list.push({
         kind: 'session',
         key: session.key,
         startedAt: session.startedAt,
         running: session.current && session === visible[0],
+        quiet,
       })
+      // A session that only recorded its own start needs no second line.
+      if (quiet) continue
       for (const [index, entry] of session.entries.entries()) {
         if (count >= limit) break
         list.push({ kind: 'line', key: `${session.key}:${index}`, entry })
@@ -182,6 +190,9 @@
         {#if row.running}
           <span class="now">running</span>
         {/if}
+        {#if row.quiet}
+          <span class="idle">app started</span>
+        {/if}
       </div>
     {:else}
       <div class="line {row.entry.level}">
@@ -290,6 +301,10 @@
   }
   .now {
     color: var(--ok);
+  }
+  .idle {
+    color: var(--muted);
+    opacity: 0.8;
   }
   .line {
     display: grid;

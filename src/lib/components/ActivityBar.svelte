@@ -4,15 +4,11 @@
   import { openUrl } from '@tauri-apps/plugin-opener'
   import { ui } from '../stores/ui.svelte'
   import { gitStatus } from '../stores/git.svelte'
+  import { auth, forgetUser, loadUser } from '../stores/auth.svelte'
   import { pushToast } from '../stores/toasts.svelte'
   import { tip } from '../utils/tooltip'
 
-  interface UserInfo {
-    login: string
-    avatarUrl: string
-  }
-
-  let user = $state<UserInfo | null>(null)
+  const user = $derived(auth.user)
 
   // The panel clips its content, so the menu is fixed and placed by hand.
   let menuOpen = $state(false)
@@ -63,21 +59,18 @@
       pushToast(`logout: ${e}`)
       return
     }
-    user = null
-  }
-
-  async function loadUser() {
-    user = await invoke<UserInfo>('github_get_user').catch(() => null)
+    forgetUser()
   }
 
   onMount(() => {
     // Off the startup path: the request and avatar fetch can wait for first paint.
     const timer = setTimeout(() => void loadUser(), 1200)
-    // Refresh after login/logout without restarting the app.
-    window.addEventListener('focus', loadUser)
+    // Refreshes only when the cached copy is stale, so a focus is free.
+    const onFocus = () => void loadUser()
+    window.addEventListener('focus', onFocus)
     return () => {
       clearTimeout(timer)
-      window.removeEventListener('focus', loadUser)
+      window.removeEventListener('focus', onFocus)
     }
   })
 

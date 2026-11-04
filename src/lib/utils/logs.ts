@@ -73,6 +73,11 @@ export function isStart(entry: LogEntry): boolean {
   return entry.category === 'app' && /\bstarting$/.test(entry.message)
 }
 
+/// A session with nothing but its start line: the app opened and closed.
+export function isStartOnly(session: LogSession): boolean {
+  return session.entries.length === 1 && isStart(session.entries[0])
+}
+
 export function buildSessions(sources: LogSource[]): LogSession[] {
   const sessions: LogSession[] = []
   for (const source of sources) {

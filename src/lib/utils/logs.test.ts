@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSessions, matches, parseLog } from './logs'
+import { buildSessions, isStartOnly, matches, parseLog } from './logs'
 
 const START = '[2026-11-04][13:21:04][app][INFO] gitpad 0.1.5 starting'
 const PUSH = '[2026-11-04][13:22:10][git][INFO] push: main'
@@ -55,6 +55,26 @@ describe('buildSessions', () => {
     expect(sessions).toHaveLength(1)
     expect(sessions[0].startedAt).toBe(42)
     expect(sessions[0].current).toBe(false)
+  })
+
+  it('keeps every session aligned with its own first line', () => {
+    const text = [
+      '[2026-11-04][00:00:54][app][INFO] gitpad 0.1.5 starting',
+      '[2026-11-04][00:07:09][app][INFO] gitpad 0.1.5 starting',
+      PUSH,
+    ].join('\n')
+    const sessions = buildSessions([{ name: 'gitpad.log', current: true, modified: 0, text }])
+    expect(sessions.map((s) => [s.startedAt, s.entries[0].at])).toEqual([
+      [Date.parse('2026-11-04T00:07:09'), Date.parse('2026-11-04T00:07:09')],
+      [Date.parse('2026-11-04T00:00:54'), Date.parse('2026-11-04T00:00:54')],
+    ])
+  })
+
+  it('marks a session that recorded nothing but its start', () => {
+    const text = [START, '[2026-11-04][14:00:00][app][INFO] gitpad 0.1.5 starting', FAIL].join('\n')
+    const [busy, quiet] = buildSessions([{ name: 'gitpad.log', current: true, modified: 0, text }])
+    expect(isStartOnly(quiet)).toBe(true)
+    expect(isStartOnly(busy)).toBe(false)
   })
 
   it('returns nothing for an empty file', () => {
