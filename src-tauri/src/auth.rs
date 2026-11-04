@@ -78,7 +78,14 @@ mod tests {
     #[test]
     fn keyring_roundtrip() {
         let key = "gitpad_test_key";
-        store(key, "value").unwrap();
+        // Headless runners have no Secret Service, so there is nothing to test
+        // on: any other failure is still a failure.
+        if let Err(e) = store(key, "value") {
+            let missing_backend = e.contains("secure storage") || e.contains("DBus");
+            assert!(missing_backend, "unexpected keyring error: {e}");
+            eprintln!("keyring backend unavailable, skipping: {e}");
+            return;
+        }
         assert_eq!(read(key).unwrap(), Some("value".into()));
         entry(key).unwrap().delete_credential().unwrap();
         assert_eq!(read(key).unwrap(), None);
