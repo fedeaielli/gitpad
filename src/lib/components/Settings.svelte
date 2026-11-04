@@ -7,6 +7,7 @@
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
+  import { auth, forgetUser, loadUser, setUser } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
   import LogsPane from './LogsPane.svelte'
   import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
@@ -65,7 +66,7 @@
     void ui.editorTheme
     return (contrast(ui.accent, surfaceForTheme()) ?? 99) < 3
   })
-  let user = $state<UserInfo | null>(null)
+  const user = $derived(auth.user)
   let accountError = $state('')
   let pat = $state('')
   let signingIn = $state(false)
@@ -94,11 +95,8 @@
   )
 
   onMount(async () => {
-    try {
-      user = await invoke<UserInfo>('github_get_user')
-    } catch {
-      accountError = 'not connected'
-    }
+    await loadUser()
+    if (!auth.user) accountError = 'not connected'
     fonts = (await invoke<string[]>('fs_list_fonts').catch(() => [])) ?? []
   })
 
@@ -211,17 +209,13 @@
     }
     // Stay on the form: the onboarding wizard is for the first run, not for
     // signing back in.
-    user = null
+    forgetUser()
     accountError = ''
   }
 
   async function refreshUser() {
-    try {
-      user = await invoke<UserInfo>('github_get_user')
-      accountError = ''
-    } catch (e) {
-      accountError = errorMessage(e)
-    }
+    await loadUser(true)
+    accountError = auth.user ? '' : 'not connected'
   }
 
   async function signIn() {
@@ -230,7 +224,7 @@
     signingIn = true
     try {
       // Validate before storing: a bad token must never reach the keyring.
-      user = await invoke<UserInfo>('github_validate_token', { token })
+      setUser(await invoke<UserInfo>('github_validate_token', { token }))
       await invoke('auth_set_pat', { token })
       pat = ''
       accountError = ''
