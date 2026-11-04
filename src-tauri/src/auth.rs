@@ -1,3 +1,5 @@
+use tauri_plugin_log::log;
+
 pub const SERVICE: &str = "com.gitpad.app";
 pub const TOKEN_KEY: &str = "github_token";
 
@@ -32,7 +34,10 @@ pub fn token() -> Result<String, String> {
 pub async fn store_token(token: String) -> Result<(), String> {
     tokio::task::spawn_blocking(move || store(TOKEN_KEY, &token))
         .await
-        .map_err(|e| format!("keyring task: {e}"))?
+        .map_err(|e| format!("keyring task: {e}"))??;
+    // Never the token itself: only that one is stored.
+    log::info!(target: "app", "auth: token stored");
+    Ok(())
 }
 
 /// Stores the token the user pasted. The only write the webview can make.
@@ -60,7 +65,9 @@ pub async fn auth_clear() -> Result<(), String> {
         Err(e) => Err(format!("keyring clear: {e}")),
     })
     .await
-    .map_err(|e| format!("keyring task: {e}"))?
+    .map_err(|e| format!("keyring task: {e}"))??;
+    log::info!(target: "app", "auth: token cleared");
+    Ok(())
 }
 
 #[cfg(test)]

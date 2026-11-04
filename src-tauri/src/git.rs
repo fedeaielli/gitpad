@@ -133,6 +133,10 @@ pub fn open_repo(path: &Path) -> Result<Repository, GitError> {
 }
 
 fn git_err(e: git2::Error) -> GitError {
+    // A missing ref is a normal probe (unborn HEAD, empty history), not a fault.
+    if e.code() != git2::ErrorCode::NotFound {
+        log::warn!(target: "git", "git: {}", e.message());
+    }
     GitError::Other(format!("git: {}", e.message()))
 }
 
@@ -178,7 +182,10 @@ pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
 
 /// Warm the clone path cache off the main thread; a missing repo is fine.
 pub fn prime_repo_path(app: &AppHandle) {
-    let _ = repo_dir(app);
+    match repo_dir(app) {
+        Ok(path) => log::info!(target: "git", "repository: {}", path.display()),
+        Err(_) => log::info!(target: "git", "repository: none yet"),
+    }
 }
 
 fn remember_repo(app: &AppHandle, path: PathBuf) {
@@ -477,6 +484,7 @@ fn commit_head(repo: &Repository, tree: &git2::Tree, message: &str) -> Result<()
     let refs: Vec<&git2::Commit> = parents.iter().collect();
     repo.commit(Some("HEAD"), &sig, &sig, message, tree, &refs)
         .map_err(git_err)?;
+    log::info!(target: "git", "commit: {message}");
     if repo.state() == git2::RepositoryState::Merge {
         repo.cleanup_state().map_err(git_err)?;
     }
@@ -588,6 +596,7 @@ fn pull_repo_with(
     commit_pending(repo, message)?;
     let before = repo.head().ok().and_then(|head| head.target());
     let (Some(local), Some(remote)) = branch_oids(repo) else {
+        log::info!(target: "git", "pull: local only, nothing to fetch");
         return Ok((status_of(repo)?, Vec::new()));
     };
     let annotated = repo.find_annotated_commit(remote).map_err(git_err)?;
@@ -596,6 +605,7 @@ fn pull_repo_with(
         let remote_commit = repo.find_commit(remote).map_err(git_err)?;
         repo.reset(remote_commit.as_object(), ResetType::Hard, None)
             .map_err(git_err)?;
+        log::info!(target: "git", "pull: fast-forward");
     } else if analysis.is_normal() {
         let mut checkout = CheckoutBuilder::new();
         repo.merge(&[&annotated], None, Some(&mut checkout))
@@ -605,6 +615,7 @@ fn pull_repo_with(
             // HEAD did not move, but the merge rewrote the worktree: report
             // every changed path, conflicts included.
             let status = status_of(repo)?;
+            log::warn!(target: "git", "pull: {} conflict(s)", status.conflicts.len());
             let changes = status.changes.clone();
             return Ok((status, changes));
         }
@@ -622,6 +633,9 @@ fn pull_repo_with(
             &[&local_commit, &remote_commit],
         )
         .map_err(git_err)?;
+        log::info!(target: "git", "pull: merged origin");
+    } else {
+        log::info!(target: "git", "pull: up to date");
     }
     let status = status_of(repo)?;
     let changes = changed_paths(repo, before)?;
@@ -728,7 +742,10 @@ fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
     opts.remote_callbacks(callbacks(token));
     remote
         .push(&[refspec.as_str()], Some(&mut opts))
-        .map_err(|e| format!("git push: {}", e.message()))?;
+        .map_err(|e| {
+            log::warn!(target: "git", "push: {}", e.message());
+            format!("git push: {}", e.message())
+        })?;
     log::info!(target: "git", "push: {branch}");
     record_push(repo);
     Ok(())
@@ -1061,6 +1078,7 @@ pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Res
     let target = fresh_clone_target(Path::new(parent.trim()), &name)?;
     clone_into(&app, &url, &target).await?;
     remember_repo(&app, target.clone());
+    log::info!(target: "git", "repository: {} (imported)", target.display());
     if let Err(e) = crate::config::store_repo_path(&app, &target) {
         log::warn!(target: "git", "import: could not save the new location: {e}");
     }
@@ -1143,9 +1161,14 @@ async fn clone_into(app: &AppHandle, url: &str, target: &Path) -> Result<(), Git
     let target_task = target.to_path_buf();
     let gate = app.state::<crate::AppState>().repo_gate.clone();
     tokio::task::spawn_blocking(move || {
+        log::info!(target: "git", "clone: {url}");
         let token = auth::token().ok();
         let _gate = gate.write().map_err(|e| e.to_string())?;
-        clone_repo(&url, &target_task, token)
+        let result = clone_repo(&url, &target_task, token);
+        if result.is_ok() {
+            log::info!(target: "git", "clone: done");
+        }
+        result
     })
     .await
     .map_err(|e| format!("git task: {e}"))?
@@ -1197,6 +1220,7 @@ pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, 
     .await
     .map_err(|e| format!("git task: {e}"))??;
     remember_repo(&app, to.clone());
+    log::info!(target: "git", "repository: {} (moved from {})", to.display(), from.display());
     if let Err(e) = crate::config::store_repo_path(&app, &to) {
         log::warn!(target: "git", "move: could not save the new location: {e}");
     }

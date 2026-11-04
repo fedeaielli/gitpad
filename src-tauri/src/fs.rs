@@ -324,6 +324,7 @@ fn create_dir_in(
         std::fs::write(abs.join(".gitkeep"), "")
             .map_err(|e| format!("create dir {label}: {e}"))?;
     }
+    log::info!(target: "editor", "create folder: {label}");
     Ok(())
 }
 
@@ -346,6 +347,7 @@ pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), git::GitError
         } else {
             std::fs::remove_file(&abs).map_err(|e| format!("delete {label}: {e}"))?;
         }
+        log::info!(target: "editor", "delete: {label}");
         // The filesystem is the source of truth: a failed commit is retried by the next push.
         if let Err(e) = git::commit_all(&root_task, &format!("gitpad: delete {label}")) {
             log::warn!(target: "editor", "commit after delete failed: {e}");
@@ -379,6 +381,7 @@ pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), g
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         let _gate = gate.write().map_err(|e| e.to_string())?;
         rename_in(&root_task, &from, &to)?;
+        log::info!(target: "editor", "rename: {from} -> {to}");
         // The filesystem is the source of truth: a failed commit is retried by the next push.
         if let Err(e) = git::commit_all(&root_task, &format!("gitpad: rename {from}")) {
             log::warn!(target: "editor", "commit after rename failed: {e}");
@@ -515,6 +518,7 @@ fn import_locked(
     let _gate = gate.write().map_err(|e| e.to_string())?;
     let name = import_into(src, &root.join(dest_rel))?;
     let rel = dest_rel.join(name);
+    log::info!(target: "editor", "import: {}", rel.display());
     // The copy already happened: a failed commit is retried by the next push.
     if let Err(e) = git::commit_all(root, &format!("gitpad: import {}", rel.display())) {
         log::warn!(target: "editor", "commit after import failed: {e}");
