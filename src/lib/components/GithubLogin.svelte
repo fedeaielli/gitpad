@@ -2,7 +2,7 @@
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
-  import { openUrl } from '@tauri-apps/plugin-opener'
+  import { openExternal } from '../utils/open'
   import { errorMessage } from '../stores/git.svelte'
 
   interface DeviceCode {
@@ -56,7 +56,7 @@
     copied = false
     try {
       code = await invoke<DeviceCode>('github_device_flow_start')
-      await openUrl(code.verificationUri)
+      await openExternal(code.verificationUri)
       await invoke('github_device_flow_poll', { deviceCode: code.deviceCode })
     } catch (e) {
       error = errorMessage(e)
@@ -92,7 +92,7 @@
       </p>
       <p class="hint">
         Enter it on
-        <button class="quiet link" onclick={() => code && void openUrl(code.verificationUri)}>
+        <button class="quiet link" onclick={() => code && void openExternal(code.verificationUri)}>
           github.com/login/device
         </button>
         — checking every {code.interval}s.

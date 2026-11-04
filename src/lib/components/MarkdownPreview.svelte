@@ -7,7 +7,7 @@
   import codeDark from 'highlight.js/styles/github-dark.css?url'
   import codeLight from 'highlight.js/styles/github.css?url'
   import { registerThemeStyles } from '../utils/themes'
-  import { openUrl } from '@tauri-apps/plugin-opener'
+  import { openExternal } from '../utils/open'
   import { tabs } from '../stores/tabs.svelte'
   import { getEditor } from '../editor/bridge'
 
@@ -93,7 +93,7 @@
     const href = anchor?.getAttribute('href')
     if (!href) return
     e.preventDefault()
-    if (/^https?:\/\//.test(href)) void openUrl(href)
+    if (/^https?:\/\//.test(href)) void openExternal(href)
   }
 
   // Attached on the node so the container stays non-interactive for a11y.

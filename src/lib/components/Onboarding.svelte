@@ -2,7 +2,7 @@
   import { invoke } from '@tauri-apps/api/core'
 
   import { open } from '@tauri-apps/plugin-dialog'
-  import { openUrl } from '@tauri-apps/plugin-opener'
+  import { openExternal } from '../utils/open'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
   import GithubLogin from './GithubLogin.svelte'
@@ -37,6 +37,8 @@
   let localRepo = $state<LocalRepo | null>(null)
   let busy = $state(false)
   let error = $state<string | null>(null)
+  /// Set when the token had to stay in memory instead of the keyring.
+  let storageNote = $state('')
 
   function fail(e: unknown) {
     error = errorMessage(e)
@@ -60,6 +62,15 @@
     step = 'repo'
     busy = true
     error = null
+    // The token is already stored; this only decides whether it survives a restart.
+    try {
+      if (!(await invoke<boolean>('auth_keyring_ok'))) {
+        storageNote =
+          'Signed in, but the credential could not be saved to the keyring: you will need to sign in again after a restart.'
+      }
+    } catch {
+      // A failed probe must not block the setup.
+    }
     try {
       repo = await invoke<RepoInfo>('github_init_repo')
     } catch (e) {
@@ -138,7 +149,7 @@
       <p>GitPad stores the credential in your OS keyring.</p>
       <input bind:value={token} placeholder="ghp_… personal access token (scope: repo)" />
       <div class="row">
-        <a href="https://github.com/settings/tokens" onclick={(e) => { e.preventDefault(); void openUrl('https://github.com/settings/tokens') }}>Create a token</a>
+        <a href="https://github.com/settings/tokens" onclick={(e) => { e.preventDefault(); void openExternal('https://github.com/settings/tokens') }}>Create a token</a>
         <button class="primary" disabled={busy || !token.trim()} onclick={validatePat}>Validate</button>
       </div>
       <div class="divider">or</div>
@@ -176,6 +187,9 @@
     {/if}
     {#if user}
       <p class="muted">Signed in as {user.login}</p>
+    {/if}
+    {#if storageNote}
+      <p class="warn">{storageNote}</p>
     {/if}
     {#if error}
       <p class="error">{error}</p>
@@ -243,6 +257,12 @@
   }
   .error {
     color: var(--err);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+
+  .warn {
+    color: var(--warn);
     font-size: 11px;
     overflow-wrap: anywhere;
   }

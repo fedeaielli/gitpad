@@ -397,6 +397,14 @@
     window.addEventListener('focus', onFocus)
     // Hidden until the first render; the timer keeps a JS failure from hiding the app forever.
     const showTimer = setTimeout(() => void getCurrentWindow().show().catch(() => {}), 1500)
+    // A token that only lives in memory is worth one warning, at startup.
+    void invoke<boolean>('auth_keyring_ok')
+      .then((ok) => {
+        if (!ok) {
+          pushToast('Keyring unavailable: you will need to sign in again next time.', 'info', 'app')
+        }
+      })
+      .catch(() => {})
     void (async () => {
       const config = await loadConfig().catch((e) => {
         pushToast(`load settings: ${errorMessage(e)}`, 'error', 'app')
