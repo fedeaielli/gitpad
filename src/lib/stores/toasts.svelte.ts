@@ -12,13 +12,23 @@ let seq = 0
 
 export const toasts = $state({ items: [] as Toast[] })
 
+export type ToastCategory = 'editor' | 'git' | 'app'
+
 /// Transient, non-blocking feedback for failures that have no inline spot.
-export function pushToast(message: string, kind: ToastKind = 'error') {
+export function pushToast(
+  message: string,
+  kind: ToastKind = 'error',
+  category: ToastCategory = 'editor',
+) {
   const id = ++seq
   toasts.items = [...toasts.items, { id, message, kind }].slice(-3)
   setTimeout(() => dismissToast(id), 5000)
   // Mirrored to the file log, so a report shows what the user was told.
-  void invoke('app_log', { level: kind === 'error' ? 'error' : 'info', message }).catch(() => {})
+  void invoke('app_log', {
+    level: kind === 'error' ? 'error' : 'info',
+    category,
+    message,
+  }).catch(() => {})
 }
 
 export function dismissToast(id: number) {

@@ -114,7 +114,7 @@
     if (!configLoaded) return
     pendingConfig = config
     clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => void saveConfig(config).catch((e) => pushToast(`save settings: ${errorMessage(e)}`)), 300)
+    saveTimer = setTimeout(() => void saveConfig(config).catch((e) => pushToast(`save settings: ${errorMessage(e)}`, 'error', 'app')), 300)
   })
 
   // Settings > Supported extensions override the built-in language map.
@@ -373,7 +373,7 @@
         .catch((e) => {
           const message = errorMessage(e)
           if (isNoRepoError(message)) gitStatus.configured = false
-          else pushToast(message)
+          else pushToast(message, 'error', 'git')
         })
     }
     window.addEventListener('focus', onFocus)
@@ -381,7 +381,7 @@
     const showTimer = setTimeout(() => void getCurrentWindow().show().catch(() => {}), 1500)
     void (async () => {
       const config = await loadConfig().catch((e) => {
-        pushToast(`load settings: ${errorMessage(e)}`)
+        pushToast(`load settings: ${errorMessage(e)}`, 'error', 'app')
         return null
       })
       if (config) {

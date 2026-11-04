@@ -729,6 +729,7 @@ fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
     remote
         .push(&[refspec.as_str()], Some(&mut opts))
         .map_err(|e| format!("git push: {}", e.message()))?;
+    log::info!(target: "git", "push: {branch}");
     record_push(repo);
     Ok(())
 }
@@ -949,7 +950,7 @@ fn move_clone(from: &Path, to: &Path) -> Result<(), GitError> {
     if let Err(e) = std::fs::remove_dir_all(from) {
         // The clone is already verified at its destination: a leftover copy is
         // better than failing a move that succeeded.
-        log::warn!("move: leaving {} in place: {e}", from.display());
+        log::warn!(target: "git", "move: leaving {} in place: {e}", from.display());
     }
     Ok(())
 }
@@ -1061,7 +1062,7 @@ pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Res
     clone_into(&app, &url, &target).await?;
     remember_repo(&app, target.clone());
     if let Err(e) = crate::config::store_repo_path(&app, &target) {
-        log::warn!("import: could not save the new location: {e}");
+        log::warn!(target: "git", "import: could not save the new location: {e}");
     }
     Ok(MovedRepo {
         from,
@@ -1119,8 +1120,14 @@ pub async fn git_use_local(app: AppHandle, path: String) -> Result<LocalRepo, Gi
     .map_err(|e| format!("git task: {e}"))??;
     // repo_dir reads the cache first, so it must learn the new path.
     remember_repo(&app, to.clone());
+    log::info!(
+        target: "git",
+        "repository: {} ({})",
+        to.display(),
+        if remote { "with origin" } else { "local only" }
+    );
     if let Err(e) = crate::config::store_repo_path(&app, &to) {
-        log::warn!("use_local: could not save the new location: {e}");
+        log::warn!(target: "git", "use_local: could not save the new location: {e}");
     }
     Ok(LocalRepo {
         from,
@@ -1191,7 +1198,7 @@ pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, 
     .map_err(|e| format!("git task: {e}"))??;
     remember_repo(&app, to.clone());
     if let Err(e) = crate::config::store_repo_path(&app, &to) {
-        log::warn!("move: could not save the new location: {e}");
+        log::warn!(target: "git", "move: could not save the new location: {e}");
     }
     Ok(MovedRepo {
         from: from.to_string_lossy().into_owned(),

@@ -36,6 +36,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 - **Commit history.** Browse the repository log, inspect changed files, restore a file from a commit, or revert a commit. With a file open, the list narrows to the commits that touch it.
 - **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search; press it again to close.
 - **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings.
+- **Session logs.** *Settings → Logs* shows the current session and the previous ones, filterable by severity, category (editor, git, app), and free text.
 - **Credentials in the OS keyring.** The GitHub token is never written to `config.json`.
 
 ---
@@ -160,7 +161,7 @@ On Linux, under `~/.local/share/com.gitpad.app/`:
 |---|---|
 | `repos/gitpad_notes/` | Local Git clone of your notes |
 | `config.json` | Theme, font size, sync settings, extension mappings |
-| `logs/gitpad.log` | Text log of errors, kept for one rotation |
+| `logs/gitpad.log` | Session log, rotated at 5 MB with the last 5 files kept (~25 MB) |
 | OS keyring | GitHub token |
 
 Deleting `config.json` resets settings but leaves the notes repository untouched.
@@ -176,6 +177,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **No filesystem watcher.** The file tree refreshes on focus, not through inotify.
 - **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes.
 - **Crash safety.** `SIGTERM` commits and pushes files already written before exit. `SIGKILL` or a crash cannot be caught; the last edits remain local until the next start.
+- **Logs stop at 5 files.** Rotation keeps five 5 MB files, so the oldest sessions are dropped once the folder reaches roughly 25 MB.
 - **Linux only.** The current release bundles an AppImage. Windows is not supported yet.
 - **Not a full Git client.** There is no branch UI, terminal, plugin system, or multi-user collaboration.
 
