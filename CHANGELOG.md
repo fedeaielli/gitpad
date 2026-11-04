@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.1 — 2026-11-05
+
+Signing in on a machine whose keyring is unavailable, and opening links from a
+minimal desktop.
+
+### Fixed
+- **GitHub login no longer fails without a keyring.** When the Secret Service is
+  missing, locked, or unreachable, the token is kept for the current session
+  instead of aborting the device flow, and the app says so with a toast at
+  startup and a note under the login form.
+- **The session bus is found again.** If `DBUS_SESSION_BUS_ADDRESS` is not set,
+  GitPad falls back to `$XDG_RUNTIME_DIR/bus`, so a launcher that drops the
+  environment no longer breaks the keyring.
+- **Links open on a bare desktop.** "Create a token", the device-flow page and
+  profile links try `xdg-open`, then `gio open`, and copy the URL with a notice
+  when neither works. Every attempt is written to the log.
+- Failing to open the browser no longer cancels the device flow.
+
 ## 1.0.0 — 2026-11-04
 
 First stable release. GitPad is a desktop editor for markdown notes kept in a
