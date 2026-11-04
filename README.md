@@ -33,7 +33,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 - **Conflict resolution.** When a pull conflicts, GitPad opens a diff dialog with local and remote versions. Accept one side, edit manually, then confirm the merge.
 - **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and editor/preview scroll sync.
 - **File tree.** Create, rename, delete, import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`.
-- **Commit history.** Browse the repository log, inspect changed files, restore a file from a commit, or revert a commit.
+- **Commit history.** Browse the repository log, inspect changed files, restore a file from a commit, or revert a commit. With a file open, the list narrows to the commits that touch it.
 - **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search; press it again to close.
 - **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings.
 - **Credentials in the OS keyring.** The GitHub token is never written to `config.json`.
