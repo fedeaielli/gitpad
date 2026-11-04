@@ -229,12 +229,11 @@
     align-items: center;
   }
   .row {
-    flex: 1;
-    min-width: 0;
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 2px;
-    width: 100%;
+    min-width: 0;
     padding: 4px 8px;
     border-color: transparent;
     background: transparent;
@@ -270,8 +269,11 @@
     white-space: nowrap;
   }
   .meta {
+    overflow: hidden;
     color: var(--muted);
     font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .actions {
     padding: 0 8px 4px;
