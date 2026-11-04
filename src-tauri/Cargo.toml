@@ -1,6 +1,6 @@
 [package]
 name = "gitpad"
-version = "1.0.1"
+version = "1.0.2"
 description = "Markdown notes in a Git repository you own"
 authors = ["Fede <fedeaielli@users.noreply.github.com>"]
 license = "GPL-3.0-only"

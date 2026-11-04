@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.2 — 2026-11-05
+
+The Arch package started with a blank window asking for a dev server.
+
+### Fixed
+- The `PKGBUILD` now builds with the `tauri/custom-protocol` feature. Without it
+  the installed binary is treated as a development build and loads
+  `http://localhost:1420`, which is why 1.0.0 and 1.0.1 from `makepkg` showed
+  `Could not connect to localhost: Connection refused`. The AppImage was never
+  affected: the Tauri CLI sets that feature itself.
+- CI compiles that same packaging build on every push, so the two build paths
+  cannot drift apart again.
+
 ## 1.0.1 — 2026-11-05
 
 Signing in on a machine whose keyring is unavailable, and opening links from a
