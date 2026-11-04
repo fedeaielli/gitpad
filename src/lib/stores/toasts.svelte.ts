@@ -14,6 +14,15 @@ export const toasts = $state({ items: [] as Toast[] })
 
 export type ToastCategory = 'editor' | 'git' | 'app'
 
+/// Mirrors one line to the Rust logger without showing anything.
+export function logLine(
+  level: 'info' | 'warn' | 'error',
+  message: string,
+  category: ToastCategory = 'app',
+) {
+  void invoke('app_log', { level, category, message }).catch(() => {})
+}
+
 /// Transient, non-blocking feedback for failures that have no inline spot.
 export function pushToast(
   message: string,
@@ -24,11 +33,7 @@ export function pushToast(
   toasts.items = [...toasts.items, { id, message, kind }].slice(-3)
   setTimeout(() => dismissToast(id), 5000)
   // Mirrored to the file log, so a report shows what the user was told.
-  void invoke('app_log', {
-    level: kind === 'error' ? 'error' : 'info',
-    category,
-    message,
-  }).catch(() => {})
+  logLine(kind === 'error' ? 'error' : 'info', message, category)
 }
 
 export function dismissToast(id: number) {

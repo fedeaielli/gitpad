@@ -84,13 +84,14 @@ async fn shutdown(app: tauri::AppHandle) {
     if SHUTTING_DOWN.swap(true, Ordering::SeqCst) {
         return;
     }
+    log::info!(target: "app", "shutdown: flushing the last commit");
     if let Ok(path) = git::repo_dir(&app) {
         let gate = app.state::<AppState>().repo_gate.clone();
         // The worktree gate is taken with a deadline: if a pull or an import
         // holds it, skip the closing commit instead of burning the timeout.
         // Push only: fetching at exit just delays closing, and a rejected push
         // (remote moved) leaves the local commit for the next sync.
-        let _ = tokio::time::timeout(
+        let flushed = tokio::time::timeout(
             Duration::from_secs(3),
             tokio::task::spawn_blocking(move || {
                 // Keyring reads are blocking: keep them off the async runtime.
@@ -99,13 +100,18 @@ async fn shutdown(app: tauri::AppHandle) {
             }),
         )
         .await;
+        if flushed.is_err() {
+            log::warn!(target: "app", "shutdown: the last push timed out");
+        }
     }
+    log::info!(target: "app", "shutdown: bye");
     app.exit(0);
 }
 
 /// SIGTERM: commit what is on disk and push before dying. `push_only_blocking`
 /// commits pending changes first, so this is the whole shutdown path.
 fn terminate(app: tauri::AppHandle) {
+    log::info!(target: "app", "terminate: flushing the last commit");
     if let Ok(path) = git::repo_dir(&app) {
         let gate = app.state::<AppState>().repo_gate.clone();
         // Same deadline as shutdown: a held gate means no closing commit.
@@ -121,7 +127,9 @@ fn terminate(app: tauri::AppHandle) {
                 git::GateWait::Until(&gate, GATE_WAIT),
             ));
         });
-        let _ = wait.recv_timeout(Duration::from_secs(5));
+        if wait.recv_timeout(Duration::from_secs(5)).is_err() {
+            log::warn!(target: "app", "terminate: the last push timed out");
+        }
     }
     app.exit(0);
 }
@@ -153,15 +161,20 @@ fn app_closing_ack() {
 /// The category becomes the log target: the logs tab filters on it.
 #[tauri::command]
 fn app_log(level: String, category: String, message: String) {
-    let target = match category.as_str() {
-        "git" => "git",
-        "app" => "app",
-        _ => "editor",
-    };
+    let target = log_target(&category);
     match level_of(&level) {
         log::Level::Error => log::error!(target: target, "{message}"),
         log::Level::Warn => log::warn!(target: target, "{message}"),
         _ => log::info!(target: target, "{message}"),
+    }
+}
+
+/// Unknown categories fall back to the editor, the busiest one.
+fn log_target(category: &str) -> &'static str {
+    match category {
+        "git" => "git",
+        "app" => "app",
+        _ => "editor",
     }
 }
 
@@ -385,6 +398,7 @@ mod tests {
     use super::safe_log_name;
     use super::watchdog_should_exit;
     use super::level_of;
+    use super::log_target;
     use tauri_plugin_log::log;
 
     #[test]
@@ -393,6 +407,14 @@ mod tests {
         assert_eq!(level_of("warn"), log::Level::Warn);
         assert_eq!(level_of("info"), log::Level::Info);
         assert_eq!(level_of("nonsense"), log::Level::Info);
+    }
+
+    #[test]
+    fn log_target_maps_the_categories_the_webview_sends() {
+        assert_eq!(log_target("git"), "git");
+        assert_eq!(log_target("app"), "app");
+        assert_eq!(log_target("editor"), "editor");
+        assert_eq!(log_target("whatever"), "editor");
     }
 
     #[test]

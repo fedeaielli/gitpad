@@ -1,6 +1,7 @@
 use crate::{auth, AppState};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
+use tauri_plugin_log::log;
 
 const API: &str = "https://api.github.com";
 const OAUTH: &str = "https://github.com/login";
@@ -71,14 +72,24 @@ async fn parse<T: DeserializeOwned>(res: reqwest::Response) -> Result<T, String>
     let status = res.status();
     if !status.is_success() {
         let body = res.text().await.unwrap_or_default();
-        return Err(match serde_json::from_str::<ApiError>(&body) {
+        let message = match serde_json::from_str::<ApiError>(&body) {
             Ok(e) => format!("github {status}: {}", e.message),
             Err(_) => format!("github {status}"),
-        });
+        };
+        // Status only: the body can echo request details.
+        log::warn!(target: "app", "{message}");
+        return Err(message);
     }
     res.json()
         .await
         .map_err(|e| format!("github response: {e}"))
+}
+
+/// One place for the device-flow failures: log the line, then tell the UI.
+fn auth_error(app: &AppHandle, message: impl ToString) {
+    let message = message.to_string();
+    log::warn!(target: "app", "auth: {message}");
+    let _ = app.emit("auth-error", message);
 }
 
 #[tauri::command]
@@ -97,7 +108,9 @@ pub fn github_device_flow_available() -> bool {
 #[tauri::command]
 pub async fn github_get_user(state: State<'_, AppState>) -> Result<UserInfo, String> {
     let token = token_blocking().await?;
-    user_from_token(&state.http, &token).await
+    let user = user_from_token(&state.http, &token).await?;
+    log::info!(target: "app", "github: user {}", user.login);
+    Ok(user)
 }
 
 #[tauri::command]
@@ -113,7 +126,9 @@ pub async fn github_init_repo(state: State<'_, AppState>) -> Result<RepoInfo, St
         .await
         .map_err(|e| format!("github: {e}"))?;
     if res.status() != reqwest::StatusCode::NOT_FOUND {
-        return parse(res).await;
+        let repo: RepoInfo = parse(res).await?;
+        log::info!(target: "app", "github: repository {} (existing)", repo.full_name);
+        return Ok(repo);
     }
     let body = serde_json::json!({
         "name": DEFAULT_REPO_NAME,
@@ -129,7 +144,9 @@ pub async fn github_init_repo(state: State<'_, AppState>) -> Result<RepoInfo, St
         .send()
         .await
         .map_err(|e| format!("github: {e}"))?;
-    parse(res).await
+    let repo: RepoInfo = parse(res).await?;
+    log::info!(target: "app", "github: repository {} (created)", repo.full_name);
+    Ok(repo)
 }
 
 #[tauri::command]
@@ -147,7 +164,9 @@ pub async fn github_device_flow_start(
         .send()
         .await
         .map_err(|e| format!("github: {e}"))?;
-    parse(res).await
+    let code: DeviceCode = parse(res).await?;
+    log::info!(target: "app", "auth: device flow started");
+    Ok(code)
 }
 
 #[tauri::command]
@@ -166,7 +185,7 @@ pub fn github_device_flow_poll(
             std::time::Instant::now() + std::time::Duration::from_secs(DEVICE_CODE_TTL_SECS);
         loop {
             if std::time::Instant::now() > deadline {
-                let _ = app.emit("auth-error", "device code expired");
+                auth_error(&app, "device code expired");
                 return;
             }
             tokio::time::sleep(interval).await;
@@ -184,22 +203,23 @@ pub fn github_device_flow_poll(
                 Ok(res) => match res.json().await {
                     Ok(poll) => poll,
                     Err(e) => {
-                        let _ = app.emit("auth-error", format!("github response: {e}"));
+                        auth_error(&app, format!("github response: {e}"));
                         return;
                     }
                 },
                 Err(e) => {
-                    let _ = app.emit("auth-error", format!("github: {e}"));
+                    auth_error(&app, format!("github: {e}"));
                     return;
                 }
             };
             if let Some(token) = poll.access_token {
                 match auth::store_token(token).await {
                     Ok(()) => {
+                        log::info!(target: "app", "auth: device flow completed");
                         let _ = app.emit("auth-success", ());
                     }
                     Err(e) => {
-                        let _ = app.emit("auth-error", e);
+                        auth_error(&app, e);
                     }
                 }
                 return;
@@ -208,19 +228,19 @@ pub fn github_device_flow_poll(
                 Some("authorization_pending") => {}
                 Some("slow_down") => interval += std::time::Duration::from_secs(5),
                 Some("expired_token") => {
-                    let _ = app.emit("auth-error", "device code expired");
+                    auth_error(&app, "device code expired");
                     return;
                 }
                 Some("access_denied") => {
-                    let _ = app.emit("auth-error", "access denied");
+                    auth_error(&app, "access denied");
                     return;
                 }
                 Some(other) => {
-                    let _ = app.emit("auth-error", other);
+                    auth_error(&app, other);
                     return;
                 }
                 None => {
-                    let _ = app.emit("auth-error", "unexpected github response");
+                    auth_error(&app, "unexpected github response");
                     return;
                 }
             }
