@@ -9,7 +9,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
-> **Status:** `v1.0.0`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** `v1.0.1`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
@@ -180,6 +180,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes.
 - **Crash safety.** `SIGTERM` commits and pushes files already written before exit. `SIGKILL` or a crash cannot be caught; the last edits remain local until the next start.
 - **Logs stop at 5 files.** Rotation keeps five 5 MB files, so the oldest sessions are dropped once the folder reaches roughly 25 MB.
+- **Without a keyring, the login lasts one session.** If the OS keyring is missing or locked, GitPad keeps the token in memory, warns at startup, and asks you to sign in again after a restart.
 - **Linux only.** The current release bundles an AppImage. Windows is not supported yet.
 - **Not a full Git client.** There is no branch UI, terminal, plugin system, or multi-user collaboration.
 
