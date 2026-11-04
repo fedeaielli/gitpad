@@ -280,7 +280,11 @@
     align-self: flex-start;
   }
   .log {
-    max-height: 46vh;
+    /* Fills the panel and never shrinks under its rows: a collapsed box hides
+       the content behind its own border. */
+    flex: 1 1 auto;
+    min-height: 120px;
+    max-height: min(46vh, 480px);
     overflow: auto;
     border: 1px solid var(--border);
     border-radius: var(--r-md);
