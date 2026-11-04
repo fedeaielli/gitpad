@@ -87,11 +87,18 @@
 
   function setDiff(next: FileDiff | null, key: string, lang = language) {
     diff = next
+    // Detach before disposing: the diff editor throws if its models vanish
+    // under it, which used to abort the effect flush and break the layout.
+    diffEditor?.setModel(null)
     for (const model of models) model.dispose()
     models = []
     if (!next) return
     ensureDiff()
     if (!diffEditor) return
+    // A model with this URI may survive a failed switch: createModel would throw.
+    for (const side of ['old', 'new']) {
+      monaco.editor.getModel(monaco.Uri.parse(`gitpad-diff://${side}/${key}`))?.dispose()
+    }
     const original = monaco.editor.createModel(
       next.original,
       lang,
@@ -271,8 +278,10 @@
 
   onMount(() => {
     return () => {
-      for (const model of models) model.dispose()
+      // Same order as setDiff: the editor must let go before its models die.
+      diffEditor?.setModel(null)
       diffEditor?.dispose()
+      for (const model of models) model.dispose()
     }
   })
 </script>
