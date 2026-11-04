@@ -69,25 +69,37 @@ makepkg -si
 
 Requirements:
 
-- Rust **1.90+**
+- Rust **1.90+**. Install it from [rustup](https://rustup.rs): distribution packages are often older.
 - Node.js **20+** (current LTS recommended)
-- Linux build dependencies: `webkit2gtk-4.1`, `gtk3`, `libsoup3`, `openssl`, `libsecret`, `libgit2`
+- Build dependencies: GTK 3, WebKitGTK 4.1, libsoup 3, OpenSSL, libsecret (the keyring), libgit2
 
-On Arch Linux:
+Name them for your distribution, in a clone of the repository:
 
 ```sh
+# Arch Linux
 sudo pacman -S --needed base-devel webkit2gtk-4.1 gtk3 libsoup3 openssl libsecret libgit2 nodejs npm rust
+
+# Debian 12+, Ubuntu 24.04+
+sudo apt install build-essential libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+  libssl-dev libsecret-1-dev libgit2-dev librsvg2-dev nodejs npm
 ```
+
+On Fedora and openSUSE use the [Tauri prerequisites](https://tauri.app/start/prerequisites/#linux) table: the same libraries have different package names. Without `libgit2-dev` (or `libgit2`), libgit2 is compiled from source and `cmake` is needed as well.
 
 Then:
 
 ```sh
 npm ci
-npm run tauri dev      # development
-npm run tauri build    # release build
+npm run tauri dev                    # development
+npm run tauri build                  # release build, AppImage
+npm run tauri build -- --no-bundle   # just the binary: src-tauri/target/release/gitpad
 ```
 
-The AppImage is written to `src-tauri/target/release/bundle/`.
+The AppImage is written to `src-tauri/target/release/bundle/`. Build it on the
+oldest distribution you want to support: the bundle carries that machine's
+libraries, and glibc cannot be newer than the one it was compiled against (see
+[Compatibility](#compatibility)). `--no-bundle` sidesteps the question, since the
+binary links the libraries you already installed.
 
 ---
 
