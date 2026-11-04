@@ -10,7 +10,7 @@ license=('GPL-3.0-only')
 depends=('webkit2gtk-4.1' 'gtk3' 'libsoup3' 'openssl' 'libsecret' 'libgit2' 'hicolor-icon-theme')
 makedepends=('rust' 'nodejs' 'npm')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('88370d06dbc6d1fc39f611db2e628732e8649b12f254a68215658548d92ed037')
+sha256sums=('31272ec169f31017da7f14bb8d02d903c83d33c5ce88f133ae5b6c6d57bbe3b3')
 # ring ships assembly that LTO turns into bitcode ld cannot resolve.
 options=('!lto')
 
