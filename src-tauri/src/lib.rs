@@ -5,6 +5,7 @@ mod git;
 mod github;
 mod search;
 
+use tauri::AppHandle;
 use tauri_plugin_log::log;
 
 #[cfg(test)]
@@ -149,13 +150,102 @@ fn app_closing_ack() {
 }
 
 /// The webview reports what the user was shown, so one log carries both sides.
+/// The category becomes the log target: the logs tab filters on it.
 #[tauri::command]
-fn app_log(level: String, message: String) {
+fn app_log(level: String, category: String, message: String) {
+    let target = match category.as_str() {
+        "git" => "git",
+        "app" => "app",
+        _ => "editor",
+    };
     match level_of(&level) {
-        log::Level::Error => log::error!("ui: {message}"),
-        log::Level::Warn => log::warn!("ui: {message}"),
-        _ => log::info!("ui: {message}"),
+        log::Level::Error => log::error!(target: target, "{message}"),
+        log::Level::Warn => log::warn!(target: target, "{message}"),
+        _ => log::info!(target: target, "{message}"),
     }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogFile {
+    name: String,
+    /// The file the running session appends to.
+    current: bool,
+    /// Milliseconds since the epoch.
+    modified: u64,
+    size: u64,
+}
+
+/// Only the files the log plugin wrote, inside the log directory: the name
+/// comes from the webview, so it must not be able to walk out.
+fn safe_log_name(name: &str) -> bool {
+    name.starts_with("gitpad")
+        && name.ends_with(".log")
+        && !name.contains('/')
+        && !name.contains('\\')
+        && !name.contains("..")
+}
+
+fn log_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    app.path().app_log_dir().map_err(|e| format!("log dir: {e}"))
+}
+
+/// Newest first. Sessions are matched inside the files by the frontend.
+#[tauri::command]
+fn logs_list(app: AppHandle) -> Result<Vec<LogFile>, String> {
+    let dir = log_dir(&app)?;
+    let mut files: Vec<LogFile> = std::fs::read_dir(&dir)
+        .map_err(|e| format!("read {}: {e}", dir.display()))?
+        .filter_map(|entry| {
+            let entry = entry.ok()?;
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if !safe_log_name(&name) {
+                return None;
+            }
+            let meta = entry.metadata().ok()?;
+            Some(LogFile {
+                current: name == "gitpad.log",
+                modified: meta
+                    .modified()
+                    .ok()?
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .ok()?
+                    .as_millis() as u64,
+                size: meta.len(),
+                name,
+            })
+        })
+        .collect();
+    files.sort_by(|a, b| b.modified.cmp(&a.modified));
+    Ok(files)
+}
+
+/// Raw text: parsing and filtering stay in one place, in the frontend.
+#[tauri::command]
+fn logs_read(app: AppHandle, name: String) -> Result<String, String> {
+    if !safe_log_name(&name) {
+        return Err(format!("not a log file: {name}"));
+    }
+    let path = log_dir(&app)?.join(&name);
+    let meta = std::fs::metadata(&path).map_err(|e| format!("{name}: {e}"))?;
+    // A rotated file can be large: cap the read so the webview stays responsive.
+    const MAX_READ: u64 = 8 * 1024 * 1024;
+    let bytes = if meta.len() > MAX_READ {
+        let file = std::fs::File::open(&path).map_err(|e| format!("{name}: {e}"))?;
+        let skip = meta.len() - MAX_READ;
+        use std::io::{Read, Seek, SeekFrom};
+        let mut file = file;
+        file.seek(SeekFrom::Start(skip))
+            .map_err(|e| format!("{name}: {e}"))?;
+        let mut buf = Vec::with_capacity(MAX_READ as usize);
+        file.take(MAX_READ)
+            .read_to_end(&mut buf)
+            .map_err(|e| format!("{name}: {e}"))?;
+        buf
+    } else {
+        std::fs::read(&path).map_err(|e| format!("{name}: {e}"))?
+    };
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 
 fn level_of(name: &str) -> log::Level {
@@ -174,7 +264,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(
-            // One file plus the previous one: enough for a bug report, no growth.
+            // Archive on rotation instead of deleting: the logs tab reads the
+            // previous sessions back. 5 files x 5 MB caps the folder at ~25 MB.
             tauri_plugin_log::Builder::new()
                 .targets([
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
@@ -182,12 +273,13 @@ pub fn run() {
                     }),
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
                 ])
-                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(5))
+                .max_file_size(5 * 1024 * 1024)
                 .level(tauri_plugin_log::log::LevelFilter::Info)
                 .build(),
         )
         .setup(move |app| {
-            log::info!("gitpad {} starting", env!("CARGO_PKG_VERSION"));
+            log::info!(target: "app", "gitpad {} starting", env!("CARGO_PKG_VERSION"));
             let http = Client::builder()
                 .user_agent("GitPad")
                 .timeout(Duration::from_secs(15))
@@ -255,6 +347,8 @@ pub fn run() {
             app_exit,
             app_closing_ack,
             app_log,
+            logs_list,
+            logs_read,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -281,13 +375,14 @@ pub fn run() {
         .run(tauri::generate_context!());
 
     if let Err(err) = result {
-        log::error!("startup: {err}");
+        log::error!(target: "app", "startup: {err}");
         std::process::exit(1);
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::safe_log_name;
     use super::watchdog_should_exit;
     use super::level_of;
     use tauri_plugin_log::log;
@@ -298,6 +393,17 @@ mod tests {
         assert_eq!(level_of("warn"), log::Level::Warn);
         assert_eq!(level_of("info"), log::Level::Info);
         assert_eq!(level_of("nonsense"), log::Level::Info);
+    }
+
+    #[test]
+    fn log_names_cannot_leave_the_log_directory() {
+        assert!(safe_log_name("gitpad.log"));
+        assert!(safe_log_name("gitpad_2026-11-04_13-21-04.log"));
+        assert!(!safe_log_name("../gitpad.log"));
+        assert!(!safe_log_name("/etc/gitpad.log"));
+        assert!(!safe_log_name("gitpad/../evil.log"));
+        assert!(!safe_log_name("notes.txt"));
+        assert!(!safe_log_name("other.log"));
     }
 
     #[test]

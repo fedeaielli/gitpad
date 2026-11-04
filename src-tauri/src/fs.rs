@@ -348,7 +348,7 @@ pub async fn fs_delete(app: AppHandle, path: String) -> Result<(), git::GitError
         }
         // The filesystem is the source of truth: a failed commit is retried by the next push.
         if let Err(e) = git::commit_all(&root_task, &format!("gitpad: delete {label}")) {
-            log::warn!("commit after delete failed: {e}");
+            log::warn!(target: "editor", "commit after delete failed: {e}");
         }
         Ok(())
     })
@@ -381,7 +381,7 @@ pub async fn fs_rename(app: AppHandle, from: String, to: String) -> Result<(), g
         rename_in(&root_task, &from, &to)?;
         // The filesystem is the source of truth: a failed commit is retried by the next push.
         if let Err(e) = git::commit_all(&root_task, &format!("gitpad: rename {from}")) {
-            log::warn!("commit after rename failed: {e}");
+            log::warn!(target: "editor", "commit after rename failed: {e}");
         }
         Ok(())
     })
@@ -517,7 +517,7 @@ fn import_locked(
     let rel = dest_rel.join(name);
     // The copy already happened: a failed commit is retried by the next push.
     if let Err(e) = git::commit_all(root, &format!("gitpad: import {}", rel.display())) {
-        log::warn!("commit after import failed: {e}");
+        log::warn!(target: "editor", "commit after import failed: {e}");
     }
     Ok(rel)
 }

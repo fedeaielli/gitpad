@@ -8,6 +8,7 @@
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
   import GithubLogin from './GithubLogin.svelte'
+  import LogsPane from './LogsPane.svelte'
   import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
   import { flushPendingSave } from '../editor/bridge'
 
@@ -16,13 +17,14 @@
     avatarUrl: string
   }
 
-  type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'account'
+  type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'logs' | 'account'
 
   const TABS: Array<{ id: Tab; label: string }> = [
     { id: 'appearance', label: 'Appearance' },
     { id: 'sync', label: 'Sync' },
     { id: 'editor', label: 'Editor' },
     { id: 'extensions', label: 'Extensions' },
+    { id: 'logs', label: 'Logs' },
     { id: 'account', label: 'Account' },
   ]
 
@@ -477,6 +479,8 @@
         {#if extMessage}
           <p class="note">{extMessage}</p>
         {/if}
+      {:else if tab === 'logs'}
+        <LogsPane />
       {:else}
         {#if user}
           <div class="field">
