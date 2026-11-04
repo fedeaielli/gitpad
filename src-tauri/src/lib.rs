@@ -274,6 +274,15 @@ pub fn run() {
     // Must happen before Tauri spawns threads: they inherit the mask.
     let sigterm = block_sigterm().ok();
     let result = tauri::Builder::default()
+        // Two instances on the same repository would autosave, commit and push
+        // twice: a second launch only raises the window that is already open.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(

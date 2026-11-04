@@ -9,7 +9,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
-> **Status:** early development (`v0.1.5`). GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository while the app is still young.
+> **Status:** `v1.0.0`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
@@ -172,6 +172,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 ## Limits worth knowing
 
 - **One repository at a time.** *Settings → Sync* switches to another local folder, but there is no "close repository" state and picking a folder inside the current one creates a nested repository.
+- **One window.** Launching GitPad again raises the window already open instead of starting a second copy, which would autosave, commit and push twice.
 - **Only `origin` is recognized.** A repository whose remote has another name is treated as local-only.
 - **External edits are focus-based.** Changes made outside GitPad appear after the window regains focus; an open tab is not reloaded automatically.
 - **Remote images are blocked in preview.** The content security policy allows local/data images and GitHub avatars, not arbitrary remote images.
@@ -189,6 +190,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - GitPad talks to GitHub only for the repository operations you configure.
 - The token lives in the OS keyring and is never written to `config.json`.
 - There is no analytics, telemetry, or third-party crash reporting.
+- Logging out deletes the token from the keyring. It is not revoked on GitHub: the device flow uses a public client, and GitHub only accepts revocation signed with a client secret.
 - Monaco and all front-end assets are bundled locally; the app does not load them from a CDN.
 
 ---
