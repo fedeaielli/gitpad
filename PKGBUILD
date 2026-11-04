@@ -1,7 +1,7 @@
 # Maintainer: https://github.com/fedeaielli
 # The v$pkgver tag must exist on the remote.
 pkgname=gitpad
-pkgver=1.0.1
+pkgver=1.0.2
 pkgrel=1
 pkgdesc="Markdown notes in a Git repository you own"
 arch=('x86_64')
@@ -23,7 +23,9 @@ prepare() {
 build() {
   cd "$pkgname-$pkgver"
   npm run build
-  (cd src-tauri && cargo build --release --locked --offline)
+  # Tauri only serves the bundled assets with this feature on: without it the
+  # binary thinks it is a dev build and loads devUrl (http://localhost:1420).
+  (cd src-tauri && cargo build --release --locked --offline --features tauri/custom-protocol)
 }
 
 package() {

@@ -9,7 +9,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
-> **Status:** `v1.0.1`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** `v1.0.2`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
