@@ -50,3 +50,8 @@ jobs:
 
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      # The Arch package builds with this exact feature set: without
+      # `tauri/custom-protocol` the binary looks for a dev server at runtime.
+      - name: Package build
+        run: cargo build --release --locked --features tauri/custom-protocol --manifest-path src-tauri/Cargo.toml
