@@ -62,11 +62,11 @@
     step = 'repo'
     busy = true
     error = null
-    // The token is already stored; this only decides whether it survives a restart.
+    // The token is already stored; this only tells the UI where it lives.
     try {
       if (!(await invoke<boolean>('auth_keyring_ok'))) {
         storageNote =
-          'Signed in, but the credential could not be saved to the keyring: you will need to sign in again after a restart.'
+          'Signed in, but the OS keyring is unavailable: the token is kept in a protected file on this machine.'
       }
     } catch {
       // A failed probe must not block the setup.
