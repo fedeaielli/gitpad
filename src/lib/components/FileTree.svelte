@@ -34,7 +34,7 @@
   }
 
   function sorted(nodes: FileNode[]): FileNode[] {
-    return sortNodes(visible(nodes), ui.sortMode, ui.sortDesc)
+    return sortNodes(visible(nodes), ui.sortMode, ui.sortDesc, ui.foldersFirst)
   }
 
   function focusInput(node: HTMLElement) {

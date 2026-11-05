@@ -10,7 +10,6 @@
     name: 'Name',
     modified: 'Modified',
     type: 'Type',
-    folders: 'Folders first',
   }
 
   let menuOpen = $state(false)
@@ -115,6 +114,16 @@
               Descending
             </button>
             <hr />
+            <button
+              type="button"
+              class="menu-item"
+              role="menuitemcheckbox"
+              aria-checked={ui.foldersFirst}
+              onclick={() => (ui.foldersFirst = !ui.foldersFirst)}
+            >
+              <span class="tick">{ui.foldersFirst ? '✓' : ''}</span>
+              Folders first
+            </button>
             <button
               type="button"
               class="menu-item"

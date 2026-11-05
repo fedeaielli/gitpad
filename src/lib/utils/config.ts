@@ -17,6 +17,7 @@ export interface Config {
   repoPath: string
   sortMode: string
   sortDesc: boolean
+  foldersFirst: boolean
   showHidden: boolean
 }
 

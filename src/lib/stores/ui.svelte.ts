@@ -54,8 +54,9 @@ export const ui = $state({
   /** Folder that holds the clone; empty means the app data dir. */
   repoPath: '',
   showHidden: false,
-  sortMode: 'name' as 'name' | 'folders' | 'modified' | 'type',
+  sortMode: 'name' as 'name' | 'modified' | 'type',
   sortDesc: false,
+  foldersFirst: false,
   /// Expanded folders live here so they survive tree reloads and view switches.
   expanded: [] as string[],
   conflictsHidden: false,
