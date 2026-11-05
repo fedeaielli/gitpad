@@ -402,7 +402,11 @@
     void invoke<boolean>('auth_keyring_ok')
       .then((ok) => {
         if (!ok) {
-          pushToast('Keyring unavailable: the GitHub token is kept in a protected file.', 'info', 'app')
+          pushToast(
+            'Keyring unavailable: the GitHub token is kept in a protected file.',
+            'warning',
+            'app',
+          )
         }
       })
       .catch(() => {})

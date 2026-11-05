@@ -1,7 +1,12 @@
 <script lang="ts">
   import { fly } from 'svelte/transition'
   import { flip } from 'svelte/animate'
-  import { toasts, dismissToast } from '../stores/toasts.svelte'
+  import { toasts, dismissToast, type ToastKind } from '../stores/toasts.svelte'
+
+  function icon(kind: ToastKind) {
+    if (kind === 'error' || kind === 'warning') return '!'
+    return kind === 'success' ? '✓' : 'i'
+  }
 </script>
 
 <div class="toasts" aria-label="Notifications">
@@ -12,9 +17,7 @@
       transition:fly={{ y: 6, duration: 120 }}
       animate:flip={{ duration: 150 }}
     >
-      <span class="icon" aria-hidden="true">
-        {#if toast.kind === 'error'}!{:else if toast.kind === 'success'}✓{:else}i{/if}
-      </span>
+      <span class="icon" aria-hidden="true">{icon(toast.kind)}</span>
       <span class="message">{toast.message}</span>
       <button
         class="close"
@@ -56,15 +59,17 @@
   .toast.error {
     --kind: var(--err);
   }
-  .toast.success {
-    --kind: var(--ok);
+  .toast.warning {
+    --kind: var(--warn);
   }
+  .toast.success,
   .toast.info {
     --kind: var(--accent-fg);
   }
   .icon {
     display: grid;
     place-items: center;
+    box-sizing: border-box;
     width: 20px;
     height: 20px;
     border-radius: var(--r-pill);
@@ -73,6 +78,14 @@
     font-size: 12px;
     font-weight: 700;
     line-height: 1;
+  }
+  .toast.error .icon {
+    background: var(--err);
+    color: var(--on-accent);
+  }
+  .toast.warning .icon {
+    border: 1px solid var(--warn);
+    background: transparent;
   }
   .message {
     color: var(--text);

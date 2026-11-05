@@ -9,9 +9,9 @@ export async function openExternal(url: string) {
   } catch {
     try {
       await navigator.clipboard.writeText(url)
-      pushToast("Couldn't open the browser — link copied to the clipboard.", 'info', 'app')
+      pushToast("Couldn't open the browser — link copied to the clipboard.", 'warning', 'app')
     } catch {
-      pushToast(`Couldn't open the browser: ${url}`, 'info', 'app')
+      pushToast(`Couldn't open the browser: ${url}`, 'warning', 'app')
     }
   }
 }

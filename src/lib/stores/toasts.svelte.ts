@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 
-export type ToastKind = 'error' | 'info' | 'success'
+export type ToastKind = 'error' | 'warning' | 'info' | 'success'
 
 export interface Toast {
   id: number
@@ -33,7 +33,7 @@ export function pushToast(
   toasts.items = [...toasts.items, { id, message, kind }].slice(-3)
   setTimeout(() => dismissToast(id), 5000)
   // Mirrored to the file log, so a report shows what the user was told.
-  logLine(kind === 'error' ? 'error' : 'info', message, category)
+  logLine(kind === 'error' ? 'error' : kind === 'warning' ? 'warn' : 'info', message, category)
 }
 
 export function dismissToast(id: number) {
