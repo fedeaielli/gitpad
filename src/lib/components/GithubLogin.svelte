@@ -15,7 +15,7 @@
 
   interface Props {
     label?: string
-    /// Called once the token is in the keyring, so the caller can load the user.
+    /// Called once the token is stored, so the caller can load the user.
     onsuccess: () => void
   }
 

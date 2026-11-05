@@ -333,6 +333,14 @@ pub fn run() {
         )
         .setup(move |app| {
             log::info!(target: "app", "gitpad {} starting", env!("CARGO_PKG_VERSION"));
+            // The token file is the only fallback when the keyring is down.
+            match app.path().app_data_dir() {
+                Ok(dir) => auth::use_fallback_dir(dir),
+                Err(e) => log::warn!(
+                    target: "app",
+                    "auth: no app data dir ({e}); the token will not survive a restart"
+                ),
+            }
             let http = Client::builder()
                 .user_agent("GitPad")
                 .timeout(Duration::from_secs(15))
