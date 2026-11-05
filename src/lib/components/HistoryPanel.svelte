@@ -21,6 +21,11 @@
     filesChanged: number
   }
 
+  interface CommitGroup {
+    label: string
+    commits: CommitEntry[]
+  }
+
   let commits = $state<CommitEntry[]>([])
   let expanded = $state('')
   let files = $state<FileChange[]>([])
@@ -32,6 +37,7 @@
   const filePath = $derived(active?.path ?? '')
   /// A folder delete is one commit full of `D` entries: reverting it is a restore.
   const allDeleted = $derived(files.length > 0 && files.every((f) => f.status === 'D'))
+  const groups = $derived(groupByDay(commits))
 
   async function load(target = filePath) {
     if (!gitStatus.configured) return
@@ -119,13 +125,35 @@
     }
   }
 
-  function day(timestamp: number) {
-    return new Date(timestamp * 1000).toLocaleDateString()
+  function dayLabel(timestamp: number) {
+    const date = new Date(timestamp * 1000)
+    const today = new Date()
+    const yesterday = new Date()
+    yesterday.setDate(today.getDate() - 1)
+    const sameDay = (a: Date, b: Date) =>
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    if (sameDay(date, today)) return 'Today'
+    if (sameDay(date, yesterday)) return 'Yesterday'
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  }
+
+  /// Consecutive commits share a day header; the log is already newest first.
+  function groupByDay(entries: CommitEntry[]): CommitGroup[] {
+    const groups: CommitGroup[] = []
+    for (const commit of entries) {
+      const label = dayLabel(commit.timestamp)
+      const last = groups[groups.length - 1]
+      if (last?.label === label) last.commits.push(commit)
+      else groups.push({ label, commits: [commit] })
+    }
+    return groups
   }
 </script>
 
 {#if !gitStatus.configured}
-  <p class="hint">Clone a repository to see its history.</p>
+  <p class="empty">Open or clone a repository to see its history.</p>
 {:else}
   {#if filePath}
     <p class="filter">
@@ -133,60 +161,67 @@
     </p>
   {/if}
   {#if commits.length === 0}
-    <p class="hint">{filePath ? 'No commits touch this file yet.' : 'No commits yet.'}</p>
+    <p class="empty">
+      {filePath ? 'No commits touch this file yet.' : 'No commits yet.'}
+    </p>
   {/if}
   <ul class="commits">
-    {#each commits as commit (commit.hash)}
-      <li
-        class="commit"
-        class:open={expanded === commit.hash}
-        class:active={ui.timelineCommit?.hash === commit.hash}
-      >
-        <div class="head-row">
-          <button class="row" onclick={() => open(commit)}>
-            <code>{commit.shortHash}</code>
-            <span class="msg">{commit.message}</span>
-            <span class="meta">
-              {day(commit.timestamp)} · {commit.author} · {commit.filesChanged}
-            </span>
-          </button>
-          <button
-            class="expand"
-            class:open={expanded === commit.hash}
-            aria-expanded={expanded === commit.hash}
-            aria-label={expanded === commit.hash ? 'Hide files' : 'Show files'}
-            onclick={() => toggle(commit)}
-          >
-            <span class="chev">›</span>
-          </button>
-        </div>
-        {#if expanded === commit.hash}
-          <div class="actions">
-            <button class:restore={allDeleted} disabled={busy} onclick={() => revert(commit)}>
-              {allDeleted
-                ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'}`
-                : 'Revert commit'}
+    {#each groups as group (group.commits[0].hash)}
+      <li class="day">{group.label}</li>
+      {#each group.commits as commit (commit.hash)}
+        <li
+          class="commit"
+          class:open={expanded === commit.hash}
+          class:active={ui.timelineCommit?.hash === commit.hash}
+        >
+          <div class="head-row">
+            <button class="row" onclick={() => open(commit)}>
+              <code>{commit.shortHash}</code>
+              <span class="msg">{commit.message}</span>
+              <span class="meta">
+                {commit.author} · {commit.filesChanged} file{commit.filesChanged === 1
+                  ? ''
+                  : 's'}
+              </span>
+            </button>
+            <button
+              class="expand"
+              class:open={expanded === commit.hash}
+              aria-expanded={expanded === commit.hash}
+              aria-label={expanded === commit.hash ? 'Hide files' : 'Show files'}
+              onclick={() => toggle(commit)}
+            >
+              <span class="chev">›</span>
             </button>
           </div>
-          <ul class="files">
-            {#each files as file (file.path)}
-              <li>
-                <span class="badge {file.status}">{file.status}</span>
-                <span class="path">{file.path}</span>
-                {#if file.status !== 'D'}
-                  <button
-                    disabled={busy}
-                    use:tip={`Restore ${file.path}`}
-                    onclick={() => restore(commit, file)}
-                  >
-                    Restore
-                  </button>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </li>
+          {#if expanded === commit.hash}
+            <div class="actions">
+              <button class:restore={allDeleted} disabled={busy} onclick={() => revert(commit)}>
+                {allDeleted
+                  ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'}`
+                  : 'Revert commit'}
+              </button>
+            </div>
+            <ul class="files">
+              {#each files as file (file.path)}
+                <li>
+                  <span class="badge {file.status}">{file.status}</span>
+                  <span class="path">{file.path}</span>
+                  {#if file.status !== 'D'}
+                    <button
+                      disabled={busy}
+                      use:tip={`Restore ${file.path}`}
+                      onclick={() => restore(commit, file)}
+                    >
+                      Restore
+                    </button>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </li>
+      {/each}
     {/each}
   </ul>
 {/if}
@@ -195,16 +230,20 @@
 {/if}
 
 <style>
-  .hint,
   .error {
     margin: 0;
     padding: 4px 8px;
-    color: var(--muted);
+    color: var(--err);
     font-size: 11px;
     overflow-wrap: anywhere;
   }
-  .error {
-    color: var(--err);
+  .empty {
+    margin: 0;
+    padding: 24px 12px;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+    overflow-wrap: anywhere;
   }
   .filter {
     margin: 0;
@@ -231,6 +270,17 @@
   .commit.active {
     box-shadow: inset 2px 0 0 var(--accent);
   }
+  .day {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 8px 3px;
+    background: var(--surface-1);
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
   .head-row {
     display: flex;
     align-items: center;
@@ -241,10 +291,13 @@
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    padding: 4px 8px;
+    padding: 6px 8px;
     border-color: transparent;
     background: transparent;
     text-align: left;
+  }
+  .row:hover {
+    background: var(--surface-2);
   }
   .expand {
     display: grid;
@@ -278,12 +331,14 @@
     transform: rotate(90deg);
   }
   .row code {
-    color: var(--accent-fg);
-    font-size: 11px;
+    color: var(--muted);
+    font-size: 10px;
   }
   .msg {
     overflow: hidden;
+    color: var(--text);
     font-size: 12px;
+    font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
