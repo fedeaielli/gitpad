@@ -30,6 +30,8 @@
   /// An open file narrows the log to its commits; no tab means the whole repo.
   const active = $derived(tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null)
   const filePath = $derived(active?.path ?? '')
+  /// A folder delete is one commit full of `D` entries: reverting it is a restore.
+  const allDeleted = $derived(files.length > 0 && files.every((f) => f.status === 'D'))
 
   async function load(target = filePath) {
     if (!gitStatus.configured) return
@@ -61,6 +63,7 @@
       return
     }
     expanded = commit.hash
+    files = []
     files = await invoke<FileChange[]>('git_commit_files', { hash: commit.hash }).catch(() => [])
   }
 
@@ -90,14 +93,15 @@
   }
 
   async function revert(commit: CommitEntry) {
-    if (
-      !(await ask(`Revert ${commit.shortHash}: ${commit.message}?`, {
-        title: 'Revert commit',
-        kind: 'warning',
-      }))
-    ) {
-      return
-    }
+    const restore = allDeleted && expanded === commit.hash
+    const question = restore
+      ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'} from ${commit.shortHash}?`
+      : `Revert ${commit.shortHash}: ${commit.message}?`
+    const confirmed = await ask(question, {
+      title: restore ? 'Restore deleted items' : 'Revert commit',
+      kind: 'warning',
+    })
+    if (!confirmed) return
     busy = true
     error = null
     try {
@@ -158,7 +162,9 @@
         </div>
         {#if expanded === commit.hash}
           <div class="actions">
-            <button disabled={busy} onclick={() => revert(commit)}>Revert commit</button>
+            <button disabled={busy} onclick={() => revert(commit)}>
+              {allDeleted ? 'Restore deleted items' : 'Revert commit'}
+            </button>
           </div>
           <ul class="files">
             {#each files as file (file.path)}
@@ -167,9 +173,11 @@
                 <span class="path">{file.path}</span>
                 <button
                   disabled={busy || file.status === 'D'}
-                  title={file.status === 'D' ? `${file.path} does not exist in this commit` : undefined}
+                  title={file.status === 'D'
+                    ? `${file.path} was deleted: use Restore deleted items above`
+                    : undefined}
                   use:tip={file.status === 'D'
-                    ? `${file.path} does not exist in this commit`
+                    ? `${file.path} was deleted: use Restore deleted items above`
                     : `Restore ${file.path}`}
                   onclick={() => restore(commit, file)}
                 >

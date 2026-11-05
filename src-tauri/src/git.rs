@@ -1993,6 +1993,42 @@ mod tests {
     }
 
     #[test]
+    fn revert_brings_back_a_deleted_folder() {
+        let root = tmp("restore-folder");
+        Repository::init(&root).unwrap();
+        std::fs::create_dir_all(root.join("notes/sub")).unwrap();
+        std::fs::write(root.join("notes/a.md"), "a").unwrap();
+        std::fs::write(root.join("notes/sub/b.md"), "b").unwrap();
+        std::fs::write(root.join("notes/.gitkeep"), "").unwrap();
+        commit_all(&root, "seed").unwrap();
+
+        // Exactly what fs_delete does for a folder.
+        std::fs::remove_dir_all(root.join("notes")).unwrap();
+        commit_all(&root, "gitpad: delete notes").unwrap();
+        assert!(!root.join("notes").exists());
+        let deletion = {
+            let repo = Repository::open(&root).unwrap();
+            repo.head().unwrap().target().unwrap().to_string()
+        };
+
+        let repo = Repository::open(&root).unwrap();
+        let gate = std::sync::RwLock::new(());
+        let status = revert_commit(&repo, &deletion, &gate).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(root.join("notes/a.md")).unwrap(),
+            "a"
+        );
+        assert_eq!(
+            std::fs::read_to_string(root.join("notes/sub/b.md")).unwrap(),
+            "b"
+        );
+        assert!(root.join("notes/.gitkeep").is_file());
+        assert!(status.changes.is_empty());
+        assert!(gate.try_write().is_ok());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn discard_file_holds_and_releases_the_gate() {
         let root = tmp("discard-gate");
         let repo = Repository::init(&root).unwrap();
