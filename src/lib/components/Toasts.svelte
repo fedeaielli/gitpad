@@ -31,21 +31,21 @@
   .toasts {
     position: fixed;
     right: 12px;
-    bottom: calc(var(--h-statusbar) + 8px);
+    bottom: calc(var(--h-statusbar) + 16px);
     z-index: 70;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    width: min(360px, calc(100vw - 24px));
+    width: min(380px, calc(100vw - 24px));
     pointer-events: none;
   }
   .toast {
     --kind: var(--accent-fg);
     display: grid;
-    grid-template-columns: 18px 1fr 20px;
+    grid-template-columns: 20px 1fr 22px;
     align-items: start;
-    gap: 8px;
-    padding: 9px 10px 9px 12px;
+    gap: 10px;
+    padding: 11px 12px 11px 14px;
     border: 1px solid var(--border);
     border-left: 3px solid var(--kind);
     border-radius: var(--r-md);
@@ -65,27 +65,27 @@
   .icon {
     display: grid;
     place-items: center;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border-radius: var(--r-pill);
     background: var(--surface-3);
     color: var(--kind);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 1;
   }
   .message {
     color: var(--text);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.45;
     overflow-wrap: anywhere;
   }
   .close {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     padding: 0;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1;
   }
   .close:hover {
