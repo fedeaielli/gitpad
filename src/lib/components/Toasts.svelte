@@ -82,6 +82,7 @@
   }
   .close {
     display: grid;
+    align-self: center;
     place-items: center;
     width: 22px;
     height: 22px;
