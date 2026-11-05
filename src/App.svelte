@@ -632,7 +632,7 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: var(--sp-1);
+    gap: var(--sp-2);
     min-width: 0;
     min-height: 0;
   }

@@ -435,21 +435,27 @@
   }
   .resize {
     position: absolute;
-    top: calc(-1 * var(--sp-1) - 1px);
+    top: calc(-1 * var(--sp-2) - 1px);
     left: 0;
     z-index: 2;
     width: 100%;
-    height: calc(var(--sp-1) + 2px);
+    height: var(--sp-2);
     cursor: row-resize;
   }
   .resize::before {
     position: absolute;
     top: 50%;
-    right: 0;
-    left: 0;
-    height: 1px;
+    left: 50%;
+    width: 32px;
+    height: 3px;
+    border-radius: var(--r-pill);
     background: var(--border-strong);
+    transform: translate(-50%, -50%);
     content: '';
+  }
+  .resize:hover,
+  .resize.active {
+    background: var(--surface-2);
   }
   .resize:hover::before,
   .resize.active::before {
