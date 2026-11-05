@@ -114,9 +114,15 @@ pub async fn github_get_user(state: State<'_, AppState>) -> Result<UserInfo, Str
 }
 
 #[tauri::command]
-pub async fn github_init_repo(state: State<'_, AppState>) -> Result<RepoInfo, String> {
+pub async fn github_init_repo(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<RepoInfo, String> {
+    // The wizard shows these steps: each one is a round-trip that can take seconds.
+    let _ = app.emit("onboarding-stage", "account");
     let token = token_blocking().await?;
     let user = user_from_token(&state.http, &token).await?;
+    let _ = app.emit("onboarding-stage", "lookup");
     let res = state
         .http
         .get(format!("{API}/repos/{}/{DEFAULT_REPO_NAME}", user.login))
@@ -135,6 +141,7 @@ pub async fn github_init_repo(state: State<'_, AppState>) -> Result<RepoInfo, St
         "private": true,
         "auto_init": true,
     });
+    let _ = app.emit("onboarding-stage", "creating");
     let res = state
         .http
         .post(format!("{API}/user/repos"))

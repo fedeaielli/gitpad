@@ -27,6 +27,27 @@
   let busy = $state(false)
   let error = $state('')
   let copied = $state(false)
+  /// Countdown to the device code deadline: the backend stops polling after it.
+  let secondsLeft = $state(0)
+  let ticker: ReturnType<typeof setInterval> | undefined
+
+  const clock = $derived(
+    `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`,
+  )
+
+  function stopTicker() {
+    if (ticker) clearInterval(ticker)
+    ticker = undefined
+  }
+
+  /// Ends the wait only. The backend keeps polling in its own task, so a code
+  /// completed in the browser still stores the token; the next check finds it.
+  function cancel() {
+    stopTicker()
+    busy = false
+    code = null
+    error = ''
+  }
 
   onMount(() => {
     void invoke<boolean>('github_device_flow_available')
@@ -38,16 +59,21 @@
     const unlistens: Array<() => void> = []
     void listen('auth-success', () => {
       if (!busy) return
+      stopTicker()
       busy = false
       code = null
       onsuccess()
     }).then((fn) => unlistens.push(fn))
     void listen<string>('auth-error', (e) => {
       if (!busy) return
+      stopTicker()
       busy = false
       error = e.payload
     }).then((fn) => unlistens.push(fn))
-    return () => unlistens.forEach((fn) => fn())
+    return () => {
+      stopTicker()
+      unlistens.forEach((fn) => fn())
+    }
   })
 
   async function start() {
@@ -56,9 +82,16 @@
     copied = false
     try {
       code = await invoke<DeviceCode>('github_device_flow_start')
+      secondsLeft = code.expiresIn
+      stopTicker()
+      ticker = setInterval(() => {
+        secondsLeft = Math.max(0, secondsLeft - 1)
+        if (secondsLeft === 0) cancel()
+      }, 1000)
       await openExternal(code.verificationUri)
       await invoke('github_device_flow_poll', { deviceCode: code.deviceCode })
     } catch (e) {
+      stopTicker()
       error = errorMessage(e)
       busy = false
       code = null
@@ -83,8 +116,11 @@
     </p>
   {:else}
     <button class="start" disabled={busy} onclick={start}>
-      {busy ? 'Waiting for GitHub…' : label}
+      {busy ? `Waiting for GitHub… ${clock}` : label}
     </button>
+    {#if busy}
+      <button class="quiet cancel" onclick={cancel}>Cancel</button>
+    {/if}
     {#if code}
       <p class="code">
         Code <strong>{code.userCode}</strong>
@@ -149,6 +185,9 @@
   }
   .link {
     text-decoration: underline;
+  }
+  .cancel {
+    align-self: flex-start;
   }
   .error {
     margin: 0;

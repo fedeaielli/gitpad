@@ -169,6 +169,22 @@ select {
   outline-offset: -2px;
 }
 
+/* Work that waits on the network: a small ring next to the label. */
+.loading {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: loading-spin 0.8s linear infinite;
+}
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Monaco's own drag handles (hidden diff regions) would otherwise borrow the
    focus border, which is the accent here and reads as a stray purple bar. */
 .monaco-editor .diff-hidden-lines:not(.dragging) .top:hover,
