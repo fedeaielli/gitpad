@@ -1,6 +1,5 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
-  import { ask } from '@tauri-apps/plugin-dialog'
   import {
     applyGitStatus,
     errorMessage,
@@ -9,6 +8,7 @@
     type GitStatus,
   } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
+  import { confirmDialog } from '../stores/confirm.svelte'
   import { closeIfClean, tabs } from '../stores/tabs.svelte'
   import { tip } from '../utils/tooltip'
 
@@ -80,9 +80,12 @@
       error = 'save or close the open file first'
       return
     }
-    if (!(await ask(`Restore ${file.path} from ${commit.shortHash}?`, { title: 'Restore file' }))) {
-      return
-    }
+    const confirmed = await confirmDialog({
+      title: 'Restore file',
+      message: `Restore ${file.path} from ${commit.shortHash}?`,
+      confirmLabel: 'Restore',
+    })
+    if (!confirmed) return
     busy = true
     error = null
     try {
@@ -104,9 +107,11 @@
     const question = restore
       ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'} from ${commit.shortHash}?`
       : `Revert ${commit.shortHash}: ${commit.message}?`
-    const confirmed = await ask(question, {
+    const confirmed = await confirmDialog({
       title: restore ? 'Restore deleted items' : 'Revert commit',
+      message: question,
       kind: 'warning',
+      confirmLabel: restore ? 'Restore' : 'Revert',
     })
     if (!confirmed) return
     busy = true
