@@ -279,14 +279,19 @@
     margin: 0;
     padding: 0;
   }
+  .commits {
+    padding: 2px 0 8px;
+  }
   .commit {
-    border-bottom: 1px solid var(--border);
-  }
-  .commit:last-child {
-    border-bottom: 0;
-  }
-  .commit.open {
+    margin: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
     background: var(--surface-2);
+    overflow: hidden;
+  }
+  .commit:hover,
+  .commit.open {
+    border-color: var(--border-strong);
   }
   .commit.active {
     box-shadow: inset 2px 0 0 var(--accent);
@@ -295,7 +300,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 6px 8px 3px;
+    padding: 7px 8px 4px;
     background: var(--surface-1);
     color: var(--muted);
     font-size: 10px;
@@ -317,7 +322,7 @@
     text-align: left;
   }
   .row:hover {
-    background: var(--surface-2);
+    background: var(--surface-3);
   }
   .expand {
     display: grid;
@@ -387,6 +392,9 @@
   .files button:disabled {
     cursor: default;
     opacity: 0.5;
+  }
+  .files {
+    padding-bottom: 4px;
   }
   .files li {
     display: flex;
