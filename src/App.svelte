@@ -91,7 +91,6 @@
   })
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let pendingConfig: Config | null = null
-  let onboardingSkipped = $state(false)
 
   // Dragging the gap between the left panel and the editor resizes the sidebar.
   const MIN_SIDEBAR = 150
@@ -566,9 +565,10 @@
     </main>
     <StatusBar />
   </div>
-  {#if configLoaded && !ui.onboardingComplete && !onboardingSkipped}
+  {#if configLoaded && !ui.onboardingComplete}
     <!-- Gated on config.json so an onboarded user doesn't see the wizard flash. -->
-    <Onboarding onskip={() => (onboardingSkipped = true)} />
+    <!-- Skipping is a choice: it is saved, and Settings is where to change it. -->
+    <Onboarding onskip={() => (ui.onboardingComplete = true)} />
   {/if}
 </div>
 
