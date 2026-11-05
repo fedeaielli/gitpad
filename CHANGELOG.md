@@ -27,6 +27,8 @@ Sign-in without a keyring, a reworked history, and a safer editor.
   longer closes the history behind it.
 - The history panel is clamped to the editor column when the window shrinks.
 - `dompurify` is forced to 3.4.17 for Monaco, closing a critical advisory.
+- The Arch/source package now compiles the device-flow client id, so both
+  sign-in paths work outside the AppImage.
 
 ## 1.0.2 — 2026-11-05
 
