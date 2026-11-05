@@ -126,7 +126,7 @@
       retarget(moved.from, moved.to)
       ui.repoPath = moved.to
       ui.treeVersion += 1
-      pushToast('Repository moved')
+      pushToast('Repository moved', 'success')
     } catch (e) {
       pushToast(`move repository: ${errorMessage(e)}`)
     } finally {
@@ -159,7 +159,7 @@
       importOpen = false
       importUrl = ''
       importFolder = ''
-      pushToast('Repository imported')
+      pushToast('Repository imported', 'success')
     } catch (e) {
       pushToast(`import repository: ${errorMessage(e)}`)
     } finally {
@@ -185,7 +185,10 @@
       ui.repoPath = result.to
       ui.treeVersion += 1
       void invoke<GitStatus>('git_status').then(applyGitStatus).catch(() => {})
-      pushToast(result.remote ? 'Local repository opened' : 'Local repository opened (no remote)')
+      pushToast(
+        result.remote ? 'Local repository opened' : 'Local repository opened (no remote)',
+        'success',
+      )
     } catch (e) {
       pushToast(`open local repository: ${errorMessage(e)}`)
     } finally {

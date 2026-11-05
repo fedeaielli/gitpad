@@ -378,7 +378,10 @@
     if (!tab || tab.staleUpstream) return
     tab.staleUpstream = true
     tab.modified = true
-    pushToast(`${path} changed upstream — autosave paused for this tab, copy your text and reopen it`)
+    pushToast(
+      `${path} changed upstream — autosave paused for this tab, copy your text and reopen it`,
+      'warning',
+    )
   }
 
   async function reloadTab(path: string) {
