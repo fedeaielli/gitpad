@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.0.3 — 2026-11-05
+
+Sign-in without a keyring, a reworked history, and a safer editor.
+
+### Added
+- The GitHub token now survives restarts without an OS keyring: it is kept in
+  `auth.token` (mode 0600) under the app data directory, and removed on logout
+  or when the keyring accepts it again.
+- **Restore removed folders** from History: a commit that only deletes files
+  gets a "Restore N deleted items" action.
+- History is grouped by day (Today/Yesterday/date), commits are cards coloured
+  by action, and the expander has its own rail.
+- The editor and the file history are separate, resizable frames with a centred
+  drag grip.
+- Confirmation dialogs are in-app and centred (restore, revert, discard, exit).
+- Folders-first is independent of the sort order.
+- Notifications have warning/error/info severity colours.
+
+### Fixed
+- Discarding a conflicted file no longer deletes it; discard refuses and points
+  to the conflict dialog. Staged deletions are restored from HEAD.
+- A slow file-history request can no longer overwrite the current tab or the
+  newly expanded commit.
+- Global shortcuts no longer fire behind the confirmation dialog, and Escape no
+  longer closes the history behind it.
+- The history panel is clamped to the editor column when the window shrinks.
+- `dompurify` is forced to 3.4.17 for Monaco, closing a critical advisory.
+
 ## 1.0.2 — 2026-11-05
 
 The Arch package started with a blank window asking for a dev server.
