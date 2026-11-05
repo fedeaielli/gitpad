@@ -38,7 +38,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 - **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings.
 - **Session logs.** *Settings → Logs* shows the current session and the previous ones, filterable by severity, category (editor, git, app), and free text.
   Tracked: repository open/move/import/clone, every commit, pull and push outcome, conflicts, folder and file changes, sign-in and sign-out (never the token), GitHub calls by status code, startup, shutdown, and every message the UI shows as a toast or a crash. File contents and request bodies are never logged.
-- **Credentials in the OS keyring.** The GitHub token is never written to `config.json`.
+- **Credentials in the OS keyring.** The GitHub token is never written to `config.json`; when the keyring is unavailable it goes to a mode-0600 file under the app data dir.
 
 ---
 
@@ -53,7 +53,7 @@ chmod +x GitPad_*.AppImage
 ./GitPad_*.AppImage
 ```
 
-Nothing to install and no root: GTK and WebKitGTK travel inside the bundle. It does need a glibc at least as new as the one it was built against (see [Compatibility](#compatibility)), and the desktop's Secret Service for the keyring (`gnome-keyring`, or KWallet on KDE).
+Nothing to install and no root: GTK and WebKitGTK travel inside the bundle. It does need a glibc at least as new as the one it was built against (see [Compatibility](#compatibility)). The desktop's Secret Service (`gnome-keyring`, or KWallet on KDE) is preferred for the token; without it the token goes to a protected file.
 
 ### Arch Linux
 
@@ -128,13 +128,13 @@ same sentence.
 
 ## First start
 
-1. **Connect GitHub.** The onboarding wizard asks for a personal access token (classic) with the `repo` scope. Create one at <https://github.com/settings/tokens>. The token is stored in the OS keyring, not in a config file.
+1. **Connect GitHub.** Sign in with the OAuth device flow or a personal access token (classic) with the `repo` scope, created at <https://github.com/settings/tokens>. The token is stored in the OS keyring, not in a config file.
 2. **Choose a repository.** By default GitPad looks for a private repository named `gitpad_notes`, creates it if it does not exist, and clones it into the app data directory.
 3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically. You can also skip the wizard and clone an existing repository from the Git panel.
 
 No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Open local folder*. GitPad opens an existing repository or initializes one in place when the folder is not a repository yet. A repository without an `origin` remote commits locally and skips sync until you add one.
 
-GitHub sign-in currently uses a PAT; the OAuth device-flow code path is present but not configured in the app yet.
+Both sign-in paths work: the OAuth device flow uses a public client id compiled in by `npm run tauri build`, and the personal access token needs the `repo` scope.
 
 ---
 
@@ -198,7 +198,8 @@ On Linux, under `~/.local/share/com.gitpad.app/`:
 | `repos/gitpad_notes/` | Local Git clone of your notes |
 | `config.json` | Theme, font size, sync settings, extension mappings |
 | `logs/gitpad.log` | Session log, rotated at 5 MB with the last 5 files kept (~25 MB) |
-| OS keyring | GitHub token |
+| `auth.token` | GitHub token, only when the OS keyring is unavailable (mode 0600) |
+| OS keyring | GitHub token, preferred |
 
 Deleting `config.json` resets settings but leaves the notes repository untouched.
 
@@ -215,7 +216,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes.
 - **Crash safety.** `SIGTERM` commits and pushes files already written before exit. `SIGKILL` or a crash cannot be caught; the last edits remain local until the next start.
 - **Logs stop at 5 files.** Rotation keeps five 5 MB files, so the oldest sessions are dropped once the folder reaches roughly 25 MB.
-- **Without a keyring, the login lasts one session.** If the OS keyring is missing or locked, GitPad keeps the token in memory, warns at startup, and asks you to sign in again after a restart.
+- **Without a keyring, the token lives in a protected file.** If the OS keyring is missing or locked, GitPad keeps the token in `auth.token` (mode 0600) under the app data dir, warns at startup, and still signs in after a restart. The file is removed on logout, or at the next sign-in when the keyring accepts the token.
 - **The AppImage is as new as its build host.** Bundled libraries need the glibc of the machine that built them, so the release AppImage runs on Arch and not on Debian 13 or Ubuntu 24.04. Build from source there; see [Compatibility](#compatibility).
 - **Linux only.** The current release bundles an AppImage. Windows is not supported yet.
 - **Not a full Git client.** There is no branch UI, terminal, plugin system, or multi-user collaboration.
@@ -225,9 +226,9 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 ## Privacy
 
 - GitPad talks to GitHub only for the repository operations you configure.
-- The token lives in the OS keyring and is never written to `config.json`.
+- The token lives in the OS keyring, or in a mode-0600 file under the app data dir when the keyring is unavailable; it is never written to `config.json`.
 - There is no analytics, telemetry, or third-party crash reporting.
-- Logging out deletes the token from the keyring. It is not revoked on GitHub: the device flow uses a public client, and GitHub only accepts revocation signed with a client secret.
+- Logging out deletes the token from the keyring and removes `auth.token` if it exists. It is not revoked on GitHub: the device flow uses a public client, and GitHub only accepts revocation signed with a client secret.
 - Monaco and all front-end assets are bundled locally; the app does not load them from a CDN.
 
 ---
@@ -278,7 +279,7 @@ src-tauri/src/          Rust back end
   fs.rs                 file reads/writes, atomic saves, imports
   git.rs                status, pull/push, history, conflicts
   github.rs             GitHub API
-  auth.rs               OS keyring
+  auth.rs               OS keyring, protected-file fallback
   search.rs             repository search
 ```
 
