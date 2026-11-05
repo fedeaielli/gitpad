@@ -81,6 +81,8 @@
     overflow-wrap: anywhere;
   }
   .close {
+    display: grid;
+    place-items: center;
     width: 22px;
     height: 22px;
     padding: 0;
