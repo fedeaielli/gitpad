@@ -18,7 +18,7 @@
   import ConfirmDialog from './lib/components/ConfirmDialog.svelte'
   import TitleBar from './lib/components/TitleBar.svelte'
   import { pushToast } from './lib/stores/toasts.svelte'
-  import { confirmDialog } from './lib/stores/confirm.svelte'
+  import { confirmDialog, confirmState } from './lib/stores/confirm.svelte'
   import { tip } from './lib/utils/tooltip'
   import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
@@ -232,6 +232,12 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    // A confirmation owns the keyboard: let it handle Escape/Enter/Tab, but block
+    // global shortcuts and WebKit defaults (Ctrl+W closes the window).
+    if (confirmState.current) {
+      if (e.ctrlKey || e.metaKey || e.altKey) e.preventDefault()
+      return
+    }
     // Ctrl+S is always global: it must never reach the webview's save-page dialog.
     if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 's') {
       e.preventDefault()
