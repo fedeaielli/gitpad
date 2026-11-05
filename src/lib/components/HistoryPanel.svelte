@@ -22,6 +22,7 @@
   }
 
   interface CommitGroup {
+    key: string
     label: string
     commits: CommitEntry[]
   }
@@ -130,23 +131,39 @@
     const today = new Date()
     const yesterday = new Date()
     yesterday.setDate(today.getDate() - 1)
+    const day = date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
     const sameDay = (a: Date, b: Date) =>
       a.getFullYear() === b.getFullYear() &&
       a.getMonth() === b.getMonth() &&
       a.getDate() === b.getDate()
-    if (sameDay(date, today)) return 'Today'
-    if (sameDay(date, yesterday)) return 'Yesterday'
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    if (sameDay(date, today)) return `Today · ${day}`
+    if (sameDay(date, yesterday)) return `Yesterday · ${day}`
+    return day
+  }
+
+  function timeLabel(timestamp: number) {
+    return new Date(timestamp * 1000).toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  function fileCount(count: number) {
+    return `${count} file${count === 1 ? '' : 's'}`
   }
 
   /// Consecutive commits share a day header; the log is already newest first.
   function groupByDay(entries: CommitEntry[]): CommitGroup[] {
     const groups: CommitGroup[] = []
     for (const commit of entries) {
-      const label = dayLabel(commit.timestamp)
+      const key = new Date(commit.timestamp * 1000).toDateString()
       const last = groups[groups.length - 1]
-      if (last?.label === label) last.commits.push(commit)
-      else groups.push({ label, commits: [commit] })
+      if (last?.key === key) last.commits.push(commit)
+      else groups.push({ key, label: dayLabel(commit.timestamp), commits: [commit] })
     }
     return groups
   }
@@ -166,7 +183,7 @@
     </p>
   {/if}
   <ul class="commits">
-    {#each groups as group (group.commits[0].hash)}
+    {#each groups as group (group.key)}
       <li class="day">{group.label}</li>
       {#each group.commits as commit (commit.hash)}
         <li
@@ -179,9 +196,7 @@
               <code>{commit.shortHash}</code>
               <span class="msg">{commit.message}</span>
               <span class="meta">
-                {commit.author} · {commit.filesChanged} file{commit.filesChanged === 1
-                  ? ''
-                  : 's'}
+                {timeLabel(commit.timestamp)} · {commit.author} · {fileCount(commit.filesChanged)}
               </span>
             </button>
             <button
@@ -264,6 +279,12 @@
     margin: 0;
     padding: 0;
   }
+  .commit {
+    border-bottom: 1px solid var(--border);
+  }
+  .commit:last-child {
+    border-bottom: 0;
+  }
   .commit.open {
     background: var(--surface-2);
   }
@@ -278,8 +299,7 @@
     background: var(--surface-1);
     color: var(--muted);
     font-size: 10px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-weight: 600;
   }
   .head-row {
     display: flex;
