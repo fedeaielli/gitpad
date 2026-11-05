@@ -32,6 +32,8 @@
   let files = $state<FileChange[]>([])
   let busy = $state(false)
   let error = $state<string | null>(null)
+  /// Ignore a response that lost the race against a newer tab or expansion.
+  let loadSeq = 0
 
   /// An open file narrows the log to its commits; no tab means the whole repo.
   const active = $derived(tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null)
@@ -42,9 +44,11 @@
 
   async function load(target = filePath) {
     if (!gitStatus.configured) return
-    commits = target
+    const seq = ++loadSeq
+    const result = target
       ? await invoke<CommitEntry[]>('git_file_log', { path: target }).catch(() => [])
       : await invoke<CommitEntry[]>('git_log').catch(() => [])
+    if (seq === loadSeq) commits = result
   }
 
   // Reload when the view opens, on another tab, and whenever a sync finishes.
@@ -69,9 +73,11 @@
       files = []
       return
     }
-    expanded = commit.hash
+    const hash = commit.hash
+    expanded = hash
     files = []
-    files = await invoke<FileChange[]>('git_commit_files', { hash: commit.hash }).catch(() => [])
+    const result = await invoke<FileChange[]>('git_commit_files', { hash }).catch(() => [])
+    if (expanded === hash) files = result
   }
 
   async function restore(commit: CommitEntry, file: FileChange) {
