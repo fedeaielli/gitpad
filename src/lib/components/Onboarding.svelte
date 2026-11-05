@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
+  import { listen } from '@tauri-apps/api/event'
 
   import { open } from '@tauri-apps/plugin-dialog'
   import { openExternal } from '../utils/open'
@@ -40,6 +42,26 @@
   /// Set when the token had to stay in memory instead of the keyring.
   let storageNote = $state('')
 
+  /// What the repository step is waiting for. `account`, `lookup` and
+  /// `creating` come from the backend; `cloning` is local to the next step.
+  type Stage = 'account' | 'lookup' | 'creating' | 'cloning'
+  const STAGES: Record<Stage, string> = {
+    account: 'Contacting GitHub…',
+    lookup: 'Looking for gitpad_notes…',
+    creating: 'Creating gitpad_notes…',
+    cloning: 'Cloning the repository…',
+  }
+  let stage = $state<Stage>('account')
+
+  onMount(() => {
+    const unlisten = listen<string>('onboarding-stage', (e) => {
+      if (e.payload in STAGES) stage = e.payload as Stage
+    })
+    return () => {
+      void unlisten.then((fn) => fn())
+    }
+  })
+
   function fail(e: unknown) {
     error = errorMessage(e)
     busy = false
@@ -62,6 +84,7 @@
     step = 'repo'
     busy = true
     error = null
+    stage = 'account'
     // The token is already stored; this only tells the UI where it lives.
     try {
       if (!(await invoke<boolean>('auth_keyring_ok'))) {
@@ -89,6 +112,7 @@
     if (!repo) return
     busy = true
     error = null
+    stage = 'cloning'
     try {
       const parent = folder.trim()
       ui.repoPath = await invoke<string>('git_clone', { url: repo.cloneUrl, parent: parent || null })
@@ -150,14 +174,14 @@
       <input bind:value={token} placeholder="ghp_… personal access token (scope: repo)" />
       <div class="row">
         <a href="https://github.com/settings/tokens" onclick={(e) => { e.preventDefault(); void openExternal('https://github.com/settings/tokens') }}>Create a token</a>
-        <button class="primary" disabled={busy || !token.trim()} onclick={validatePat}>Validate</button>
+        <button class="primary" disabled={busy || !token.trim()} onclick={validatePat}>{busy ? 'Validating…' : 'Validate'}</button>
       </div>
       <div class="divider">or</div>
       <GithubLogin label="Login with GitHub" onsuccess={goRepo} />
     {:else if step === 'repo'}
       <h1>Repository</h1>
       {#if busy}
-        <p>Looking for or creating <code>gitpad_notes</code>…</p>
+        <p class="stage"><span class="loading"></span>{STAGES[stage]}</p>
       {:else if repo}
         <p><code>{repo.fullName}</code> {repo.private ? '(private)' : ''}</p>
         <p class="muted">{repo.cloneUrl}</p>
@@ -265,6 +289,11 @@
     color: var(--warn);
     font-size: 11px;
     overflow-wrap: anywhere;
+  }
+  .stage {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   .row {
     display: flex;
