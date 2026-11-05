@@ -35,6 +35,7 @@
     type GitStatus,
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
+  import { clampTimelineHeight } from './lib/utils/timeline'
 
   let configLoaded = $state(false)
   // Monaco is heavy: load it after the shell paints.
@@ -72,7 +73,21 @@
   $effect(() => {
     if (!ui.timelineOpen || timelineSized || !editorColumn) return
     timelineSized = true
-    ui.timelineHeight = Math.min(600, Math.max(120, Math.round(editorColumn.clientHeight * 0.4)))
+    ui.timelineHeight = clampTimelineHeight(
+      editorColumn.clientHeight,
+      Math.round(editorColumn.clientHeight * 0.4),
+    )
+  })
+
+  // The stored height is in pixels: keep it inside the column when it shrinks.
+  $effect(() => {
+    const column = editorColumn
+    if (!column) return
+    const observer = new ResizeObserver(() => {
+      ui.timelineHeight = clampTimelineHeight(column.clientHeight, ui.timelineHeight)
+    })
+    observer.observe(column)
+    return () => observer.disconnect()
   })
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let pendingConfig: Config | null = null
