@@ -11,6 +11,7 @@
   import { monacoTheme } from '../utils/themes'
   import { tip } from '../utils/tooltip'
   import { isCurrentVersion } from '../utils/file-history'
+  import { clampTimelineHeight } from '../utils/timeline'
   import FileIcon from './FileIcon.svelte'
 
   interface CommitEntry {
@@ -49,6 +50,7 @@
   let dragging = $state(false)
 
   let host: HTMLDivElement
+  let frame = $state<HTMLElement>()
   let diffEditor: monaco.editor.IStandaloneDiffEditor | undefined
   let models: monaco.editor.ITextModel[] = []
   let startY = 0
@@ -251,7 +253,8 @@
 
   function moveResize(e: PointerEvent) {
     if (!dragging) return
-    ui.timelineHeight = Math.min(600, Math.max(120, startHeight + (startY - e.clientY)))
+    const column = frame?.parentElement?.clientHeight ?? window.innerHeight
+    ui.timelineHeight = clampTimelineHeight(column, startHeight + (startY - e.clientY))
   }
 
   function endResize() {
@@ -317,7 +320,12 @@
   })
 </script>
 
-<section class="timeline" style="height: {ui.timelineHeight}px" aria-label="File history">
+<section
+  class="timeline"
+  style="height: {ui.timelineHeight}px"
+  aria-label="File history"
+  bind:this={frame}
+>
   <div
     class="resize"
     class:active={dragging}
@@ -429,6 +437,8 @@
     gap: var(--sp-1);
     box-sizing: border-box;
     min-height: 0;
+    /* Safety net for the JS clamp: leave 160px for the editor. */
+    max-height: calc(100% - 160px);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     background: var(--surface-base);
