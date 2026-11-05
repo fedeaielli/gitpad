@@ -1299,12 +1299,25 @@ fn discard_file(
     gate: &std::sync::RwLock<()>,
 ) -> Result<(), GitError> {
     let _gate = gate.write().map_err(|e| e.to_string())?;
-    let tracked = repo
-        .index()
-        .map_err(git_err)?
-        .get_path(rel, 0)
-        .is_some();
-    if tracked {
+    let index = repo.index().map_err(git_err)?;
+    // A conflict lives in stages 1-3, never 0: discarding would delete a file
+    // the merge still needs. Resolution belongs to the conflict dialog.
+    if (1..=3).any(|stage| index.get_path(rel, stage).is_some()) {
+        return Err(GitError::Other(format!(
+            "{} has a merge conflict: resolve it in the conflict dialog",
+            rel.display()
+        )));
+    }
+    let in_index = index.get_path(rel, 0).is_some();
+    drop(index);
+    // A staged deletion/rename is already gone from stage 0 but still in HEAD.
+    let in_head = repo
+        .head()
+        .ok()
+        .and_then(|head| head.peel_to_tree().ok())
+        .map(|tree| tree.get_path(rel).is_ok())
+        .unwrap_or(false);
+    if in_index || in_head {
         let mut checkout = CheckoutBuilder::new();
         checkout.path(rel).force();
         repo.checkout_head(Some(&mut checkout)).map_err(git_err)
@@ -1312,8 +1325,12 @@ fn discard_file(
         let workdir = repo
             .workdir()
             .ok_or_else(|| GitError::IoError("bare repository".into()))?;
-        std::fs::remove_file(workdir.join(rel))
-            .map_err(|e| GitError::IoError(format!("remove {}: {e}", rel.display())))
+        match std::fs::remove_file(workdir.join(rel)) {
+            Ok(()) => Ok(()),
+            // Another tool may have removed it first: already discarded.
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(GitError::IoError(format!("remove {}: {e}", rel.display()))),
+        }
     }
 }
 
@@ -2057,6 +2074,64 @@ mod tests {
             discard_file(&repo, Path::new("note.md"), &gate).is_ok()
         });
         assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn discard_refuses_a_conflicted_path() {
+        let root = tmp("discard-conflict");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let a_path = root.join("a");
+        let a = Repository::clone(remote_path.to_str().unwrap(), &a_path).unwrap();
+        commit_file(&a, "note.md", "base\n");
+        push_current(&a);
+
+        let b = Repository::clone(remote_path.to_str().unwrap(), root.join("b")).unwrap();
+        commit_file(&b, "note.md", "theirs\n");
+        push_current(&b);
+
+        commit_file(&a, "note.md", "ours\n");
+        let (status, _) = pull_repo(&a, None, &std::sync::RwLock::new(())).unwrap();
+        assert_eq!(status.conflicts.len(), 1);
+
+        let gate = std::sync::RwLock::new(());
+        match discard_file(&a, Path::new("note.md"), &gate) {
+            Err(GitError::Other(message)) => assert!(message.contains("merge conflict"), "{message}"),
+            other => panic!("unexpected discard result: {other:?}"),
+        }
+        // The conflict must survive a refused discard.
+        assert!(a.index().unwrap().has_conflicts());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn discard_restores_a_staged_deletion() {
+        let root = tmp("discard-staged-delete");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "note.md", "old");
+        {
+            let mut index = repo.index().unwrap();
+            index.remove_path(Path::new("note.md")).unwrap();
+            index.write().unwrap();
+        }
+        std::fs::remove_file(root.join("note.md")).unwrap();
+
+        let gate = std::sync::RwLock::new(());
+        discard_file(&repo, Path::new("note.md"), &gate).unwrap();
+        assert_eq!(std::fs::read_to_string(root.join("note.md")).unwrap(), "old");
+        assert!(status_of(&repo).unwrap().changes.is_empty());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn discard_ignores_a_missing_untracked_file() {
+        let root = tmp("discard-missing");
+        let repo = Repository::init(&root).unwrap();
+        let gate = std::sync::RwLock::new(());
+
+        discard_file(&repo, Path::new("gone.md"), &gate).unwrap();
+        assert!(gate.try_write().is_ok());
         let _ = std::fs::remove_dir_all(&root);
     }
 

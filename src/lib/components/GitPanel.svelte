@@ -22,6 +22,7 @@
   let cloning = $state(false)
 
   const blocked = $derived(gitStatus.syncing || gitStatus.conflicts.length > 0)
+  const conflicted = $derived(new Set(gitStatus.conflicts.map((c) => c.path)))
 
   async function commit() {
     if (!commitMessage.trim()) return
@@ -176,8 +177,15 @@
             </button>
             <button
               class="discard"
-              aria-label="Discard changes"
-              use:tip={'Discard changes'} onclick={() => discard(change)}>
+              aria-label={conflicted.has(change.path)
+                ? 'Resolve the conflict first'
+                : 'Discard changes'}
+              disabled={conflicted.has(change.path)}
+              use:tip={conflicted.has(change.path)
+                ? 'Resolve the conflict first'
+                : 'Discard changes'}
+              onclick={() => discard(change)}
+            >
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M4.5 4.5l7 7m0-7-7 7" />
               </svg>
@@ -399,9 +407,16 @@
   .discard:focus-visible {
     opacity: 1;
   }
-  .discard:hover {
+  .changes li:hover .discard:disabled {
+    opacity: 0.35;
+  }
+  .discard:hover:not(:disabled) {
     background: var(--surface-3);
     color: var(--err);
+  }
+  .discard:disabled {
+    cursor: default;
+    opacity: 0.35;
   }
   .conflicts,
   .error {
