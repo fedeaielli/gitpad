@@ -113,6 +113,7 @@
       accent: ui.accent,
       sortMode: ui.sortMode,
       sortDesc: ui.sortDesc,
+      foldersFirst: ui.foldersFirst,
       showHidden: ui.showHidden,
       repoPath: ui.repoPath,
     }
@@ -434,9 +435,12 @@
           ui.keybindings = config.keybindings as Keybinding
         }
         if (config.extensions) ui.extensions = config.extensions
+        if (typeof config.foldersFirst === 'boolean') ui.foldersFirst = config.foldersFirst
         const mode = config.sortMode
+        // Configs written before the split stored folders-first as a sort mode.
+        if (mode === 'folders') ui.foldersFirst = true
         if (mode === 'name' || mode === 'folders' || mode === 'modified' || mode === 'type') {
-          ui.sortMode = mode
+          ui.sortMode = mode === 'folders' ? 'name' : mode
         }
         if (typeof config.sortDesc === 'boolean') ui.sortDesc = config.sortDesc
         if (typeof config.showHidden === 'boolean') ui.showHidden = config.showHidden

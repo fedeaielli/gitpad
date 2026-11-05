@@ -20,9 +20,11 @@ pub struct Config {
     pub extensions: BTreeMap<String, String>,
     /// Hex accent override; empty means "use the theme's own accent".
     pub accent: String,
-    /// File tree ordering: "name", "modified" or "folders".
+    /// File tree ordering: "name", "modified" or "type".
     pub sort_mode: String,
     pub sort_desc: bool,
+    /// Keep folders above files whatever the ordering.
+    pub folders_first: bool,
     pub show_hidden: bool,
     /// Clone location picked by the user; empty means "the default repos dir".
     pub repo_path: String,
@@ -61,6 +63,7 @@ impl Default for Config {
             accent: String::new(),
             sort_mode: "name".into(),
             sort_desc: false,
+            folders_first: false,
             show_hidden: false,
             repo_path: String::new(),
         }
@@ -158,6 +161,7 @@ mod tests {
             accent: "#10b981".into(),
             sort_mode: "modified".into(),
             sort_desc: true,
+            folders_first: true,
             show_hidden: true,
             repo_path: "/tmp/notes".into(),
         };
@@ -172,6 +176,7 @@ mod tests {
         assert!(!loaded.sidebar_open);
         assert_eq!(loaded.sort_mode, "modified");
         assert!(loaded.sort_desc);
+        assert!(loaded.folders_first);
         assert!(loaded.show_hidden);
         assert_eq!(loaded.repo_path, "/tmp/notes");
         assert!(!loaded.auto_sync);
@@ -200,6 +205,7 @@ mod tests {
         assert_eq!(config.theme, "vs-dark");
         assert_eq!(config.font_size, 13);
         assert_eq!(config.save_debounce_ms, 2000);
+        assert!(!config.folders_first);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
