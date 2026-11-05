@@ -156,6 +156,17 @@
     return `${count} file${count === 1 ? '' : 's'}`
   }
 
+  type CommitKind = 'delete' | 'revert' | 'import' | 'sync' | 'update' | 'other'
+
+  function kindOf(message: string): CommitKind {
+    if (message.startsWith('gitpad: delete ')) return 'delete'
+    if (message.startsWith('gitpad: revert ')) return 'revert'
+    if (message.startsWith('gitpad: import ')) return 'import'
+    if (message.startsWith('gitpad: sync ')) return 'sync'
+    if (message.startsWith('gitpad: update ')) return 'update'
+    return 'other'
+  }
+
   /// Consecutive commits share a day header; the log is already newest first.
   function groupByDay(entries: CommitEntry[]): CommitGroup[] {
     const groups: CommitGroup[] = []
@@ -194,7 +205,7 @@
           <div class="head-row">
             <button class="row" onclick={() => open(commit)}>
               <code>{commit.shortHash}</code>
-              <span class="msg">{commit.message}</span>
+              <span class="msg {kindOf(commit.message)}">{commit.message}</span>
               <span class="meta">
                 {timeLabel(commit.timestamp)} · {commit.author} · {fileCount(commit.filesChanged)}
               </span>
@@ -211,7 +222,7 @@
           </div>
           {#if expanded === commit.hash}
             <div class="actions">
-              <button class:restore={allDeleted} disabled={busy} onclick={() => revert(commit)}>
+              <button disabled={busy} onclick={() => revert(commit)}>
                 {allDeleted
                   ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'}`
                   : 'Revert commit'}
@@ -367,6 +378,15 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .msg.delete {
+    color: var(--err);
+  }
+  .msg.revert {
+    color: var(--warn);
+  }
+  .msg.import {
+    color: var(--ok);
+  }
   .meta {
     overflow: hidden;
     color: var(--muted);
@@ -377,15 +397,15 @@
   .actions {
     padding: 0 8px 4px;
   }
-  .actions .restore {
+  .actions button {
     padding: 3px 10px;
     border: 1px solid var(--accent);
-    background: var(--surface-2);
+    background: transparent;
     color: var(--accent-fg);
     font-size: 11px;
     font-weight: 600;
   }
-  .actions .restore:hover:not(:disabled) {
+  .actions button:hover:not(:disabled) {
     background: var(--surface-3);
   }
   .actions button:disabled,
