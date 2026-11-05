@@ -7,6 +7,7 @@
   import { openExternal } from '../utils/open'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
+  import { loadUser, setUser } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
 
   interface UserInfo {
@@ -74,6 +75,9 @@
       const info = await invoke<UserInfo>('github_validate_token', { token: token.trim() })
       await invoke('auth_set_pat', { token: token.trim() })
       user = info
+      // The activity bar reads the shared store: without this it stays signed
+      // out until its cached "no user" expires.
+      setUser(info)
       goRepo()
     } catch (e) {
       fail(e)
@@ -133,10 +137,15 @@
 
   /// Use an existing folder: initialized in place when it is not a repository.
   async function useLocal() {
-    const picked = await open({ directory: true, multiple: false, title: 'Open a local repository' })
-    if (typeof picked !== 'string' || !picked) return
+    if (busy) return
+    // Busy before the picker: the wizard must not move on while it is open.
     busy = true
     error = null
+    const picked = await open({ directory: true, multiple: false, title: 'Open a local repository' })
+    if (typeof picked !== 'string' || !picked) {
+      busy = false
+      return
+    }
     try {
       const result = await invoke<LocalRepo>('git_use_local', { path: picked })
       ui.repoPath = result.to
@@ -163,7 +172,7 @@
         <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> markdown preview</li>
         <li><kbd>Esc</kbd> close palette</li>
       </ul>
-      <button class="primary" onclick={() => (step = 'auth')}>Get Started</button>
+      <button class="primary" disabled={busy} onclick={() => (step = 'auth')}>Get Started</button>
       <button disabled={busy} onclick={useLocal}>{busy ? 'Opening…' : 'Use a local folder…'}</button>
       <p class="muted">
         An existing folder works too; GitPad initializes it when it is not a repository yet.
@@ -171,13 +180,19 @@
     {:else if step === 'auth'}
       <h1>Connect GitHub</h1>
       <p>GitPad stores the credential in your OS keyring.</p>
-      <input bind:value={token} placeholder="ghp_… personal access token (scope: repo)" />
+      <input
+        bind:value={token}
+        placeholder="ghp_… personal access token (scope: repo)"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+      />
       <div class="row">
         <a href="https://github.com/settings/tokens" onclick={(e) => { e.preventDefault(); void openExternal('https://github.com/settings/tokens') }}>Create a token</a>
         <button class="primary" disabled={busy || !token.trim()} onclick={validatePat}>{busy ? 'Validating…' : 'Validate'}</button>
       </div>
       <div class="divider">or</div>
-      <GithubLogin label="Login with GitHub" onsuccess={goRepo} />
+      <GithubLogin label="Login with GitHub" onsuccess={() => { void loadUser(true); goRepo() }} />
     {:else if step === 'repo'}
       <h1>Repository</h1>
       {#if busy}
@@ -191,8 +206,10 @@
         </div>
         <button class="primary" disabled={busy} onclick={clone}>Clone &amp; Open</button>
       {:else}
-        <p>Could not set up the repository.</p>
-        <button onclick={goRepo}>Retry</button>
+        <div class="row">
+          <button onclick={() => (step = 'auth')}>Back</button>
+          <button class="primary" onclick={goRepo}>Retry</button>
+        </div>
       {/if}
     {:else}
       <h1>You're set</h1>

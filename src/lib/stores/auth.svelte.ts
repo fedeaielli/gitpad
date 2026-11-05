@@ -19,11 +19,15 @@ export const auth = $state({
 export function setUser(user: GithubUser | null) {
   auth.user = user
   auth.authState = user ? 'authenticated' : 'unauthenticated'
-  loadedAt = Date.now()
+  // Only a success is worth caching: a failed lookup must not hide a sign-in
+  // that happened meanwhile. Clearing the timestamp is what makes the next
+  // check ask again.
+  loadedAt = user ? Date.now() : 0
 }
 
 /// A plain logout: the next check has to ask the backend again.
 export function forgetUser() {
+  // setUser(null) already clears loadedAt; keeping it here says so out loud.
   setUser(null)
   loadedAt = 0
 }
@@ -37,7 +41,6 @@ export async function loadUser(force = false): Promise<void> {
     .then((user) => setUser(user))
     .catch(() => setUser(null))
     .finally(() => {
-      loadedAt = Date.now()
       pending = null
     })
   return pending
