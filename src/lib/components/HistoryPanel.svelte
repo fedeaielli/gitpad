@@ -154,16 +154,18 @@
             class="expand"
             class:open={expanded === commit.hash}
             aria-expanded={expanded === commit.hash}
-            aria-label="Show files"
+            aria-label={expanded === commit.hash ? 'Hide files' : 'Show files'}
             onclick={() => toggle(commit)}
           >
-            ›
+            <span class="chev">›</span>
           </button>
         </div>
         {#if expanded === commit.hash}
           <div class="actions">
-            <button disabled={busy} onclick={() => revert(commit)}>
-              {allDeleted ? 'Restore deleted items' : 'Revert commit'}
+            <button class:restore={allDeleted} disabled={busy} onclick={() => revert(commit)}>
+              {allDeleted
+                ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'}`
+                : 'Revert commit'}
             </button>
           </div>
           <ul class="files">
@@ -171,18 +173,15 @@
               <li>
                 <span class="badge {file.status}">{file.status}</span>
                 <span class="path">{file.path}</span>
-                <button
-                  disabled={busy || file.status === 'D'}
-                  title={file.status === 'D'
-                    ? `${file.path} was deleted: use Restore deleted items above`
-                    : undefined}
-                  use:tip={file.status === 'D'
-                    ? `${file.path} was deleted: use Restore deleted items above`
-                    : `Restore ${file.path}`}
-                  onclick={() => restore(commit, file)}
-                >
-                  Restore
-                </button>
+                {#if file.status !== 'D'}
+                  <button
+                    disabled={busy}
+                    use:tip={`Restore ${file.path}`}
+                    onclick={() => restore(commit, file)}
+                  >
+                    Restore
+                  </button>
+                {/if}
               </li>
             {/each}
           </ul>
@@ -248,23 +247,35 @@
     text-align: left;
   }
   .expand {
-    flex: 0 0 18px;
-    width: 18px;
-    height: 18px;
-    margin-right: 4px;
+    display: grid;
+    flex: 0 0 26px;
+    place-items: center;
+    width: 26px;
+    height: auto;
+    align-self: stretch;
+    margin: 0;
     padding: 0;
     border: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
     background: transparent;
     color: var(--muted);
     font-size: 14px;
     line-height: 1;
+    transition:
+      background var(--t-fast),
+      color var(--t-fast);
+  }
+  .expand:hover,
+  .expand.open {
+    background: var(--surface-3);
+    color: var(--text);
+  }
+  .chev {
     transition: transform var(--t-fast);
   }
-  .expand.open {
+  .expand.open .chev {
     transform: rotate(90deg);
-  }
-  .expand:hover {
-    color: var(--text);
   }
   .row code {
     color: var(--accent-fg);
@@ -285,6 +296,22 @@
   }
   .actions {
     padding: 0 8px 4px;
+  }
+  .actions .restore {
+    padding: 3px 10px;
+    border: 1px solid var(--accent);
+    background: var(--surface-2);
+    color: var(--accent-fg);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .actions .restore:hover:not(:disabled) {
+    background: var(--surface-3);
+  }
+  .actions button:disabled,
+  .files button:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
   .files li {
     display: flex;
