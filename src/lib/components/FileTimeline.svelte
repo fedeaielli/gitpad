@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
-  import { ask } from '@tauri-apps/plugin-dialog'
+  import { confirmDialog } from '../stores/confirm.svelte'
   import * as monaco from 'monaco-editor'
   import { closeIfClean, discarded, openTab, tabs } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
@@ -193,7 +193,12 @@
       error = 'save or close the open file first'
       return
     }
-    if (!(await ask(`Restore ${target} from ${commit.shortHash}?`, { title: 'Restore file' }))) return
+    const restored = await confirmDialog({
+      title: 'Restore file',
+      message: `Restore ${target} from ${commit.shortHash}?`,
+      confirmLabel: 'Restore',
+    })
+    if (!restored) return
     busy = true
     error = null
     try {

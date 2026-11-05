@@ -3,7 +3,6 @@
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
   import { getCurrentWindow } from '@tauri-apps/api/window'
-  import { ask } from '@tauri-apps/plugin-dialog'
   import Sidebar from './lib/components/Sidebar.svelte'
   import ActivityBar from './lib/components/ActivityBar.svelte'
   import TabBar from './lib/components/TabBar.svelte'
@@ -16,8 +15,10 @@
   import Settings from './lib/components/Settings.svelte'
   import Shortcuts from './lib/components/Shortcuts.svelte'
   import Toasts from './lib/components/Toasts.svelte'
+  import ConfirmDialog from './lib/components/ConfirmDialog.svelte'
   import TitleBar from './lib/components/TitleBar.svelte'
   import { pushToast } from './lib/stores/toasts.svelte'
+  import { confirmDialog } from './lib/stores/confirm.svelte'
   import { tip } from './lib/utils/tooltip'
   import { saveAndSync } from './lib/utils/save-and-sync'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
@@ -363,10 +364,12 @@
       void invoke('app_closing_ack').catch(() => {})
       const saved = await flushPendingSave()
       if (!saved) {
-        const exit = await ask('Some changes could not be saved. Exit anyway?', {
+        const exit = await confirmDialog({
           title: 'Unsaved changes',
+          message: 'Some changes could not be saved. Exit anyway?',
           kind: 'warning',
-        }).catch(() => false)
+          confirmLabel: 'Exit',
+        })
         if (!exit) return
       }
       // The window disappears once the local writes are done; the exit commit
@@ -536,6 +539,7 @@
 {/if}
 
 <Toasts />
+<ConfirmDialog />
 
 <style>
   .shell {

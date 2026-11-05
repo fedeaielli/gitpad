@@ -1,6 +1,6 @@
 <script lang="ts">
   import { invoke } from '@tauri-apps/api/core'
-  import { ask } from '@tauri-apps/plugin-dialog'
+  import { confirmDialog } from '../stores/confirm.svelte'
   import {
     errorMessage,
     gitStatus,
@@ -50,9 +50,11 @@
   }
 
   async function discard(change: FileChange) {
-    const ok = await ask(`Discard changes to ${change.path}?`, {
+    const ok = await confirmDialog({
       title: 'Discard changes',
+      message: `Discard changes to ${change.path}?`,
       kind: 'warning',
+      confirmLabel: 'Discard',
     })
     if (!ok) return
     try {
