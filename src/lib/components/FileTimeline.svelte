@@ -427,21 +427,32 @@
     flex: 0 0 auto;
     flex-direction: column;
     gap: var(--sp-1);
+    box-sizing: border-box;
     min-height: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-base);
   }
   .resize {
     position: absolute;
-    top: -2px;
+    top: calc(-1 * var(--sp-1) - 1px);
     left: 0;
     z-index: 2;
     width: 100%;
-    height: 4px;
+    height: calc(var(--sp-1) + 2px);
     cursor: row-resize;
   }
-  .resize:hover {
+  .resize::before {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    height: 1px;
     background: var(--border-strong);
+    content: '';
   }
-  .resize.active {
+  .resize:hover::before,
+  .resize.active::before {
     background: var(--accent);
   }
   .head {

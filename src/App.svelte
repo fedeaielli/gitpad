@@ -39,7 +39,10 @@
   let configLoaded = $state(false)
   // Monaco is heavy: load it after the shell paints.
   let EditorPane = $state<Component | null>(null)
+  let FileTimeline = $state<Component | null>(null)
   let ConflictModal = $state<Component | null>(null)
+  let editorColumn = $state<HTMLDivElement>()
+  let timelineSized = false
 
   // Preload the editor chunk right away: the window is still hidden, so parsing
   // Monaco does not compete with the first paint. Opening a tab does the same
@@ -52,6 +55,24 @@
         EditorPane = m.default
       })
       .catch(() => reloadOnce())
+  })
+
+  // The history panel is its own frame: load it only when it opens.
+  $effect(() => {
+    if (!ui.timelineOpen || FileTimeline) return
+    void import('./lib/components/FileTimeline.svelte')
+      .then((m) => {
+        sessionStorage.removeItem('gitpad:chunk-reload')
+        FileTimeline = m.default
+      })
+      .catch(() => reloadOnce())
+  })
+
+  // 40% on the first open; after that the dragged height is kept.
+  $effect(() => {
+    if (!ui.timelineOpen || timelineSized || !editorColumn) return
+    timelineSized = true
+    ui.timelineHeight = Math.min(600, Math.max(120, Math.round(editorColumn.clientHeight * 0.4)))
   })
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   let pendingConfig: Config | null = null
@@ -498,21 +519,29 @@
         use:tip={`${Math.round(ui.sidebarWidth)}px`}
         onpointerdown={startResize}
       ></div>
-      <section class="editor">
-        <TabBar />
-        <Breadcrumb />
-        {#if EditorPane}
-          <EditorPane />
+      <div class="editor-column" bind:this={editorColumn}>
+        <section class="editor">
+          <TabBar />
+          <Breadcrumb />
+          {#if EditorPane}
+            <EditorPane />
+          {/if}
+          {#if tabs.tabs.length === 0 && !ui.timelineCommit}
+            <div class="empty">
+              <p class="empty-title">No file open</p>
+              <p class="empty-hint">
+                <kbd>Ctrl</kbd>+<kbd>N</kbd> to create a file · <kbd>Ctrl</kbd>+<kbd>O</kbd> to
+                import
+              </p>
+            </div>
+          {/if}
+        </section>
+        {#if ui.timelineOpen && (ui.timelineCommit || tabs.activeTabId)}
+          {#if FileTimeline}
+            <FileTimeline />
+          {/if}
         {/if}
-        {#if tabs.tabs.length === 0 && !ui.timelineCommit}
-          <div class="empty">
-            <p class="empty-title">No file open</p>
-            <p class="empty-hint">
-              <kbd>Ctrl</kbd>+<kbd>N</kbd> to create a file · <kbd>Ctrl</kbd>+<kbd>O</kbd> to import
-            </p>
-          </div>
-        {/if}
-      </section>
+      </div>
     </main>
     <StatusBar />
   </div>
@@ -599,6 +628,14 @@
   .gutter.open.active {
     background: var(--accent);
   }
+  .editor-column {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--sp-1);
+    min-width: 0;
+    min-height: 0;
+  }
   .editor {
     position: relative;
     display: flex;
@@ -606,6 +643,7 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
     /* Clipped so Monaco cannot paint a square corner over the radius. */
     border-radius: var(--r-lg);
     border: 1px solid var(--border);
