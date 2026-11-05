@@ -34,7 +34,6 @@
   import { initVimMode } from 'monaco-vim'
   import { EmacsExtension } from 'monaco-emacs'
   import MarkdownPreview from './MarkdownPreview.svelte'
-  import FileTimeline from './FileTimeline.svelte'
 
   self.MonacoEnvironment = {
     getWorker(_workerId, label) {
@@ -495,9 +494,6 @@
       <div class="preview"><MarkdownPreview /></div>
     {/if}
   </div>
-  {#if ui.timelineOpen && (ui.timelineCommit || activeTab())}
-    <FileTimeline />
-  {/if}
   {#if saveError}
     <p class="error">{saveError}</p>
   {/if}
