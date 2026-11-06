@@ -7,10 +7,16 @@
 <p align="center"><em>Markdown notes in a Git repository you own.</em></p>
 
 <p align="center">
+  <a href="https://github.com/fedeaielli/gitpad/releases/latest"><img src="https://img.shields.io/github/v/release/fedeaielli/gitpad?color=0078d4" alt="Latest release"></a>
+  <a href="https://github.com/fedeaielli/gitpad/actions/workflows/ci.yml"><img src="https://github.com/fedeaielli/gitpad/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License: GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Linux-lightgrey.svg" alt="Platform: Linux">
   <a href="https://tauri.app"><img src="https://img.shields.io/badge/Tauri-2-24C8DB.svg" alt="Tauri 2"></a>
   <a href="https://svelte.dev"><img src="https://img.shields.io/badge/Svelte-5-FF3E00.svg" alt="Svelte 5"></a>
+</p>
+
+<p align="center">
+  <img src="docs/screenshot.png" width="880" alt="A note open in the GitPad editor with the Markdown preview beside it">
 </p>
 
 GitPad is a local-first desktop editor for Markdown notes and small text files that live in a Git repository you own. It pairs the Monaco editor with a focused GitHub workflow: edit, save automatically, commit locally, and push when you stop typing.
@@ -23,27 +29,40 @@ Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
 ## Why GitPad
 
+GitPad is not Obsidian. It's not Notion. Saving is a git commit.
+
 Most note apps keep your writing in a proprietary database. GitPad keeps it in plain files inside a Git repository:
 
-- **Local-first.** Your notes are ordinary files on disk. You can edit them with any editor, inspect them with `git`, and read them without GitPad.
-- **GitHub-native.** Pull at startup, commit on save, push when you pause. No separate sync service.
-- **Markdown-friendly.** Split or full-screen preview with GitHub-flavored Markdown, syntax highlighting, and scroll sync.
-- **Keyboard-first.** Command palette, file search, tabs, and configurable VS Code/Vim/Emacs keybindings.
-- **Small surface area.** One local user, one repository, no plugin runtime.
+- **Local-first.** Your notes are ordinary files. Edit them with any editor, inspect them with `git`, read them without GitPad.
+- **GitHub-native.** Pull at startup, commit on save, push when you pause. No separate sync service, no account beyond the one you already have.
+- **Markdown-friendly.** Split or full-screen preview with GitHub-flavored Markdown and scroll sync.
+- **Keyboard-first.** Command palette, file search, tabs, and VS Code/Vim/Emacs keybindings.
+- **Small surface area.** One user, one repository, no plugin runtime.
 
 ---
 
 ## Features
 
+### Editor
+
 - **Monaco editor** with syntax highlighting for the languages Monaco supports, tabs, find/replace, and a dark default theme.
+- **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and scroll sync.
+
+### Git and sync
+
 - **Automatic save and sync.** Edits are written after a short debounce (2 s by default), committed locally, and pushed after you stop typing (30 s by default), on window blur, or on close. `Ctrl+S` does both immediately.
 - **GitHub integration.** Sign in with GitHub (OAuth device flow) or a personal access token, create a private `gitpad_notes` repository by default or clone an existing one, pull at startup, and push from the Git panel.
 - **Conflict resolution.** When a pull conflicts, GitPad opens a diff dialog with local and remote versions. Accept one side, edit manually, then confirm the merge.
-- **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and editor/preview scroll sync.
-- **File tree.** Create, rename, delete, import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`.
 - **Commit history.** Browse the repository log, inspect changed files, restore a file from a commit, or revert a commit. With a file open, the list narrows to the commits that touch it.
+
+### Navigation
+
+- **File tree.** Create, rename, delete, import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`. Folders are sorted by name, date, or type, and the choice is remembered.
 - **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search; press it again to close.
-- **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings.
+
+### Settings and logs
+
+- **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings. Everything is saved to `config.json` and restored on the next start.
 - **Session logs.** *Settings → Logs* shows the current session and the previous ones, filterable by severity, category (editor, git, app), and free text.
   Tracked: repository open/move/import/clone, every commit, pull and push outcome, conflicts, folder and file changes, sign-in and sign-out (never the token), GitHub calls by status code, startup, shutdown, and every message the UI shows as a toast or a crash. File contents and request bodies are never logged.
 - **Credentials in the OS keyring.** The GitHub token is never written to `config.json`; when the keyring is unavailable it goes to a mode-0600 file under the app data dir.
@@ -134,10 +153,10 @@ same sentence.
 
 ---
 
-## First start
+## Quickstart
 
 1. **Connect GitHub.** Sign in with the OAuth device flow or a personal access token (classic) with the `repo` scope, created at <https://github.com/settings/tokens>. The token is stored in the OS keyring, not in a config file.
-2. **Choose a repository.** By default GitPad looks for a private repository named `gitpad_notes`, creates it if it does not exist, and clones it into the app data directory.
+2. **Choose a repository.** By default GitPad looks for a private repository named `gitpad_notes`, creates it if it does not exist, and clones it into your documents folder (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
 3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically. You can also skip the wizard and clone an existing repository from the Git panel.
 
 No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Open local folder*. GitPad opens an existing repository or initializes one in place when the folder is not a repository yet. A repository without an `origin` remote commits locally and skips sync until you add one.
@@ -203,11 +222,12 @@ On Linux, under `~/.local/share/com.gitpad.app/`:
 
 | Path | Contents |
 |---|---|
-| `repos/gitpad_notes/` | Local Git clone of your notes |
-| `config.json` | Theme, font size, sync settings, extension mappings |
+| `config.json` | Theme, font, sync and sorting settings, extension mappings |
 | `logs/gitpad.log` | Session log, rotated at 5 MB with the last 5 files kept (~25 MB) |
 | `auth.token` | GitHub token, only when the OS keyring is unavailable (mode 0600) |
 | OS keyring | GitHub token, preferred |
+
+The notes repository lives where the wizard put it: `~/Documents/gitpad_notes` by default, or any folder you pick. `repos/gitpad_notes/` above is only used by clones made before 1.0.4.
 
 Deleting `config.json` resets settings but leaves the notes repository untouched.
 
@@ -295,7 +315,11 @@ src-tauri/src/          Rust back end
 
 ## Contributing
 
-Issues and pull requests are welcome. This is a personal project, so please open an issue before large changes.
+**What helps.** Bug reports with the session log attached (*Settings → Logs*, filter by severity, copy), and testing on distributions other than Arch and Ubuntu — the AppImage and the package both have a glibc/WebKit floor worth knowing about.
+
+**What to avoid.** Large pull requests without an issue first. This is a personal project with one user's data in it, so design changes are discussed before they are written.
+
+**Where the code lives.** [Project layout](#project-layout) maps every file; the Rust side is `src-tauri/src`, the UI is `src/lib`, and the tests sit next to what they test.
 
 Before sending a PR, run:
 
