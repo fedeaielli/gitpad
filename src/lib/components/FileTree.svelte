@@ -12,6 +12,9 @@
 
   let error = $state<string | null>(null)
   let loading = $state(true)
+  /// The backend stops at 20 000 entries instead of sending a payload that
+  /// can take the window down; the tree is real, just partial.
+  let truncated = $state(false)
   let noRepo = $state(false)
   let menu = $state<{ x: number; y: number; node: FileNode | null; mode: MenuMode } | null>(null)
   let name = $state('')
@@ -84,11 +87,16 @@
 
   async function loadTree() {
     try {
-      ui.fileTree = await invoke<FileNode[]>('fs_list_dir', { path: null })
+      const listing = await invoke<{ entries: FileNode[]; truncated: boolean }>('fs_list_dir', {
+        path: null,
+      })
+      ui.fileTree = listing.entries
+      truncated = listing.truncated
       error = null
       noRepo = false
     } catch (e) {
       ui.fileTree = []
+      truncated = false
       noRepo = isNoRepoError(e)
       error = noRepo ? null : errorMessage(e)
     } finally {
@@ -310,6 +318,9 @@
       </form>
     {/if}
     {@render tree(ui.fileTree)}
+    {#if truncated}
+      <p class="hint">Folder too large: only part of it is listed.</p>
+    {/if}
   {/if}
 </div>
 
