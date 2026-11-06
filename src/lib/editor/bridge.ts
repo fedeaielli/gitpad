@@ -45,6 +45,17 @@ export async function reloadOpenTabs(changes: UpstreamChange[]) {
   if (reload) await reload(changes)
 }
 
+let reloadTab: ((path: string) => Promise<void>) | null = null
+
+export function registerReloadTab(fn: ((path: string) => Promise<void>) | null) {
+  reloadTab = fn
+}
+
+/// One file changed on disk under an open tab: re-read it, do not close it.
+export async function reloadTabFromDisk(path: string) {
+  if (reloadTab) await reloadTab(path)
+}
+
 /// Jumps to a search hit; no-op until the editor chunk has loaded.
 export function revealLine(line: number, column: number) {
   if (!current) return

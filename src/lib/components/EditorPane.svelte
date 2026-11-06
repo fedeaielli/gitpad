@@ -23,7 +23,7 @@
   import tsWorker from 'monaco-editor/language/typescript/ts.worker?worker'
   import { tabs, discarded, closeTab, type Tab } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
-  import { getEditor, registerFlush, registerReload, registerSaveAll, setEditorInstance } from '../editor/bridge'
+  import { getEditor, registerFlush, registerReload, registerReloadTab, registerSaveAll, setEditorInstance } from '../editor/bridge'
   import { resetUndoState, trackChange } from '../editor/history.svelte'
   import { planPullReload, type UpstreamChange } from '../utils/pull-reload'
   import { pushToast } from '../stores/toasts.svelte'
@@ -471,12 +471,14 @@
       return { ...r, error: r.ok ? null : saveError }
     })
     registerReload(applyPullChanges)
+    registerReloadTab(reloadTab)
     applyActive()
 
     return () => {
       registerFlush(null)
       registerSaveAll(null)
       registerReload(null)
+      registerReloadTab(null)
       setEditor(null)
       window.removeEventListener('blur', onBlur)
       contentSub.dispose()

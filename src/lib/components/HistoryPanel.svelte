@@ -9,7 +9,8 @@
   } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
   import { confirmDialog } from '../stores/confirm.svelte'
-  import { closeIfClean, tabs } from '../stores/tabs.svelte'
+  import { tabs } from '../stores/tabs.svelte'
+  import { reloadTabFromDisk } from '../editor/bridge'
   import { tip } from '../utils/tooltip'
 
   interface CommitEntry {
@@ -95,10 +96,11 @@
     busy = true
     error = null
     try {
-      closeIfClean(file.path)
       applyGitStatus(
         await invoke<GitStatus>('git_restore_file', { hash: commit.hash, path: file.path }),
       )
+      // The tab stays open: EditorPane re-reads the file into its model.
+      await reloadTabFromDisk(file.path)
       ui.treeVersion += 1
       await load()
     } catch (e) {
@@ -125,7 +127,7 @@
     try {
       const touched = await invoke<FileChange[]>('git_commit_files', { hash: commit.hash })
       applyGitStatus(await invoke<GitStatus>('git_revert_commit', { hash: commit.hash }))
-      for (const file of touched) closeIfClean(file.path)
+      for (const file of touched) await reloadTabFromDisk(file.path)
       expanded = ''
       files = []
       ui.treeVersion += 1
