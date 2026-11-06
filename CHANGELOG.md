@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.5 — 2026-11-06
+
+Browser sign-in shows its code again.
+
+### Fixed
+- "Login with GitHub" no longer freezes the window. Opening the browser was
+  waiting on the main thread, so the device code was never painted and the
+  polling never started; the opener now runs off that thread, and the code and
+  the polling start before the browser is up.
+
 ## 1.0.4 — 2026-11-06
 
 Notes land next to your documents, and the editor chrome got a pass.
