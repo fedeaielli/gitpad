@@ -163,20 +163,45 @@
 </script>
 
 <div class="overlay">
-  <div class="card" class:wide={step === 'auth'}>
+  <div class="card">
     {#if step === 'welcome'}
-      <h1>GitPad</h1>
-      <p>Markdown notes in a Git repository you own. Everything is saved locally and pushed to GitHub.</p>
-      <ul class="shortcuts">
-        <li><kbd>Ctrl</kbd>+<kbd>P</kbd> command palette</li>
-        <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> markdown preview</li>
-        <li><kbd>Esc</kbd> close palette</li>
-      </ul>
-      <button class="primary" disabled={busy} onclick={() => (step = 'auth')}>Get Started</button>
-      <button disabled={busy} onclick={useLocal}>{busy ? 'Opening…' : 'Use a local folder…'}</button>
-      <p class="muted">
-        An existing folder works too; GitPad initializes it when it is not a repository yet.
+      <div class="head">
+        <div class="brand"><span class="mark" aria-hidden="true"></span></div>
+        <div>
+          <h1>GitPad</h1>
+          <p class="sub">Markdown notes · Git-backed</p>
+        </div>
+      </div>
+      <hr class="rule" />
+      <p class="lead">
+        Markdown notes in a Git repository you own. Saved locally and pushed to GitHub.
       </p>
+      <p class="label">Keyboard shortcuts</p>
+      <ul class="shortcuts">
+        <li>
+          <span class="keys"><kbd>Ctrl</kbd><kbd>P</kbd></span><span>Command palette</span>
+        </li>
+        <li>
+          <span class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd></span><span
+            >Markdown preview</span
+          >
+        </li>
+        <li><span class="keys"><kbd>Esc</kbd></span><span>Close palette</span></li>
+      </ul>
+      <hr class="rule" />
+      <button class="cta" disabled={busy} onclick={() => (step = 'auth')}>
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+          />
+        </svg>
+        Get started with GitHub
+      </button>
+      <button class="full" disabled={busy} onclick={useLocal}>
+        {busy ? 'Opening…' : 'Use a local folder'}
+      </button>
+      <p class="helper">An existing folder works too — GitPad initializes it if needed.</p>
     {:else if step === 'auth'}
       <div class="head">
         <div class="brand">
@@ -279,16 +304,13 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 380px;
+    width: 420px;
     max-width: calc(100vw - 32px);
     padding: 20px;
     background: var(--surface-3);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-2);
-  }
-  .card.wide {
-    width: 420px;
   }
   .head {
     display: flex;
@@ -305,9 +327,19 @@
     border-radius: var(--r-md);
     background: var(--surface-2);
   }
+  .mark {
+    width: 20px;
+    height: 24px;
+    background: var(--muted);
+    mask: url('/logo.png') center / contain no-repeat;
+  }
   .sub {
     color: var(--muted);
     font-size: 12px;
+  }
+  .lead {
+    font-size: var(--fs-lg);
+    line-height: 1.45;
   }
   /* --border equals --surface-3: inside this card the rule would vanish. */
   .rule {
@@ -378,19 +410,28 @@
   .shortcuts {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin: 0 0 4px;
+    gap: 8px;
+    margin: 0;
     padding: 0;
     list-style: none;
-    color: var(--muted);
-    font-size: 11px;
+  }
+  .shortcuts li {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    align-items: center;
+    gap: 8px;
+  }
+  .keys {
+    display: flex;
+    gap: 4px;
   }
   kbd {
-    padding: 1px 4px;
+    padding: 3px 8px;
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     background: var(--surface-2);
-    font: inherit;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
   }
   .error {
     color: var(--err);
@@ -458,6 +499,29 @@
   }
   .primary {
     color: var(--ok);
+  }
+  /* The one action worth the accent: every card keeps its own weight. */
+  .cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--accent);
+    border-radius: var(--r-md);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 13px;
+  }
+  .full {
+    padding: 8px 14px;
+    border-radius: var(--r-md);
+    font-size: 13px;
+  }
+  .helper {
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
   }
   .skip {
     align-self: center;
