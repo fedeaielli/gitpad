@@ -12,6 +12,7 @@ describe('slashQuery', () => {
     expect(slashQuery('/bo')).toEqual({ start: 0, query: 'bo' })
     expect(slashQuery('   /code')).toEqual({ start: 3, query: 'code' })
     expect(slashQuery('/')).toEqual({ start: 0, query: '' })
+    expect(slashQuery('/h1')).toEqual({ start: 0, query: 'h1' })
   })
 
   it('ignores slashes in the middle of a line or inside a path', () => {
@@ -62,6 +63,12 @@ describe('block commands', () => {
   it('numbers the selected lines in order', () => {
     expect(cmd('number').build('a\nb\nc', 'text').text).toBe('1. a\n2. b\n3. c')
     expect(cmd('number').build('', 'text').text).toBe('1. ')
+  })
+
+  it('indents the nested lists by two spaces', () => {
+    expect(cmd('sublist').build('a\nb', 'text').text).toBe('  - a\n  - b')
+    expect(cmd('sublist').build('', 'text')).toEqual({ text: '  - ', select: [4, 4] })
+    expect(cmd('subnumber').build('a\nb', 'text').text).toBe('  1. a\n  2. b')
   })
 
   it('inserts a table or a rule on their own', () => {

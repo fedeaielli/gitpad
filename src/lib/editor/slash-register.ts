@@ -16,6 +16,7 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
   let cached: { path: string; text: string; line: number; column: number } | null = null
   let lastLanguage = 'text'
   let applying = false
+  let retrigger: ReturnType<typeof setTimeout> | undefined
 
   function positionAfter(start: monaco.Position, text: string, offset: number) {
     const lines = text.slice(0, offset).split('\n')
@@ -24,14 +25,18 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
     return new m.Position(line, column)
   }
 
-  /// The `/word` range on the current line, if the menu was opened from it.
-  function slashRange() {
+  function queryAtCursor() {
     const model = editor.getModel()
     const position = editor.getPosition()
     if (!model || !position) return null
-    const line = model.getLineContent(position.lineNumber).slice(0, position.column - 1)
-    const query = slashQuery(line)
-    if (!query) return null
+    return slashQuery(model.getLineContent(position.lineNumber).slice(0, position.column - 1))
+  }
+
+  /// The `/word` range on the current line, if the menu was opened from it.
+  function slashRange() {
+    const position = editor.getPosition()
+    const query = queryAtCursor()
+    if (!position || !query) return null
     return new m.Range(position.lineNumber, query.start + 1, position.lineNumber, position.column)
   }
 
@@ -147,18 +152,23 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
     }
   })
 
-  const contentSub = editor.onDidChangeModelContent(() => {
+  const contentSub = editor.onDidChangeModelContent((e) => {
     if (applying) return
     awaiting = null
+    const query = queryAtCursor()
     // The wrap flow types '/bo' after the selection is gone: keep the text
     // while the line is still a bare slash query, forget it otherwise.
-    const model = editor.getModel()
-    const position = editor.getPosition()
-    const line = model && position ? model.getLineContent(position.lineNumber).slice(0, position.column - 1) : ''
-    if (!slashQuery(line)) cached = null
+    if (!query) cached = null
+    // Monaco asks for suggestions only when text is typed: a backspace would
+    // leave the list closed until the line is retyped.
+    if (query && e.changes.every((change) => change.text === '')) {
+      clearTimeout(retrigger)
+      retrigger = setTimeout(() => editor.trigger('slash', 'editor.action.triggerSuggest', {}), 0)
+    }
   })
 
   return () => {
+    clearTimeout(retrigger)
     provider.dispose()
     command.dispose()
     selectionSub.dispose()

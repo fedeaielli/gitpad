@@ -21,7 +21,9 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'link', detail: 'Link', build: link },
   { id: 'image', detail: 'Image', build: image },
   { id: 'list', detail: 'Bullet list', build: prefixed('- ') },
-  { id: 'number', detail: 'Numbered list', build: numbered },
+  { id: 'sublist', detail: 'Nested bullet', build: prefixed('  - ') },
+  { id: 'number', detail: 'Numbered list', build: numberedLines('') },
+  { id: 'subnumber', detail: 'Nested numbered list', build: numberedLines('  ') },
   { id: 'task', detail: 'Task list', build: prefixed('- [ ] ') },
   { id: 'quote', detail: 'Blockquote', build: prefixed('> ') },
   { id: 'table', detail: 'Table', build: table },
@@ -51,7 +53,7 @@ export const CODE_LANGUAGES = [
 /// The `/word` typed at the start of a line, or null. Last line only: the
 /// caller passes the line content up to the cursor.
 export function slashQuery(lineText: string): { start: number; query: string } | null {
-  const match = /^[ \t]{0,3}\/([a-zA-Z]*)$/.exec(lineText)
+  const match = /^[ \t]{0,3}\/([a-zA-Z0-9]*)$/.exec(lineText)
   if (!match) return null
   return { start: lineText.indexOf('/'), query: match[1].toLowerCase() }
 }
@@ -84,14 +86,19 @@ function prefixed(prefix: string) {
   }
 }
 
-function numbered(selected: string): Built {
-  if (!selected) return { text: '1. ', select: [3, 3] }
-  let n = 0
-  const text = selected
-    .split('\n')
-    .map((line) => (line.trim() === '' ? line : `${++n}. ${line}`))
-    .join('\n')
-  return { text, select: [0, text.length] }
+function numberedLines(indent: string) {
+  return (selected: string): Built => {
+    if (!selected) {
+      const text = `${indent}1. `
+      return { text, select: [text.length, text.length] }
+    }
+    let n = 0
+    const text = selected
+      .split('\n')
+      .map((line) => (line.trim() === '' ? line : `${indent}${++n}. ${line}`))
+      .join('\n')
+    return { text, select: [0, text.length] }
+  }
 }
 
 function codeBlock(selected: string, language: string): Built {

@@ -5,8 +5,8 @@
 ### Added
 - The `/` menu in Markdown notes: type `/` at the start of a line to insert a
   heading, emphasis, a code block with its language, a table, a task list and
-  the rest of GitHub-flavoured Markdown. With text selected the command wraps
-  it instead of inserting a placeholder.
+  the rest of GitHub-flavoured Markdown, nested lists included. With text
+  selected the command wraps it instead of inserting a placeholder.
 
 ## 1.0.5 — 2026-11-06
 
