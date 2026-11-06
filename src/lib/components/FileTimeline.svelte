@@ -1,15 +1,16 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte'
+  import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import { confirmDialog } from '../stores/confirm.svelte'
   import * as monaco from 'monaco-editor'
-  import { closeIfClean, discarded, openTab, tabs } from '../stores/tabs.svelte'
+  import { tabs } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, gitStatus, type FileChange, type GitStatus } from '../stores/git.svelte'
   import { logLine, pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { tip } from '../utils/tooltip'
+  import { reloadTabFromDisk } from '../editor/bridge'
   import { isCurrentVersion } from '../utils/file-history'
   import { clampTimelineHeight } from '../utils/timeline'
   import FileIcon from './FileIcon.svelte'
@@ -207,19 +208,8 @@
       applyGitStatus(
         await invoke<GitStatus>('git_restore_file', { hash: commit.hash, path: target }),
       )
-      // Read before closing: a failure here leaves the tab exactly as it was.
-      const content = await invoke<string>('fs_read_file', { path: target })
-      if (!closeIfClean(target)) return
-      // Let EditorPane drop the stale model before the tab comes back.
-      await tick()
-      openTab({
-        id: target,
-        path: target,
-        content,
-        modified: false,
-        language: languageFor(target),
-      })
-      discarded.delete(target)
+      // The tab stays put: EditorPane re-reads the file into its own model.
+      await reloadTabFromDisk(target)
       selected = ''
       setDiff(null, '')
       ui.treeVersion += 1
