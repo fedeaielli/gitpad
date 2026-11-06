@@ -1,7 +1,10 @@
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_log::log;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -81,10 +84,63 @@ fn config_path(app: &AppHandle) -> Result<PathBuf, String> {
 
 /// Missing or corrupt file falls back to defaults instead of failing startup.
 fn read_config(path: &Path) -> Config {
-    std::fs::read_to_string(path)
-        .ok()
-        .and_then(|raw| serde_json::from_str(&raw).ok())
-        .unwrap_or_default()
+    let Ok(raw) = std::fs::read_to_string(path) else {
+        return Config::default();
+    };
+    let mut values = match serde_json::from_str::<Value>(&raw) {
+        Ok(Value::Object(map)) => map,
+        Ok(_) => {
+            log::warn!(target: "app", "{path:?} is not a config object, using defaults");
+            set_aside(path);
+            return Config::default();
+        }
+        Err(e) => {
+            log::warn!(target: "app", "cannot parse {path:?}: {e}, using defaults");
+            set_aside(path);
+            return Config::default();
+        }
+    };
+    // Read field by field: one wrong type used to sink the whole file, so every
+    // preference came back at its default with no trace of why.
+    let default = Config::default();
+    Config {
+        onboarding_complete: take(&mut values, "onboardingComplete", default.onboarding_complete),
+        theme: take(&mut values, "theme", default.theme),
+        preview_mode: take(&mut values, "previewMode", default.preview_mode),
+        font_size: take(&mut values, "fontSize", default.font_size),
+        font_family: take(&mut values, "fontFamily", default.font_family),
+        sidebar_width: take(&mut values, "sidebarWidth", default.sidebar_width),
+        sidebar_open: take(&mut values, "sidebarOpen", default.sidebar_open),
+        auto_sync: take(&mut values, "autoSync", default.auto_sync),
+        save_debounce_ms: take(&mut values, "saveDebounceMs", default.save_debounce_ms),
+        push_idle_ms: take(&mut values, "pushIdleMs", default.push_idle_ms),
+        keybindings: take(&mut values, "keybindings", default.keybindings),
+        extensions: take(&mut values, "extensions", default.extensions),
+        accent: take(&mut values, "accent", default.accent),
+        sort_mode: take(&mut values, "sortMode", default.sort_mode),
+        sort_desc: take(&mut values, "sortDesc", default.sort_desc),
+        folders_first: take(&mut values, "foldersFirst", default.folders_first),
+        show_hidden: take(&mut values, "showHidden", default.show_hidden),
+        repo_path: take(&mut values, "repoPath", default.repo_path),
+    }
+}
+
+/// The next save would overwrite the only copy of a file we cannot read.
+fn set_aside(path: &Path) {
+    let backup = path.with_extension("json.corrupt");
+    if let Err(e) = std::fs::rename(path, &backup) {
+        log::warn!(target: "app", "cannot set aside {path:?}: {e}");
+    }
+}
+
+fn take<T: DeserializeOwned>(values: &mut Map<String, Value>, key: &str, fallback: T) -> T {
+    let Some(value) = values.remove(key) else {
+        return fallback;
+    };
+    serde_json::from_value(value).unwrap_or_else(|e| {
+        log::warn!(target: "app", "ignoring {key}: {e}");
+        fallback
+    })
 }
 
 /// Sync Tauri commands run on the main thread, so two saves never overlap and
@@ -118,7 +174,12 @@ pub fn config_get(app: AppHandle) -> Result<Config, String> {
 }
 #[tauri::command]
 pub fn config_save(app: AppHandle, config: Config) -> Result<(), String> {
-    write_config(&config_path(&app)?, &config)
+    let result = config_path(&app).and_then(|file| write_config(&file, &config));
+    // The frontend only shows a toast; the log is what is left the next day.
+    if let Err(e) = &result {
+        log::warn!(target: "app", "config_save: {e}");
+    }
+    result
 }
 
 #[cfg(test)]
@@ -188,10 +249,45 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    /// One bad value must not reset every other preference.
+    #[test]
+    fn a_bad_field_falls_back_alone() {
+        let dir = std::env::temp_dir().join(format!("gitpad-config-bad-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.json");
+        std::fs::write(
+            &path,
+            r#"{"theme":"vs","fontSize":13.5,"sortMode":"type","sortDesc":true}"#,
+        )
+        .unwrap();
+        let config = read_config(&path);
+        assert_eq!(config.theme, "vs");
+        assert_eq!(config.font_size, 13);
+        assert_eq!(config.sort_mode, "type");
+        assert!(config.sort_desc);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Whatever we cannot read is kept: the next save overwrites it.
+    #[test]
+    fn a_corrupt_file_is_kept_aside() {
+        let dir = std::env::temp_dir().join(format!("gitpad-config-corrupt-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config.json");
+        std::fs::write(&path, "not json").unwrap();
+        let config = read_config(&path);
+        assert_eq!(config.theme, "gitpad-dark");
+        assert!(!path.exists());
+        assert!(dir.join("config.json.corrupt").exists());
+        assert_eq!(std::fs::read_to_string(dir.join("config.json.corrupt")).unwrap(), "not json");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     /// A config written before the settings fields existed must still load.
     #[test]
-    fn old_config_gets_defaults_for_new_fields() {
-        let dir = std::env::temp_dir().join(format!("gitpad-config-old-{}", std::process::id()));
+    fn old_config_gets_defaults_for_new_fields() {        let dir = std::env::temp_dir().join(format!("gitpad-config-old-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("config.json");
