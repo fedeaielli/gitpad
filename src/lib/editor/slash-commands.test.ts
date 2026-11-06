@@ -9,10 +9,10 @@ function cmd(id: string): SlashCommand {
 
 describe('slashQuery', () => {
   it('only fires at the start of a line', () => {
-    expect(slashQuery('/bo')).toEqual({ start: 0, query: 'bo' })
-    expect(slashQuery('   /code')).toEqual({ start: 3, query: 'code' })
-    expect(slashQuery('/')).toEqual({ start: 0, query: '' })
-    expect(slashQuery('/h1')).toEqual({ start: 0, query: 'h1' })
+    expect(slashQuery('/bo')).toEqual({ start: 0, query: 'bo', cell: false })
+    expect(slashQuery('   /code')).toEqual({ start: 3, query: 'code', cell: false })
+    expect(slashQuery('/')).toEqual({ start: 0, query: '', cell: false })
+    expect(slashQuery('/h1')).toEqual({ start: 0, query: 'h1', cell: false })
   })
 
   it('ignores slashes in the middle of a line or inside a path', () => {
@@ -20,6 +20,14 @@ describe('slashQuery', () => {
     expect(slashQuery('src/lib')).toBeNull()
     expect(slashQuery('https://example.com')).toBeNull()
     expect(slashQuery('      /deep')).toBeNull()
+  })
+
+  it('fires at the start of a table cell', () => {
+    expect(slashQuery('| /col')).toEqual({ start: 2, query: 'col', cell: true })
+    expect(slashQuery('| a | /bo')).toEqual({ start: 6, query: 'bo', cell: true })
+    expect(slashQuery('| a /bo |')).toBeNull()
+    expect(slashQuery('| /usr/bin')).toBeNull()
+    expect(slashQuery('text | /col')).toBeNull()
   })
 })
 

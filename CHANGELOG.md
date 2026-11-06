@@ -7,6 +7,9 @@
   heading, emphasis, a code block with its language, a table, a task list and
   the rest of GitHub-flavoured Markdown, nested lists included. With text
   selected the command wraps it instead of inserting a placeholder.
+- Markdown tables edit themselves: `Tab` and `Shift+Tab` walk the cells and add
+  a row at the end, and `/row`, `/col`, `/delrow`, `/delcol` inside a cell
+  change the shape. Each change re-renders the table with its columns aligned.
 
 ## 1.0.5 — 2026-11-06
 
