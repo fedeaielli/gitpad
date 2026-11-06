@@ -245,17 +245,44 @@
       <div class="divider">or</div>
       <GithubLogin label="Login with GitHub" onsuccess={() => { void loadUser(true); goRepo() }} />
     {:else if step === 'repo'}
-      <h1>Repository</h1>
+      <div class="head">
+        <div class="brand">
+          <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+            <circle cx="4.5" cy="3.5" r="1.7" />
+            <circle cx="4.5" cy="12.5" r="1.7" />
+            <circle cx="11.5" cy="6.5" r="1.7" />
+            <path d="M4.5 5.2v5.6M9.8 6.5H8a2.5 2.5 0 0 0-2.5 2.5v1.3" />
+          </svg>
+        </div>
+        <div>
+          <h1>Repository</h1>
+          <p class="sub">Select where to clone your notes</p>
+        </div>
+      </div>
+      <hr class="rule" />
       {#if busy}
         <p class="stage"><span class="loading"></span>{STAGES[stage]}</p>
       {:else if repo}
-        <p><code>{repo.fullName}</code> {repo.private ? '(private)' : ''}</p>
-        <p class="muted">{repo.cloneUrl}</p>
-        <div class="folder">
-          <p class="muted">{folder || 'Default app folder'}</p>
-          <button disabled={busy} onclick={chooseFolder}>{folder ? 'Change…' : 'Choose…'}</button>
+        <p class="label">Selected repository</p>
+        <div class="box">
+          <p class="repo-name"><code>{repo.fullName}</code></p>
+          {#if repo.private}<span class="pill">private</span>{/if}
+          <p class="repo-url"><code>{repo.cloneUrl}</code></p>
         </div>
-        <button class="primary" disabled={busy} onclick={clone}>Clone &amp; Open</button>
+        <p class="label">Local folder</p>
+        <div class="folder">
+          <p class="pick" title={folder || 'Default app folder'}>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+              <path d="M1.8 4.2h4l1.4 1.6h7v7.4a.6.6 0 0 1-.6.6H2.4a.6.6 0 0 1-.6-.6Z" />
+            </svg>
+            <span class="path" class:set={folder}>{folder || 'Default app folder'}</span>
+          </p>
+          <button class="choose" disabled={busy} onclick={chooseFolder}>
+            {folder ? 'Change…' : 'Choose…'}
+          </button>
+        </div>
+        <hr class="rule" />
+        <button class="cta" disabled={busy} onclick={clone}>Clone and open</button>
       {:else}
         <div class="row">
           <button onclick={() => (step = 'auth')}>Back</button>
@@ -361,7 +388,7 @@
     padding: 3px 3px 3px 10px;
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
-    background: var(--surface-2);
+    background: var(--surface-1);
   }
   .field:focus-within {
     border-color: var(--accent);
@@ -457,12 +484,71 @@
   }
   .folder {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 8px;
   }
-  .folder p {
+  /* Read-only on purpose: one trigger for the picker, not two. */
+  .pick {
+    display: flex;
     flex: 1;
+    align-items: center;
+    gap: 8px;
     min-width: 0;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface-1);
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .pick svg {
+    flex: 0 0 auto;
+  }
+  .path {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .path.set {
+    color: var(--text);
+  }
+  .choose {
+    flex: 0 0 auto;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--surface-1);
+    font-size: 13px;
+  }
+  .choose:hover:not(:disabled) {
+    border-color: var(--accent);
+  }
+  .box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+  }
+  .repo-name code {
+    font-size: 15px;
+  }
+  .repo-url {
+    max-width: 100%;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .pill {
+    padding: 1px 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.6;
   }
   .divider {
     display: flex;
