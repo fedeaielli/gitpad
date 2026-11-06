@@ -140,7 +140,7 @@
         void commit()
       }}
     >
-      <textarea bind:value={commitMessage} placeholder="Commit message" rows="2"></textarea>
+      <textarea bind:value={commitMessage} placeholder="Commit message" rows="3"></textarea>
       <button
         type="submit"
         class="commit"
@@ -287,7 +287,8 @@
     font-size: var(--fs-sm);
   }
   textarea {
-    min-height: 46px;
+    /* Three lines: this is the panel's main input, not a filter box. */
+    min-height: 64px;
     resize: none;
   }
   textarea:focus,
