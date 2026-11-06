@@ -234,6 +234,7 @@
   }
   /* The view stays selected when the panel is closed; only the bar fades. */
   .item.active {
+    background: var(--surface-2);
     color: var(--text);
   }
   .item.active::before {
