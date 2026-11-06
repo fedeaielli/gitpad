@@ -645,9 +645,13 @@
   .restore:hover:not(:disabled) {
     border-color: var(--accent);
   }
+  /* Dimming alone still leaves a pill outline and a bright label: at 0.3 the
+     text would read as a live control on the Current row. Drop the chrome. */
   .restore:disabled {
     opacity: 0.3;
     cursor: default;
+    border-color: transparent;
+    color: var(--muted);
   }
   .skeleton {
     height: 10px;
