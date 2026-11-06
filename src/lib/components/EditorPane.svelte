@@ -25,6 +25,7 @@
   import { ui } from '../stores/ui.svelte'
   import { getEditor, registerFlush, registerReload, registerReloadTab, registerSaveAll, setEditorInstance } from '../editor/bridge'
   import { resetUndoState, trackChange } from '../editor/history.svelte'
+  import { registerSlashCommands } from '../editor/slash-register'
   import { planPullReload, type UpstreamChange } from '../utils/pull-reload'
   import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
@@ -460,6 +461,7 @@
       find: { addExtraSpaceOnTop: false },
     })
     setEditor(editor)
+    const slashSub = registerSlashCommands(monaco, editor)
     const contentSub = editor.onDidChangeModelContent(onEdit)
     const cursorSub = editor.onDidChangeCursorPosition((e) => {
       ui.cursor = { line: e.position.lineNumber, column: e.position.column }
@@ -481,6 +483,7 @@
       registerReloadTab(null)
       setEditor(null)
       window.removeEventListener('blur', onBlur)
+      slashSub()
       contentSub.dispose()
       cursorSub.dispose()
       persist.cancel()
