@@ -19,6 +19,8 @@
     fullName: string
     cloneUrl: string
     private: boolean
+    /// Absolute default clone path, already localised by the backend.
+    defaultFolder: string
   }
   interface LocalRepo {
     from: string
@@ -36,6 +38,9 @@
   let repo = $state<RepoInfo | null>(null)
   /// Folder that will hold the clone; empty keeps the app data dir.
   let folder = $state('')
+  /// The default destination is <documents>/<repo>, and only the backend knows
+  /// where "documents" is called in this locale.
+  const target = $derived(folder || repo?.defaultFolder || '')
   /// Set when the user opened a folder instead of cloning from GitHub.
   let localRepo = $state<LocalRepo | null>(null)
   let busy = $state(false)
@@ -271,11 +276,11 @@
         </div>
         <p class="label">Local folder</p>
         <div class="folder">
-          <p class="pick" title={folder || 'Default app folder'}>
+          <p class="pick" title={target || 'Default app folder'}>
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
               <path d="M1.8 4.2h4l1.4 1.6h7v7.4a.6.6 0 0 1-.6.6H2.4a.6.6 0 0 1-.6-.6Z" />
             </svg>
-            <span class="path" class:set={folder}>{folder || 'Default app folder'}</span>
+            <span class="path" class:set={!!target}>{target || 'Default app folder'}</span>
           </p>
           <button class="choose" disabled={busy} onclick={chooseFolder}>
             {folder ? 'Change…' : 'Choose…'}

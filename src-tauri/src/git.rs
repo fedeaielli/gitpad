@@ -154,7 +154,34 @@ fn repos_root(app: &AppHandle) -> Result<PathBuf, GitError> {
     Ok(dir)
 }
 
-/// The clone lives in app_data_dir/repos/<repo name>, so the name is discovered, never hardcoded.
+/// Where a fresh clone goes when the wizard picked no folder: next to the
+/// user's documents, because a hidden app-data folder is a bad place for notes.
+pub fn default_clone_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
+    let path = app.path();
+    Ok(pick_clone_dir(
+        path.document_dir().ok(),
+        path.home_dir().ok(),
+        repos_root(app)?,
+    ))
+}
+
+/// Documents, else home, else the old app-data folder: never a hidden one when
+/// a visible one exists. A missing document dir is normal (no XDG entry, a
+/// container, a removed folder), so each candidate must be a real directory.
+fn pick_clone_dir(
+    documents: Option<PathBuf>,
+    home: Option<PathBuf>,
+    fallback: PathBuf,
+) -> PathBuf {
+    documents
+        .filter(|p| p.is_dir())
+        .or(home.filter(|p| p.is_dir()))
+        .unwrap_or(fallback)
+}
+
+/// The clone's name is discovered, never hardcoded: a location written by a
+/// clone wins, and the app-data scan only finds clones made before the default
+/// moved next to the user's documents.
 pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
     let cache = &app.state::<crate::AppState>().repo_path;
     let mut cached = cache.lock().unwrap_or_else(|e| e.into_inner());
@@ -1050,7 +1077,7 @@ pub async fn git_clone(
     let name = repo_name_from_url(&url)?;
     let target = match parent.as_deref().map(str::trim).filter(|p| !p.is_empty()) {
         Some(parent) => clone_target(Path::new(parent), &name)?,
-        None => repos_root(&app)?.join(name),
+        None => default_clone_dir(&app)?.join(name),
     };
     if target.join(".git").exists() {
         remember_repo(&app, target.clone());
@@ -1665,6 +1692,27 @@ mod tests {
     fn iso8601_matches_known_dates() {
         assert_eq!(iso8601(0), "1970-01-01T00:00:00Z");
         assert_eq!(iso8601(1_700_000_000), "2023-11-14T22:13:20Z");
+    }
+
+    #[test]
+    fn clone_dir_prefers_documents_then_home() {
+        let root = tmp("clone-dir");
+        let docs = root.join("Documenti");
+        let home = root.join("home");
+        std::fs::create_dir_all(&docs).unwrap();
+        std::fs::create_dir_all(&home).unwrap();
+        let fallback = root.join("hidden");
+        assert_eq!(
+            pick_clone_dir(Some(docs.clone()), Some(home.clone()), fallback.clone()),
+            docs
+        );
+        // A configured but missing documents folder must not be used.
+        assert_eq!(
+            pick_clone_dir(Some(root.join("missing")), Some(home.clone()), fallback.clone()),
+            home
+        );
+        assert_eq!(pick_clone_dir(None, None, fallback.clone()), fallback);
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]
