@@ -637,8 +637,9 @@
     font-size: 11px;
     opacity: 0.55;
   }
-  .row:hover .restore,
-  .restore:focus-visible {
+  /* :not(:disabled): otherwise a hover wakes the button on the Current row. */
+  .row:hover .restore:not(:disabled),
+  .restore:focus-visible:not(:disabled) {
     opacity: 1;
   }
   .restore:hover:not(:disabled) {
@@ -646,6 +647,7 @@
   }
   .restore:disabled {
     opacity: 0.3;
+    cursor: default;
   }
   .skeleton {
     height: 10px;
