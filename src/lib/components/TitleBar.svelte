@@ -164,7 +164,9 @@
     color: var(--text);
   }
   .step:disabled {
-    opacity: 0.4;
+    /* Unmistakable: an arrow that cannot act must not look clickable. */
+    opacity: 0.35;
+    cursor: default;
   }
   .step svg {
     width: 12px;
