@@ -675,6 +675,7 @@
   .modal select,
   .modal input[type='text'],
   .modal input[type='number'] {
+    box-sizing: border-box;
     height: 28px;
     padding: 0 var(--sp-2);
     border: 1px solid var(--border);
