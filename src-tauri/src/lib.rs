@@ -280,7 +280,14 @@ fn open_external(url: String) -> Result<(), String> {
     let mut failures = Vec::new();
     for attempt in [("xdg-open", vec![url.as_str()]), ("gio", vec!["open", url.as_str()])] {
         let (program, args) = attempt;
-        match std::process::Command::new(program).args(args).status() {
+        // The browser writes to the inherited stdout: keep its chatter out of
+        // our terminal, the exit status is all we need.
+        match std::process::Command::new(program)
+            .args(args)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+        {
             Ok(status) if status.success() => {
                 log::info!(target: "app", "open: {url} via {program}");
                 return Ok(());
