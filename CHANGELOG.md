@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.0.4 — 2026-11-06
+
+Notes land next to your documents, and the editor chrome got a pass.
+
+### Added
+- New repositories are cloned next to your documents
+  (`~/Documents/gitpad_notes`) instead of a hidden app-data folder. The wizard
+  shows the path before it starts and still lets you pick another folder.
+- The command palette splits a path into the folder and the file name, so the
+  name keeps its weight and only the leading folders truncate.
+- The setup wizard is one card per step, and a missing repository is an
+  ordinary state instead of an error.
+
+### Fixed
+- Restoring or reverting from the sidebar History no longer closes the open
+  tab: the editor re-reads the file in place.
+- The undo and redo arrows follow the undo stack and stay disabled when there
+  is nothing to undo or redo.
+- The disabled Restore in the file timeline no longer lights up on hover, and
+  disabled arrows read as disabled.
+- Settings controls share one height (the inputs were two pixels taller than
+  the select next to them), and the selected tab no longer looks like a
+  hovered one.
+
 ## 1.0.3 — 2026-11-05
 
 Sign-in without a keyring, a reworked history, and a safer editor.
