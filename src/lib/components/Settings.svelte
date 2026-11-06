@@ -599,12 +599,15 @@
     cursor: pointer;
   }
   .tab:hover {
-    background: var(--surface-2);
+    background: var(--surface-1);
     color: var(--text);
   }
+  /* Joined to the body below, bold, and underlined by the accent bar: hover
+     must never look the same as selected. */
   .tab.active {
     background: var(--surface-2);
     color: var(--text);
+    font-weight: 500;
   }
   /* Inset past the corners: a border-top would follow the radius and bow. */
   .tab.active::after {
@@ -648,7 +651,9 @@
     background: var(--surface-0);
     border-bottom-color: var(--border);
   }
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab:hover,
+  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab:hover {
+    background: var(--surface-2);
+  }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab.active,
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .body {
     background: var(--surface-3);
@@ -666,14 +671,23 @@
     border-color: var(--border);
     background: var(--surface-0);
   }
+  /* One shape for every control in the dialog: same height, same radius. */
   .modal select,
   .modal input[type='text'],
   .modal input[type='number'] {
-    padding: var(--sp-1) var(--sp-2);
+    height: 28px;
+    padding: 0 var(--sp-2);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);
+  }
+  /* The native stepper is a fourth style; the range already sets the value. */
+  .modal input[type='number'] {
+    appearance: textfield;
+  }
+  .modal input[type='number']::-webkit-inner-spin-button {
+    display: none;
   }
   .modal select:focus,
   .modal input[type='text']:focus,
@@ -740,10 +754,12 @@
     gap: var(--sp-2);
   }
   .swatch {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
+    /* Centred inside the 28 px row the other controls set. */
+    margin: 2px 0;
     padding: 0;
-    border: 2px solid transparent;
+    border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--swatch-color);
     cursor: pointer;
@@ -751,6 +767,7 @@
   .swatch.active,
   .swatch:focus-visible {
     border-color: var(--text);
+    box-shadow: 0 0 0 2px var(--accent-fg);
     outline: none;
   }
   .hex-input {
