@@ -290,21 +290,35 @@
         </div>
       {/if}
     {:else}
-      <h1>You're set</h1>
+      <div class="head">
+        <div class="brand done">
+          <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 8.6 6.4 12 13 4.6" />
+          </svg>
+        </div>
+        <div>
+          <h1>You're set</h1>
+          <p class="sub">Everything is ready to go</p>
+        </div>
+      </div>
+      <hr class="rule" />
       {#if localRepo}
-        <p><code>{localRepo.to}</code></p>
-        <p class="muted">
-          {localRepo.remote
-            ? 'Pushes go to its origin remote.'
-            : 'No remote: commits stay on this machine until you add one.'}
-        </p>
+        <div class="box">
+          <p class="repo-name"><code>{localRepo.to}</code></p>
+          <p class="repo-url">
+            {localRepo.remote
+              ? 'Pushes go to its origin remote.'
+              : 'No remote: commits stay on this machine until you add one.'}
+          </p>
+        </div>
       {:else}
-        <p>Edits commit locally right away. Pushes happen on idle, when the window loses focus and on close.</p>
+        <p class="lead">Edits commit locally right away. Pushes happen on idle, when the window loses focus and on close.</p>
       {/if}
-      <p class="muted">Ctrl+Shift+P toggles the markdown preview.</p>
-      <button class="primary" onclick={finish}>Start Editing</button>
+      <p class="hintbox"><kbd>Ctrl</kbd><kbd>P</kbd> opens the command palette</p>
+      <hr class="rule" />
+      <button class="cta" onclick={finish}>Start editing</button>
     {/if}
-    {#if user}
+    {#if user && step !== 'done'}
       <p class="muted">Signed in as {user.login}</p>
     {/if}
     {#if storageNote}
@@ -367,6 +381,23 @@
   .lead {
     font-size: var(--fs-lg);
     line-height: 1.45;
+  }
+  /* The only card that means "done", so the tile carries the success colour. */
+  .brand.done {
+    border-color: var(--ok);
+    background: var(--ok-soft);
+    color: var(--ok);
+  }
+  .hintbox {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
   }
   /* --border equals --surface-3: inside this card the rule would vanish. */
   .rule {

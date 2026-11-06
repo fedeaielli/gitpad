@@ -27,6 +27,8 @@
   --selection: #264f78;
 
   --ok: #4ec9b0;
+  /* A tint of --ok for a finished state; alpha keeps it right on any surface. */
+  --ok-soft: rgba(78, 201, 176, 0.14);
   --warn: #d7ba7d;
   --err: #f48771;
 
@@ -89,6 +91,7 @@
   --selection: #d6e6f7;
 
   --ok: #0e700e;
+  --ok-soft: rgba(14, 112, 14, 0.1);
   --warn: #7a5200;
   --err: #a4262c;
 
@@ -120,6 +123,7 @@
   --selection: #264f78;
 
   --ok: #3ff23f;
+  --ok-soft: rgba(63, 242, 63, 0.12);
   --warn: #fff200;
   --err: #ff5252;
 
