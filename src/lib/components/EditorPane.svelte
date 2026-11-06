@@ -24,6 +24,7 @@
   import { tabs, discarded, closeTab, type Tab } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
   import { getEditor, registerFlush, registerReload, registerSaveAll, setEditorInstance } from '../editor/bridge'
+  import { resetUndoState, trackChange } from '../editor/history.svelte'
   import { planPullReload, type UpstreamChange } from '../utils/pull-reload'
   import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
@@ -250,7 +251,13 @@
     pushTimer = setTimeout(() => void syncNow(null), ui.pushIdleMs)
   }
 
-  function onEdit() {
+  function onEdit(e: monaco.editor.IModelContentChangedEvent) {
+    const changed = editor?.getModel()
+    // A reload rewrites the buffer: its history starts over, it does not grow.
+    if (changed) {
+      if (applyingExternal) resetUndoState(changed.getAlternativeVersionId())
+      else trackChange(changed.getAlternativeVersionId(), e.isUndoing, e.isRedoing)
+    }
     if (applyingExternal) return
     const tab = activeTab()
     const model = editor?.getModel()
@@ -280,6 +287,7 @@
     currentPath = path
     if (!tab) {
       editor.setModel(null)
+      resetUndoState(0)
       return
     }
     let model = models.get(path)
@@ -289,6 +297,7 @@
       saved.set(path, tab.content)
     }
     editor.setModel(model)
+    resetUndoState(model.getAlternativeVersionId())
     const state = viewStates.get(path)
     if (state) editor.restoreViewState(state)
     editor.focus()

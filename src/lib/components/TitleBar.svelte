@@ -4,6 +4,7 @@
   import { ui } from '../stores/ui.svelte'
   import { tabs } from '../stores/tabs.svelte'
   import { getEditor } from '../editor/bridge'
+  import { undoState } from '../editor/history.svelte'
   import MenuBar from './MenuBar.svelte'
   import { tip } from '../utils/tooltip'
 
@@ -55,7 +56,7 @@
         class="step"
         aria-label="Undo (Ctrl+Z)"
         use:tip={'Undo (Ctrl+Z)'}
-        disabled={!hasTab}
+        disabled={!hasTab || !undoState.canUndo}
         onclick={() => step('undo')}
       >
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
@@ -65,7 +66,7 @@
         class="step"
         aria-label="Redo (Ctrl+Y)"
         use:tip={'Redo (Ctrl+Y)'}
-        disabled={!hasTab}
+        disabled={!hasTab || !undoState.canRedo}
         onclick={() => step('redo')}
       >
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" /></svg>
