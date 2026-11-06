@@ -269,17 +269,33 @@ fn level_of(name: &str) -> log::Level {
     }
 }
 
-/// Opens a link in the browser. `xdg-open` can exit without a browser on a bare
-/// desktop, so the two openers that exist there are tried in turn and every
-/// attempt is logged: the logs tab says which one failed.
+/// The URL reaches a process argv: never let anything but a web page through.
+fn openable(url: &str) -> bool {
+    url.starts_with("https://") || url.starts_with("http://")
+}
+
 #[tauri::command]
-fn open_external(url: String) -> Result<(), String> {
-    if !(url.starts_with("https://") || url.starts_with("http://")) {
+async fn open_external(url: String) -> Result<(), String> {
+    if !openable(&url) {
         return Err("only http(s) links can be opened".into());
     }
+    // A cold browser start keeps xdg-open alive for many seconds. Sync commands
+    // run on the main thread, where that wait froze the window before it could
+    // paint the device code, so the wait belongs on the blocking pool.
+    tauri::async_runtime::spawn_blocking(move || open_blocking(&url))
+        .await
+        .map_err(|e| format!("open task: {e}"))?
+}
+
+/// `xdg-open` can exit without a browser on a bare desktop, so the two openers
+/// that exist there are tried in turn and every attempt is logged: the logs tab
+/// says which one failed.
+fn open_blocking(url: &str) -> Result<(), String> {
     let mut failures = Vec::new();
-    for attempt in [("xdg-open", vec![url.as_str()]), ("gio", vec!["open", url.as_str()])] {
+    for attempt in [("xdg-open", vec![url]), ("gio", vec!["open", url])] {
         let (program, args) = attempt;
+        // Logged before the wait: a hung opener would otherwise leave no trace.
+        log::info!(target: "app", "open: {url} via {program}");
         // The browser writes to the inherited stdout: keep its chatter out of
         // our terminal, the exit status is all we need.
         match std::process::Command::new(program)
@@ -289,7 +305,6 @@ fn open_external(url: String) -> Result<(), String> {
             .status()
         {
             Ok(status) if status.success() => {
-                log::info!(target: "app", "open: {url} via {program}");
                 return Ok(());
             }
             Ok(status) => {
@@ -477,9 +492,10 @@ mod tests {
     #[test]
     fn open_external_only_takes_http_links() {
         // The URL reaches a process argv: never let anything else through.
-        assert!(super::open_external("file:///etc/passwd".into()).is_err());
-        assert!(super::open_external("--help".into()).is_err());
-        assert!(super::open_external("javascript:alert(1)".into()).is_err());
+        assert!(!super::openable("file:///etc/passwd"));
+        assert!(!super::openable("--help"));
+        assert!(!super::openable("javascript:alert(1)"));
+        assert!(super::openable("https://github.com/login/device"));
     }
 
     #[test]

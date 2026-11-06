@@ -88,7 +88,9 @@
         secondsLeft = Math.max(0, secondsLeft - 1)
         if (secondsLeft === 0) cancel()
       }, 1000)
-      await openExternal(code.verificationUri)
+      // Not awaited: a cold browser start takes seconds, and the code has to be
+      // on screen (and the poll running) before that wait is over.
+      void openExternal(code.verificationUri)
       await invoke('github_device_flow_poll', { deviceCode: code.deviceCode })
     } catch (e) {
       stopTicker()
