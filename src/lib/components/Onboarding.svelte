@@ -94,15 +94,15 @@
     busy = true
     error = null
     stage = 'account'
-    // The token is already stored; this only tells the UI where it lives.
-    try {
-      if (!(await invoke<boolean>('auth_keyring_ok'))) {
-        storageNote =
-          'Signed in, but the OS keyring is unavailable: the token is kept in a protected file on this machine.'
-      }
-    } catch {
-      // A failed probe must not block the setup.
-    }
+    // The note is cosmetic: never let a slow keyring probe hold the wizard.
+    void invoke<boolean>('auth_keyring_ok')
+      .then((ok) => {
+        if (!ok) {
+          storageNote =
+            'Signed in, but the OS keyring is unavailable: the token is kept in a protected file on this machine.'
+        }
+      })
+      .catch(() => {})
     try {
       repo = await invoke<RepoInfo>('github_init_repo')
     } catch (e) {

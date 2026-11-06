@@ -262,8 +262,11 @@ pub async fn auth_has_token() -> Result<bool, String> {
 
 /// Answers once per process whether the token survives a restart.
 #[tauri::command]
-pub fn auth_keyring_ok() -> bool {
-    keyring_ok()
+pub async fn auth_keyring_ok() -> Result<bool, String> {
+    // Keyring probes are blocking: keep them off the main thread.
+    tokio::task::spawn_blocking(keyring_ok)
+        .await
+        .map_err(|e| format!("keyring task: {e}"))
 }
 
 #[tauri::command]
