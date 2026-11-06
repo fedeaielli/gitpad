@@ -83,13 +83,19 @@
     max-width: 200px;
     border-right: 1px solid var(--border);
     border-radius: var(--r-md);
+    color: var(--muted);
+  }
+  /* Hover is a lifted grey, never the editor surface the open tab shows. */
+  .tab:not(.active):hover {
+    background: var(--surface-2);
+    color: var(--text);
   }
   .tab.active {
-    background:
-      linear-gradient(var(--accent), var(--accent)) center top / calc(100% - var(--r-md) - var(--r-md)) 2px no-repeat,
-      var(--editor-surface);
+    background: var(--editor-surface);
+    box-shadow: inset 0 2px 0 var(--accent);
     border-radius: var(--r-md) var(--r-md) 0 0;
     border-right-color: transparent;
+    color: var(--text);
   }
   /* The active surface continues into the editor below. These outward curves
      carve the tab-strip colour around its lower corners, matching VS Code. */
@@ -167,18 +173,23 @@
     stroke: currentColor;
     stroke-width: 1.4;
   }
+  /* A toggle next to the tab icons: same height, same border, no accent. */
   .preview {
-    padding: 1px 8px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 22px;
+    padding: 0 8px;
     border: 1px solid var(--border);
-    border-radius: 999px;
-    background: transparent;
+    border-radius: var(--r-md);
+    background: var(--surface-0);
     color: var(--muted);
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
   .preview:hover {
+    border-color: var(--border-strong);
     color: var(--text);
-    border-color: var(--accent);
   }
 </style>
