@@ -21,9 +21,15 @@
   }
 
   type Item =
-    | { kind: 'file'; path: string; label: string }
-    | { kind: 'result'; path: string; line: number; column: number; label: string; snippet: string }
+    | { kind: 'file'; path: string; dir: string; name: string }
+    | { kind: 'result'; path: string; line: number; column: number; dir: string; name: string; snippet: string }
     | { kind: 'command'; id: string; label: string; hint?: string }
+
+  /// The directory is context, the file name is what you are looking for.
+  function splitPath(path: string) {
+    const cut = path.lastIndexOf('/')
+    return { dir: path.slice(0, cut + 1), name: path.slice(cut + 1) }
+  }
 
   type Prompt = 'file' | 'folder' | null
 
@@ -114,7 +120,7 @@
         path: r.file,
         line: r.line,
         column: r.column,
-        label: `${r.file}:${r.line}`,
+        ...splitPath(r.file),
         snippet: r.snippet,
       }))
     }
@@ -126,7 +132,7 @@
     return filePaths
       .filter((p) => p.toLowerCase().includes(needle))
       .slice(0, 100)
-      .map((p) => ({ kind: 'file', path: p, label: p }))
+      .map((p) => ({ kind: 'file', path: p, ...splitPath(p) }))
   })
 
   async function openPath(path: string, line?: number, column?: number) {
@@ -353,10 +359,14 @@
               <span class="label">{item.label}</span>
               {#if item.hint}<span class="hint-key">{item.hint}</span>{/if}
             {:else if item.kind === 'result'}
-              <span class="label">{item.label}</span>
+              <span class="label">
+                <span class="dir">{item.dir}</span><span class="name">{item.name}:{item.line}</span>
+              </span>
               <span class="snippet">{item.snippet}</span>
             {:else}
-              <span class="label">{item.label}</span>
+              <span class="label">
+                <span class="dir">{item.dir}</span><span class="name">{item.name}</span>
+              </span>
             {/if}
           </button>
         {/each}
@@ -448,10 +458,34 @@
     outline-offset: -2px;
   }
   .label {
+    display: flex;
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  /* Both shrink, so a long path loses characters instead of the file name. */
+  .dir,
+  .name {
+    flex: 0 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .dir {
+    color: var(--muted);
+  }
+  .name {
+    color: var(--text);
+    font-weight: 500;
+  }
+  /* On the accent row keep the split: white for the name, a light one for the path. */
+  .item.active .dir {
+    color: inherit;
+    opacity: 0.72;
+  }
+  .item.active .name {
+    color: inherit;
   }
   .snippet {
     flex: 0 1 50%;
