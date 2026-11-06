@@ -111,8 +111,47 @@ fn parse_families(stdout: &str) -> Vec<String> {
     families.into_iter().collect()
 }
 
-fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
+/// A full walk costs one stat per entry and travels to the webview as a single
+/// message: past these bounds the payload alone can take the window down.
+const MAX_TREE_ENTRIES: usize = 20_000;
+const MAX_TREE_DEPTH: usize = 40;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileListing {
+    pub entries: Vec<FileEntry>,
+    pub truncated: bool,
+}
+
+struct Budget {
+    left: usize,
+    truncated: bool,
+}
+
+impl Budget {
+    /// False means the tree is full: the caller stops adding and drops nothing.
+    fn take(&mut self) -> bool {
+        if self.left == 0 {
+            self.truncated = true;
+            return false;
+        }
+        self.left -= 1;
+        true
+    }
+}
+
+fn build_tree(
+    root: &Path,
+    dir: &Path,
+    depth: usize,
+    budget: &mut Budget,
+) -> Result<Vec<FileEntry>, String> {
     let mut entries = Vec::new();
+    // The cap doubles as a stack guard: this function is recursive.
+    if depth > MAX_TREE_DEPTH {
+        budget.truncated = true;
+        return Ok(entries);
+    }
     for entry in std::fs::read_dir(dir).map_err(|e| format!("read dir {}: {e}", dir.display()))? {
         let entry = entry.map_err(|e| format!("read dir {}: {e}", dir.display()))?;
         let name = entry.file_name().to_string_lossy().to_string();
@@ -135,14 +174,20 @@ fn build_tree(root: &Path, dir: &Path) -> Result<Vec<FileEntry>, String> {
             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
             .map(|d| d.as_secs());
         if file_type.is_dir() {
+            if !budget.take() {
+                break;
+            }
             entries.push(FileEntry {
                 name,
                 path: rel,
                 kind: "dir".into(),
-                children: Some(build_tree(root, &abs)?),
+                children: Some(build_tree(root, &abs, depth + 1, budget)?),
                 modified,
             });
         } else if file_type.is_file() {
+            if !budget.take() {
+                break;
+            }
             entries.push(FileEntry {
                 name,
                 path: rel,
@@ -536,16 +581,29 @@ pub async fn reveal_in_filemanager(app: AppHandle, path: String) -> Result<(), S
 }
 
 #[tauri::command]
-pub async fn fs_list_dir(app: AppHandle, path: Option<String>) -> Result<Vec<FileEntry>, git::GitError> {
+pub async fn fs_list_dir(
+    app: AppHandle,
+    path: Option<String>,
+) -> Result<FileListing, git::GitError> {
     let root = git::repo_dir(&app)?;
     let base = match path {
         Some(path) => root.join(resolve(&app, &path)?.1),
         None => root.clone(),
     };
-    let entries = tokio::task::spawn_blocking(move || build_tree(&root, &base))
-        .await
-        .map_err(|e| format!("list task: {e}"))??;
-    Ok(entries)
+    let listing = tokio::task::spawn_blocking(move || {
+        let mut budget = Budget {
+            left: MAX_TREE_ENTRIES,
+            truncated: false,
+        };
+        let entries = build_tree(&root, &base, 0, &mut budget)?;
+        Ok::<FileListing, String>(FileListing {
+            entries,
+            truncated: budget.truncated,
+        })
+    })
+    .await
+    .map_err(|e| format!("list task: {e}"))??;
+    Ok(listing)
 }
 
 #[cfg(test)]
@@ -588,6 +646,15 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+    fn walk(root: &Path, left: usize) -> (Vec<FileEntry>, bool) {
+        let mut budget = Budget {
+            left,
+            truncated: false,
+        };
+        let tree = build_tree(root, root, 0, &mut budget).unwrap();
+        (tree, budget.truncated)
+    }
+
     #[test]
     fn builds_tree_skipping_git_and_sorting_dirs_first() {
         let root = std::env::temp_dir().join(format!("gitpad-tree-{}", std::process::id()));
@@ -597,12 +664,51 @@ mod tests {
         std::fs::write(root.join("b.md"), "b").unwrap();
         std::fs::write(root.join("dir/a.md"), "a").unwrap();
 
-        let tree = build_tree(&root, &root).unwrap();
+        let (tree, truncated) = walk(&root, MAX_TREE_ENTRIES);
+        assert!(!truncated);
         assert_eq!(tree.len(), 2);
         assert_eq!(tree[0].kind, "dir");
         assert_eq!(tree[1].name, "b.md");
         assert_eq!(tree[0].path, "dir");
         assert_eq!(tree[0].children.as_ref().unwrap()[0].path, "dir/a.md");
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn tree_stops_at_the_entry_budget() {
+        let root = std::env::temp_dir().join(format!("gitpad-budget-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        for i in 0..30 {
+            std::fs::write(root.join(format!("{i:02}.md")), "x").unwrap();
+        }
+
+        let (tree, truncated) = walk(&root, 10);
+        assert!(truncated);
+        assert_eq!(tree.len(), 10);
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn tree_stops_at_the_depth_limit() {
+        let root = std::env::temp_dir().join(format!("gitpad-depth-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let mut deep = root.clone();
+        for _ in 0..MAX_TREE_DEPTH + 3 {
+            deep = deep.join("d");
+        }
+        std::fs::create_dir_all(&deep).unwrap();
+
+        let (mut tree, truncated) = walk(&root, MAX_TREE_ENTRIES);
+        assert!(truncated);
+        let mut levels = 0;
+        while let Some(child) = tree.first().and_then(|entry| entry.children.as_ref()) {
+            tree = child.clone();
+            levels += 1;
+        }
+        assert!(levels <= MAX_TREE_DEPTH + 1, "walked {levels} levels");
 
         let _ = std::fs::remove_dir_all(&root);
     }
@@ -905,7 +1011,7 @@ mod tests {
         let mut opts = git2::StatusOptions::new();
         opts.include_untracked(true).recurse_untracked_dirs(true);
         assert!(repo.statuses(Some(&mut opts)).unwrap().is_empty());
-        let tree = build_tree(&root, &root).unwrap();
+        let (tree, _) = walk(&root, MAX_TREE_ENTRIES);
         assert!(tree.iter().all(|entry| entry.name != "gitpad-save.tmp"));
 
         let _ = std::fs::remove_dir_all(&dir);
