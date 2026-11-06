@@ -30,6 +30,15 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'hr', detail: 'Horizontal rule', build: () => ({ text: '---\n', select: [4, 4] }) },
 ]
 
+/// Table edits instead of text: the registration applies them to the block
+/// around the caret, so they only show up inside a table cell.
+export const TABLE_COMMANDS = [
+  { id: 'row', detail: 'Row below' },
+  { id: 'col', detail: 'Column right' },
+  { id: 'delrow', detail: 'Delete row' },
+  { id: 'delcol', detail: 'Delete column' },
+]
+
 /// highlight.js names, so the preview colours the fence without a second map.
 export const CODE_LANGUAGES = [
   'text',
@@ -50,12 +59,16 @@ export const CODE_LANGUAGES = [
   'java',
 ]
 
-/// The `/word` typed at the start of a line, or null. Last line only: the
-/// caller passes the line content up to the cursor.
-export function slashQuery(lineText: string): { start: number; query: string } | null {
+/// The `/word` typed at the start of a line or of a table cell, or null. Last
+/// line only: the caller passes the line content up to the cursor.
+export function slashQuery(lineText: string): { start: number; query: string; cell: boolean } | null {
   const match = /^[ \t]{0,3}\/([a-zA-Z0-9]*)$/.exec(lineText)
-  if (!match) return null
-  return { start: lineText.indexOf('/'), query: match[1].toLowerCase() }
+  if (match) return { start: lineText.indexOf('/'), query: match[1].toLowerCase(), cell: false }
+  // Inside a table the slash starts a cell: `| /col`.
+  if (!/^[ \t]*\|/.test(lineText)) return null
+  const inCell = /\|\s*\/([a-zA-Z0-9]*)$/.exec(lineText)
+  if (!inCell) return null
+  return { start: lineText.lastIndexOf('/'), query: inCell[1].toLowerCase(), cell: true }
 }
 
 function heading(level: number) {

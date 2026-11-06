@@ -1,10 +1,21 @@
 import type * as monaco from 'monaco-editor'
-import { CODE_LANGUAGES, SLASH_COMMANDS, slashQuery, type SlashCommand } from './slash-commands'
+import {
+  CODE_LANGUAGES,
+  SLASH_COMMANDS,
+  TABLE_COMMANDS,
+  slashQuery,
+  type SlashCommand,
+} from './slash-commands'
+import { addColumn, addRow, cellIndex, parseTable, removeColumn, removeRow } from './table'
+import { writeTable } from './table-register'
 
 const RUN = 'gitpad.slash.insert'
 
 type Editor = monaco.editor.IStandaloneCodeEditor
-type Arg = { kind: 'command'; id: string } | { kind: 'language'; value: string }
+type Arg =
+  | { kind: 'command'; id: string }
+  | { kind: 'table'; id: string }
+  | { kind: 'language'; value: string }
 
 /// The `/` menu for Markdown notes. One provider, two stages: commands, then
 /// the language of a code fence. Returns the disposer for the editor lifecycle.
@@ -79,8 +90,50 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
     editor.focus()
   }
 
-  function insertFence(language: string) {
-    const position = editor.getPosition()
+  /// Table commands change the block, not the text: drop the `/word` first so
+  /// the cell is empty, then rewrite the table around it.
+  function applyTableOp(id: string) {
+    const model = editor.getModel()
+    const range = slashRange()
+    if (!model || !range) return
+    const start = range.getStartPosition()
+    applying = true
+    editor.executeEdits('slash', [{ range, text: '' }])
+    applying = false
+    const lines = model.getLinesContent()
+    const table = parseTable(lines, start.lineNumber - 1)
+    if (!table) return
+    const cell = cellIndex(lines[start.lineNumber - 1], start.column)
+    const row = Math.max(0, start.lineNumber - 1 - table.start - 1)
+    let rows = table.rows
+    let aligns = table.aligns
+    let targetRow = row
+    let targetCell = cell
+
+    if (id === 'row') {
+      rows = addRow(rows, row + 1)
+      targetRow = row + 1
+      targetCell = 0
+    } else if (id === 'col') {
+      const added = addColumn(rows, aligns, cell + 1)
+      rows = added.rows
+      aligns = added.aligns
+    } else if (id === 'delrow') {
+      rows = removeRow(rows, row)
+      targetRow = Math.min(row, rows.length - 1)
+      targetCell = 0
+    } else if (id === 'delcol') {
+      const cut = removeColumn(rows, aligns, cell)
+      rows = cut.rows
+      aligns = cut.aligns
+      targetCell = Math.min(cell, aligns.length - 1)
+    } else {
+      return
+    }
+    writeTable(m, editor, table, rows, aligns, targetRow, targetCell)
+  }
+
+  function insertFence(language: string) {    const position = editor.getPosition()
     if (!position) return
     lastLanguage = language
     awaiting = null
@@ -95,6 +148,7 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
 
   const command = m.editor.registerCommand(RUN, (_accessor, arg: Arg) => {
     if (arg.kind === 'language') return insertFence(arg.value)
+    if (arg.kind === 'table') return applyTableOp(arg.id)
     const cmd = SLASH_COMMANDS.find((candidate) => candidate.id === arg.id)
     if (cmd) runCommand(cmd)
   })
@@ -124,19 +178,33 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
       const query = slashQuery(line)
       if (!query) return { suggestions: [] }
       const range = new m.Range(position.lineNumber, query.start + 1, position.lineNumber, position.column)
+      // In a cell the table edits come first: they only exist there.
+      const table = TABLE_COMMANDS.map((cmd, index) => ({
+        label: '/' + cmd.id,
+        detail: cmd.detail,
+        kind: m.languages.CompletionItemKind.Method,
+        insertText: '/' + cmd.id,
+        filterText: '/' + cmd.id,
+        sortText: '0' + String(index).padStart(2, '0'),
+        range,
+        command: { id: RUN, title: cmd.detail, arguments: [{ kind: 'table', id: cmd.id }] },
+      }))
       return {
-        suggestions: SLASH_COMMANDS.map((cmd, index) => ({
-          label: '/' + cmd.id,
-          detail: cmd.detail,
-          kind: m.languages.CompletionItemKind.Snippet,
-          // The command deletes this text and inserts the real block, so the
-          // caret lands exactly where the snippet wants it.
-          insertText: '/' + cmd.id,
-          filterText: '/' + cmd.id,
-          sortText: String(index).padStart(2, '0'),
-          range,
-          command: { id: RUN, title: cmd.detail, arguments: [{ kind: 'command', id: cmd.id }] },
-        })),
+        suggestions: [
+          ...(query.cell ? table : []),
+          ...SLASH_COMMANDS.map((cmd, index) => ({
+            label: '/' + cmd.id,
+            detail: cmd.detail,
+            kind: m.languages.CompletionItemKind.Snippet,
+            // The command deletes this text and inserts the real block, so the
+            // caret lands exactly where the snippet wants it.
+            insertText: '/' + cmd.id,
+            filterText: '/' + cmd.id,
+            sortText: '1' + String(index).padStart(2, '0'),
+            range,
+            command: { id: RUN, title: cmd.detail, arguments: [{ kind: 'command', id: cmd.id }] },
+          })),
+        ],
       }
     },
   })
