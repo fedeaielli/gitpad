@@ -1,15 +1,23 @@
-# GitPad
+<p align="center">
+  <img src="docs/icon.png" width="104" alt="GitPad">
+</p>
 
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
-[![Platform: Linux](https://img.shields.io/badge/platform-Linux-lightgrey.svg)](#install)
-[![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB.svg)](https://tauri.app)
-[![Svelte 5](https://img.shields.io/badge/Svelte-5-FF3E00.svg)](https://svelte.dev)
+<h1 align="center">GitPad</h1>
+
+<p align="center"><em>Markdown notes in a Git repository you own.</em></p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License: GPL-3.0"></a>
+  <img src="https://img.shields.io/badge/platform-Linux-lightgrey.svg" alt="Platform: Linux">
+  <a href="https://tauri.app"><img src="https://img.shields.io/badge/Tauri-2-24C8DB.svg" alt="Tauri 2"></a>
+  <a href="https://svelte.dev"><img src="https://img.shields.io/badge/Svelte-5-FF3E00.svg" alt="Svelte 5"></a>
+</p>
 
 GitPad is a local-first desktop editor for Markdown notes and small text files that live in a Git repository you own. It pairs the Monaco editor with a focused GitHub workflow: edit, save automatically, commit locally, and push when you stop typing.
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
-> **Status:** `v1.0.2`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** `v1.0.4`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
