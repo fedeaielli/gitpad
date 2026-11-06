@@ -89,9 +89,8 @@
       noRepo = false
     } catch (e) {
       ui.fileTree = []
-      const message = errorMessage(e)
-      noRepo = isNoRepoError(message)
-      error = noRepo ? null : message
+      noRepo = isNoRepoError(e)
+      error = noRepo ? null : errorMessage(e)
     } finally {
       loading = false
     }

@@ -208,9 +208,9 @@
         applyGitStatus(await invoke<GitStatus>('git_status'))
         repoReady = true
       } catch (e) {
-        const message = errorMessage(e)
-        if (isNoRepoError(message)) gitStatus.configured = false
-        else gitStatus.error = message
+        // The object, not its message: the code is what tells "no repo yet" from a fault.
+        if (isNoRepoError(e)) gitStatus.configured = false
+        else gitStatus.error = errorMessage(e)
       }
       if (!repoReady) return
       // Network work waits for first paint; the local status is enough to render.
@@ -434,9 +434,8 @@
       void invoke<GitStatus>('git_status')
         .then(applyGitStatus)
         .catch((e) => {
-          const message = errorMessage(e)
-          if (isNoRepoError(message)) gitStatus.configured = false
-          else pushToast(message, 'error', 'git')
+          if (isNoRepoError(e)) gitStatus.configured = false
+          else pushToast(errorMessage(e), 'error', 'git')
         })
     }
     window.addEventListener('focus', onFocus)
