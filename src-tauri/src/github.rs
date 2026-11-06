@@ -27,6 +27,17 @@ pub struct RepoInfo {
     pub full_name: String,
     pub clone_url: String,
     pub private: bool,
+    /// Where the wizard clones by default; GitHub sends nothing for it.
+    #[serde(default)]
+    pub default_folder: String,
+}
+
+/// The wizard shows this instead of a generic "default folder": the answer
+/// depends on the user's locale, so only the backend can name it.
+fn default_folder(app: &AppHandle) -> String {
+    crate::git::default_clone_dir(app)
+        .map(|dir| dir.join(DEFAULT_REPO_NAME).to_string_lossy().into_owned())
+        .unwrap_or_default()
 }
 
 #[derive(Serialize, Deserialize)]
@@ -132,7 +143,8 @@ pub async fn github_init_repo(
         .await
         .map_err(|e| format!("github: {e}"))?;
     if res.status() != reqwest::StatusCode::NOT_FOUND {
-        let repo: RepoInfo = parse(res).await?;
+        let mut repo: RepoInfo = parse(res).await?;
+        repo.default_folder = default_folder(&app);
         log::info!(target: "app", "github: repository {} (existing)", repo.full_name);
         return Ok(repo);
     }
@@ -151,7 +163,8 @@ pub async fn github_init_repo(
         .send()
         .await
         .map_err(|e| format!("github: {e}"))?;
-    let repo: RepoInfo = parse(res).await?;
+    let mut repo: RepoInfo = parse(res).await?;
+    repo.default_folder = default_folder(&app);
     log::info!(target: "app", "github: repository {} (created)", repo.full_name);
     Ok(repo)
 }
