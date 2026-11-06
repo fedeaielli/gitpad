@@ -198,10 +198,10 @@
     font-size: 10px;
     white-space: nowrap;
   }
+  /* A suffix of the field, not a badge floating inside it: separator, no box. */
   .search .chip {
-    padding: 0 4px;
-    border: 1px solid var(--border);
-    border-radius: var(--r-sm);
+    padding-left: 8px;
+    border-left: 1px solid var(--border);
   }
   /* Narrow windows: icon only, so it cannot collide with the title or controls. */
   @media (max-width: 560px) {
