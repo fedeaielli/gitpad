@@ -543,7 +543,7 @@
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
-    background: var(--surface-2);
+    background: var(--surface-1);
     box-shadow: var(--shadow-2);
   }
   header {
@@ -596,7 +596,8 @@
     cursor: pointer;
   }
   .tab:hover {
-    background: var(--surface-1);
+    /* Half a step: the active tab owns --surface-2 outright. */
+    background: color-mix(in srgb, var(--surface-2) 55%, transparent);
     color: var(--text);
   }
   /* Joined to the body below, bold, and underlined by the accent bar: hover
@@ -622,8 +623,8 @@
     flex-direction: column;
     gap: var(--sp-4);
     overflow-y: auto;
-    padding: var(--sp-4);
-    background: var(--surface-2);
+    padding: var(--sp-6) var(--sp-4) var(--sp-4);
+    background: var(--surface-0);
   }
   .field {
     display: flex;
@@ -636,34 +637,13 @@
     color: var(--muted);
     font-size: var(--fs-sm);
   }
-  /* Keep the layered dialog surfaces aligned with the shared dark palette. */
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal {
-    background: var(--surface-3);
-    box-shadow: var(--shadow-2);
-  }
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal header,
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tabs {
-    background: var(--surface-0);
-  }
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab:hover {
-    background: var(--surface-2);
-  }
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab.active,
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .body {
-    background: var(--surface-3);
-  }
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .field > span:first-child {
-    /* Keep muted labels readable on the lighter dialog surface. */
-    color: var(--muted);
-  }
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .close:hover {
-    background: var(--surface-2);
-  }
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal select,
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal input[type='text'],
-  :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal input[type='number'] {
-    border-color: var(--border);
-    background: var(--surface-0);
+  /* One control width: the value it sets, not the whole dialog. */
+  .field select,
+  .field input[type='text'],
+  .field input[type='number'],
+  .field .inline,
+  .field button.change {
+    max-width: 280px;
   }
   /* One shape for every control in the dialog: same height, same radius. */
   .modal select,
@@ -676,6 +656,7 @@
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);
+    font-size: var(--fs-sm);
   }
   /* The native stepper is a fourth style; the range already sets the value. */
   .modal input[type='number'] {
@@ -700,11 +681,11 @@
   }
   .inline input[type='range'] {
     flex: 1;
-    max-width: 320px;
+    max-width: 280px;
   }
   .wide {
     width: 100%;
-    max-width: 460px;
+    max-width: 280px;
   }
   .hint,
   .note {

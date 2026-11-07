@@ -217,11 +217,13 @@
         >
           <div class="head-row">
             <button class="row" onclick={() => open(commit)}>
-              <code>{commit.shortHash}</code>
-              <span class="msg {kindOf(commit.message)}">{commit.message}</span>
-              <span class="meta">
-                {timeLabel(commit.timestamp)} · {commit.author} · {fileCount(commit.filesChanged)}
+              <span class="id">
+                <code>{commit.shortHash}</code>
+                <span class="meta">
+                  {timeLabel(commit.timestamp)} · {commit.author} · {fileCount(commit.filesChanged)}
+                </span>
               </span>
+              <span class="msg {kindOf(commit.message)}">{commit.message}</span>
             </button>
             <button
               class="expand"
@@ -383,6 +385,13 @@
     color: var(--muted);
     font-size: var(--fs-2xs);
   }
+  /* Identity on one line, the message gets the other to itself. */
+  .id {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    min-width: 0;
+  }
   .msg {
     overflow: hidden;
     color: var(--text);
@@ -401,6 +410,7 @@
     color: var(--ok);
   }
   .meta {
+    min-width: 0;
     overflow: hidden;
     color: var(--muted);
     font-size: var(--fs-2xs);
@@ -411,7 +421,8 @@
     padding: 0 8px 4px;
   }
   .actions button {
-    padding: 3px 10px;
+    min-height: 32px;
+    padding: 0 12px;
     border: 1px solid var(--accent);
     background: transparent;
     color: var(--accent-fg);
@@ -460,7 +471,17 @@
     color: var(--err);
   }
   .files button {
-    padding: 0 5px;
+    /* Desktop target, not touch: 32px is the smallest that still reads as one. */
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--text);
     font-size: var(--fs-2xs);
+  }
+  .files button:hover:not(:disabled) {
+    border-color: var(--border-strong);
+    background: var(--surface-3);
   }
 </style>
