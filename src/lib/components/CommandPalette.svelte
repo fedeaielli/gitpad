@@ -492,7 +492,7 @@
     overflow: hidden;
     color: var(--muted);
     font-family: ui-monospace, monospace;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -502,7 +502,7 @@
   }
   .hint-key {
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .item.active .hint-key {
     color: inherit;
@@ -511,7 +511,7 @@
   .hint,
   .error {
     margin: 12px 16px;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .hint {
     color: var(--muted);

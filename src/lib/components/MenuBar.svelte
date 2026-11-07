@@ -224,7 +224,7 @@
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .trigger:hover,
   .trigger.open {

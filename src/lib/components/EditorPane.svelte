@@ -55,19 +55,34 @@
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#171717',
-      'editor.foreground': '#cccccc',
-      'editorLineNumber.foreground': '#8e8e8e',
-      'editorLineNumber.activeForeground': '#cccccc',
+      'editor.background': '#191715',
+      'editor.foreground': '#d8d3ca',
+      'editorLineNumber.foreground': '#857f75',
+      'editorLineNumber.activeForeground': '#d8d3ca',
       'editor.selectionBackground': '#264f78',
-      'editor.lineHighlightBackground': '#252526',
-      'editorCursor.foreground': '#cccccc',
-      'editorIndentGuide.background1': '#3c3c3c',
-      'editorIndentGuide.activeBackground1': '#6b6b6b',
+      'editor.lineHighlightBackground': '#23211e',
+      'editorCursor.foreground': '#d8d3ca',
+      'editorIndentGuide.background1': '#35312c',
+      'editorIndentGuide.activeBackground1': '#5f594f',
       // Find/replace widget, clearly lighter than the editor surface.
-      'editorWidget.background': '#333338',
-      'editorWidget.foreground': '#cccccc',
-      'widget.border': '#7a7a7a',
+      'editorWidget.background': '#2b2824',
+      'editorWidget.foreground': '#d8d3ca',
+      'widget.border': '#6f685d',
+      // Widgets that otherwise inherit VS Code's cool greys.
+      'list.hoverBackground': '#2b2824',
+      'list.activeSelectionBackground': '#264f78',
+      'list.activeSelectionForeground': '#d8d3ca',
+      'list.inactiveSelectionBackground': '#2b2824',
+      'list.highlightForeground': '#4daafc',
+      'list.deemphasizedForeground': '#a39d93',
+      'input.background': '#23211e',
+      'input.foreground': '#d8d3ca',
+      'dropdown.background': '#2b2824',
+      'dropdown.foreground': '#d8d3ca',
+      'focusBorder': '#4daafc',
+      'badge.background': '#35312c',
+      'badge.foreground': '#d8d3ca',
+      'editorLink.activeForeground': '#4daafc',
     },
   })
 
@@ -76,18 +91,32 @@
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#ffffff',
-      'editor.foreground': '#1f1f1f',
-      'editorLineNumber.foreground': '#616161',
-      'editorLineNumber.activeForeground': '#1f1f1f',
+      'editor.background': '#fffdf8',
+      'editor.foreground': '#24211d',
+      'editorLineNumber.foreground': '#6b665c',
+      'editorLineNumber.activeForeground': '#24211d',
       'editor.selectionBackground': '#d6e6f7',
-      'editor.lineHighlightBackground': '#f3f3f3',
-      'editorCursor.foreground': '#1f1f1f',
-      'editorIndentGuide.background1': '#c8c8c8',
-      'editorIndentGuide.activeBackground1': '#949494',
-      'editorWidget.background': '#e3e3e3',
-      'editorWidget.foreground': '#1f1f1f',
-      'widget.border': '#8a8a8a',
+      'editor.lineHighlightBackground': '#f2eee4',
+      'editorCursor.foreground': '#24211d',
+      'editorIndentGuide.background1': '#e8e3d7',
+      'editorIndentGuide.activeBackground1': '#8f887b',
+      'editorWidget.background': '#f2eee4',
+      'editorWidget.foreground': '#24211d',
+      'widget.border': '#8f887b',
+      'list.hoverBackground': '#e8e3d7',
+      'list.activeSelectionBackground': '#d6e6f7',
+      'list.activeSelectionForeground': '#24211d',
+      'list.inactiveSelectionBackground': '#ece7db',
+      'list.highlightForeground': '#005fb8',
+      'list.deemphasizedForeground': '#6b665c',
+      'input.background': '#fffdf8',
+      'input.foreground': '#24211d',
+      'dropdown.background': '#f2eee4',
+      'dropdown.foreground': '#24211d',
+      'focusBorder': '#005fb8',
+      'badge.background': '#e8e3d7',
+      'badge.foreground': '#24211d',
+      'editorLink.activeForeground': '#005fb8',
     },
   })
 
@@ -556,7 +585,7 @@
     border-radius: var(--r-sm);
     background: var(--surface-1);
     color: var(--muted);
-    font: 12px ui-monospace, monospace;
+    font: var(--fs-sm) ui-monospace, monospace;
     pointer-events: none;
   }
   .preview {
@@ -574,6 +603,6 @@
     border-radius: var(--r-sm);
     background: var(--surface-1);
     color: var(--err);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 </style>

@@ -205,7 +205,7 @@
     height: 24px;
     padding: 0;
     color: var(--muted);
-    font-size: 16px;
+    font-size: var(--fs-lg);
   }
   .close:hover {
     color: var(--text);
@@ -251,7 +251,7 @@
     display: flex;
     justify-content: space-between;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
@@ -296,7 +296,7 @@
   .error {
     margin: 0;
     color: var(--err);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     overflow-wrap: anywhere;
   }
 </style>

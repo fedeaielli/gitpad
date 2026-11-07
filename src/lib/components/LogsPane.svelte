@@ -252,7 +252,7 @@
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .chip[aria-pressed='true'] {
     border-color: var(--accent);
@@ -274,7 +274,7 @@
   .note {
     margin: 0;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .more {
     align-self: flex-start;
@@ -290,7 +290,7 @@
     border-radius: var(--r-md);
     background: var(--surface-0);
     font-family: ui-monospace, monospace;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     line-height: 1.5;
   }
   .session {

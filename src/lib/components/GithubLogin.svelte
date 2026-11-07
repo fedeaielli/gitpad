@@ -166,7 +166,7 @@
     border-radius: var(--r-md);
     background: var(--accent);
     color: var(--on-accent);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     cursor: pointer;
   }
   .start:disabled {
@@ -205,7 +205,7 @@
     border: 0;
     background: none;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     text-decoration: underline;
     cursor: pointer;
   }

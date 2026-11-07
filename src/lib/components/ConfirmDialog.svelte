@@ -89,7 +89,7 @@
     border-radius: var(--r-pill);
     background: var(--surface-2);
     color: var(--accent-fg);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     line-height: 1;
   }
@@ -105,13 +105,13 @@
   h2 {
     margin: 0;
     color: var(--text);
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-weight: 600;
   }
   p {
     margin: 10px 0 16px;
     color: var(--text);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -125,7 +125,7 @@
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .actions button:hover {
     background: var(--surface-2);

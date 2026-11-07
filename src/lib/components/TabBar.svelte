@@ -184,7 +184,7 @@
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }

@@ -135,7 +135,7 @@
     border-radius: var(--r-sm);
     background: var(--surface-2);
     color: var(--text);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     text-align: left;
   }
   .search:hover {
@@ -198,7 +198,7 @@
   .search kbd {
     flex: 0 0 auto;
     color: var(--muted);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     white-space: nowrap;
   }
   /* A suffix of the field, not a badge floating inside it: separator, no box. */
@@ -226,7 +226,7 @@
     align-items: center;
     gap: 6px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   /* A mask, not an image: the mark takes the title colour in every theme. */
   .logo {

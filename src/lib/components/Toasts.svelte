@@ -75,7 +75,7 @@
     border-radius: var(--r-pill);
     background: var(--surface-3);
     color: var(--kind);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     line-height: 1;
   }
@@ -89,7 +89,7 @@
   }
   .message {
     color: var(--text);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     line-height: 1.45;
     overflow-wrap: anywhere;
   }
@@ -101,7 +101,7 @@
     height: 22px;
     padding: 0;
     color: var(--muted);
-    font-size: 15px;
+    font-size: var(--fs-lg);
     line-height: 1;
   }
   .close:hover {

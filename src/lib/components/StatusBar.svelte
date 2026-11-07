@@ -61,7 +61,7 @@
     padding: 0 10px;
     background: var(--surface-1);
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     white-space: nowrap;
   }
   .path {

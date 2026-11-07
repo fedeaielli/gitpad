@@ -273,14 +273,14 @@
     margin: 0;
     padding: 4px 8px;
     color: var(--err);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     overflow-wrap: anywhere;
   }
   .empty {
     margin: 0;
     padding: 24px 12px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     text-align: center;
     overflow-wrap: anywhere;
   }
@@ -289,7 +289,7 @@
     padding: 4px 8px;
     border-bottom: 1px solid var(--border);
     color: var(--muted);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -327,7 +327,7 @@
     padding: 7px 8px 4px;
     background: var(--surface-1);
     color: var(--muted);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
   }
   .head-row {
@@ -362,7 +362,7 @@
     border-radius: 0;
     background: transparent;
     color: var(--muted);
-    font-size: 14px;
+    font-size: var(--fs-md);
     line-height: 1;
     transition:
       background var(--t-fast),
@@ -381,12 +381,12 @@
   }
   .row code {
     color: var(--muted);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
   .msg {
     overflow: hidden;
     color: var(--text);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -403,7 +403,7 @@
   .meta {
     overflow: hidden;
     color: var(--muted);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -415,7 +415,7 @@
     border: 1px solid var(--accent);
     background: transparent;
     color: var(--accent-fg);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
   }
   .actions button:hover:not(:disabled) {
@@ -439,7 +439,7 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -447,7 +447,7 @@
     flex: 0 0 auto;
     width: 12px;
     border-radius: var(--r-pill);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
   }
   .badge.M {
@@ -461,6 +461,6 @@
   }
   .files button {
     padding: 0 5px;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
 </style>

@@ -272,7 +272,7 @@
     border-radius: 7px;
     background: var(--accent);
     color: var(--on-accent);
-    font-size: 9px;
+    font-size: var(--fs-2xs);
     line-height: 14px;
     text-align: center;
   }

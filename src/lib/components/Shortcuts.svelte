@@ -103,7 +103,7 @@
     border-radius: var(--r-md);
     background: transparent;
     color: var(--muted);
-    font-size: 18px;
+    font-size: var(--fs-xl);
     cursor: pointer;
   }
   .close:hover {
