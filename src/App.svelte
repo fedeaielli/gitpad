@@ -637,15 +637,30 @@
     inset: 0 -4px 0 -10px;
     content: '';
   }
+  /* The slot is the gap between panels, so the bar is drawn inside it: a 4px
+     line in the middle leaves the layout where it was. */
+  .gutter::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    border-radius: var(--r-pill);
+    background: transparent;
+    transform: translateX(-50%);
+    transition: background var(--t-fast);
+    content: '';
+    pointer-events: none;
+  }
   .gutter.open {
     cursor: col-resize;
   }
-  .gutter.open:hover {
+  .gutter.open:hover::after {
     background: var(--border-strong);
   }
   /* Accent only while dragging, so the two states are told apart at a glance.
      Two classes to match :hover, which is still on during the drag. */
-  .gutter.open.active {
+  .gutter.open.active::after {
     background: var(--accent);
   }
   .editor-column {

@@ -371,10 +371,12 @@
       {:else}
         {#each commits as commit, index (commit.hash)}
           <li class="row" class:active={selected === commit.hash}>
-            <button class="commit" use:tip={commit.author} onclick={() => void select(commit)}>
-              <code>{commit.shortHash}</code>
+            <button class="commit entry" use:tip={commit.author} onclick={() => void select(commit)}>
+              <span class="id">
+                <code>{commit.shortHash}</code>
+                <span class="meta">{when(commit.timestamp)}</span>
+              </span>
               <span class="msg">{commit.message}</span>
-              <span class="meta">{when(commit.timestamp)}</span>
             </button>
             {#if isCurrentVersion(index, path, gitStatus.changes, dirty)}
               <span class="badge">Current</span>
@@ -442,22 +444,23 @@
     height: var(--sp-2);
     cursor: row-resize;
   }
+  /* Kept visible at rest: unlike the two side gutters, nothing else marks this
+     edge as draggable. */
   .resize::before {
     position: absolute;
     top: 50%;
     left: 50%;
     width: 32px;
-    height: 3px;
+    height: 4px;
     border-radius: var(--r-pill);
-    background: var(--border-strong);
+    background: var(--border);
     transform: translate(-50%, -50%);
+    transition: background var(--t-fast);
     content: '';
   }
-  .resize:hover,
-  .resize.active {
-    background: var(--surface-2);
+  .resize:hover::before {
+    background: var(--border-strong);
   }
-  .resize:hover::before,
   .resize.active::before {
     background: var(--accent);
   }
@@ -542,15 +545,30 @@
     list-style: none;
   }
   /* The gap between the two panels, made grabbable, like the sidebar gutter. */
+  /* The gap between the two panels, made grabbable, like the sidebar gutter. */
   .split {
+    position: relative;
     flex: 0 0 var(--sp-1);
     cursor: col-resize;
     touch-action: none;
   }
-  .split:hover {
+  .split::after {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 4px;
+    border-radius: var(--r-pill);
+    background: transparent;
+    transform: translateX(-50%);
+    transition: background var(--t-fast);
+    content: '';
+    pointer-events: none;
+  }
+  .split:hover::after {
     background: var(--border-strong);
   }
-  .split.active {
+  .split.active::after {
     background: var(--accent);
   }
   .row {
@@ -572,6 +590,20 @@
   .commit:hover,
   .row.active .commit {
     background: var(--surface-2);
+  }
+  /* Two lines: each field keeps its own width, the message takes the rest. */
+  .entry {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .id {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
   }
   /* Inset past the corners: a box-shadow would follow the button radius. */
   .row.active .commit::before {
@@ -597,8 +629,12 @@
   }
   .meta {
     flex: 0 0 auto;
+    min-width: 0;
+    overflow: hidden;
     color: var(--muted);
     font-size: var(--fs-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .badge {
     flex: 0 0 auto;
@@ -615,25 +651,22 @@
   }
   .sha {
     flex: 0 0 auto;
-    font-size: var(--fs-xs);
+    font-size: var(--fs-2xs);
   }
   .restore {
     flex: 0 0 auto;
-    padding: 1px 6px;
+    /* Desktop target, not touch: 32px is the smallest that still reads as one. */
+    min-height: 32px;
+    padding: 0 10px;
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--text);
     font-size: var(--fs-xs);
-    opacity: 0.55;
-  }
-  /* :not(:disabled): otherwise a hover wakes the button on the Current row. */
-  .row:hover .restore:not(:disabled),
-  .restore:focus-visible:not(:disabled) {
-    opacity: 1;
   }
   .restore:hover:not(:disabled) {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
+    background: var(--surface-3);
   }
   /* Dimming alone still leaves a pill outline and a bright label: at 0.3 the
      text would read as a live control on the Current row. Drop the chrome. */
