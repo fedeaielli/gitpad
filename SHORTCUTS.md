@@ -20,6 +20,7 @@ open file now and pushes immediately. Autosave keeps running as before.
 | `Ctrl+/` | Toggle a line comment |
 | `Shift+Alt+A` | Toggle a block comment |
 | `Ctrl+H` | Open or close the file history |
+| `Ctrl+B` | Toggle sidebar |
 | `Ctrl+W` | Close the current tab |
 | `Ctrl+K` | Show or hide the keyboard shortcut list |
 | `Esc` | Close the palette, the file history, or a dialog |
