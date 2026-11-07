@@ -61,7 +61,8 @@
     box-sizing: border-box;
     flex: 0 0 var(--h-tabbar);
     overflow: hidden;
-    padding: 4px 4px 0;
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--divider);
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     background: var(--surface-1);
   }
@@ -69,9 +70,7 @@
     display: flex;
     flex: 1;
     min-width: 0;
-    /* Keep the first tab in place while leaving room for its outward curve. */
-    margin-left: calc(-1 * var(--r-lg));
-    padding-left: var(--r-lg);
+    gap: 2px;
     overflow-x: auto;
     overflow-y: hidden;
   }
@@ -81,42 +80,18 @@
     align-items: center;
     flex: 0 0 auto;
     max-width: 200px;
-    border-right: 1px solid var(--border);
     border-radius: var(--r-md);
     color: var(--muted);
   }
-  /* Hover is a lifted grey, never the editor surface the open tab shows. */
+  /* Hover is a lifted grey, never the surface the open tab shows. */
   .tab:not(.active):hover {
     background: var(--surface-2);
     color: var(--text);
   }
   .tab.active {
-    background: var(--editor-surface);
+    background: var(--surface-3);
     box-shadow: inset 0 2px 0 var(--accent);
-    border-radius: var(--r-md) var(--r-md) 0 0;
-    border-right-color: transparent;
     color: var(--text);
-  }
-  /* The active surface continues into the editor below. These outward curves
-     carve the tab-strip colour around its lower corners, matching VS Code. */
-  .tab.active::before,
-  .tab.active::after {
-    position: absolute;
-    bottom: 0;
-    width: var(--r-lg);
-    height: var(--r-lg);
-    content: '';
-    pointer-events: none;
-  }
-  .tab.active::before {
-    left: calc(-1 * var(--r-lg));
-    border-bottom-right-radius: var(--r-lg);
-    box-shadow: 4px 4px 0 4px var(--editor-surface);
-  }
-  .tab.active::after {
-    right: calc(-1 * var(--r-lg));
-    border-bottom-left-radius: var(--r-lg);
-    box-shadow: -4px 4px 0 4px var(--editor-surface);
   }
   .label {
     display: flex;

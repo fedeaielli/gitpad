@@ -256,7 +256,7 @@
             onclick={() => toggle(node.path)}
           >
             <span class="chevron">{ui.expanded.includes(node.path) ? '▾' : '▸'}</span>
-            <span class="icon"><FileIcon name={node.name} dir /></span>
+            <span class="icon"><FileIcon name={node.name} dir size={16} /></span>
             <span class="name">{node.name}</span>
           </button>
           {#if ui.expanded.includes(node.path)}
@@ -279,7 +279,7 @@
             }}
             onclick={() => openFile(node)}
           >
-            <span class="icon"><FileIcon name={node.name} /></span>
+            <span class="icon"><FileIcon name={node.name} size={16} /></span>
             <span class="name">{node.name}</span>
           </button>
         {/if}
@@ -357,12 +357,12 @@
     box-sizing: border-box;
     height: 100%;
     overflow-y: auto;
-    padding: 4px 0;
+    padding: 6px 0;
   }
   ul {
     list-style: none;
     margin: 0;
-    padding-left: 10px;
+    padding-left: 12px;
   }
   .tree > :global(ul) {
     padding-left: 0;
@@ -372,7 +372,8 @@
     align-items: center;
     gap: 6px;
     width: 100%;
-    padding: 2px 8px;
+    min-height: 26px;
+    padding: 0 8px;
     text-align: left;
     border-radius: var(--r-sm);
   }
@@ -407,7 +408,7 @@
   .icon {
     display: inline-flex;
     justify-content: center;
-    width: 18px;
+    width: 16px;
     color: var(--muted);
   }
   .name {
