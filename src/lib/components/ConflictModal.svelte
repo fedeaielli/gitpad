@@ -185,7 +185,7 @@
     height: 80vh;
     background: var(--surface-3);
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
   }
   header {
@@ -194,7 +194,7 @@
     justify-content: space-between;
     min-height: 40px;
     padding: 0 12px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--divider);
     font-weight: 600;
   }
   .close {

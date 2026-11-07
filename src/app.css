@@ -97,7 +97,8 @@
 
   --border: #d9d3c7;
   --border-strong: #8f887b;
-  --divider: #e4ded2;
+  /* One step under --border: the old value vanished on the warm paper. */
+  --divider: #ded7c9;
 
   --accent: #005fb8;
   --on-accent: #ffffff;

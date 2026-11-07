@@ -405,7 +405,7 @@
     overflow: hidden;
     background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
     animation: drop var(--t-fast) ease-out;
   }

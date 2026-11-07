@@ -542,19 +542,16 @@
     height: min(620px, 88vh);
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-overlay);
     background: var(--surface-2);
-    box-shadow:
-      0 20px 60px rgba(0, 0, 0, 0.6),
-      0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-2);
   }
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: var(--sp-3) var(--sp-4);
-    border-bottom: 1px solid var(--border);
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-radius: var(--r-overlay) var(--r-overlay) 0 0;
     background: var(--surface-1);
   }
   h2 {
@@ -585,7 +582,7 @@
     display: flex;
     gap: 2px;
     padding: var(--sp-1) var(--sp-2) 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--divider);
     background: var(--surface-1);
   }
   .tab {
@@ -642,14 +639,11 @@
   /* Keep the layered dialog surfaces aligned with the shared dark palette. */
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal {
     background: var(--surface-3);
-    box-shadow:
-      0 24px 64px rgba(0, 0, 0, 0.7),
-      0 8px 24px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-2);
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .modal header,
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tabs {
     background: var(--surface-0);
-    border-bottom-color: var(--border);
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .tab:hover {
     background: var(--surface-2);

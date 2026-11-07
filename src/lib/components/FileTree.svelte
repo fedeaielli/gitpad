@@ -384,6 +384,7 @@
     /* Follows the accent, at a strength that keeps --text above 4.5:1. */
     background: var(--selection);
     background: color-mix(in srgb, var(--accent) 22%, transparent);
+    box-shadow: inset 2px 0 0 var(--accent);
     color: var(--text);
   }
   .rename {
@@ -456,7 +457,7 @@
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-1);
   }
   .menu button {
     display: block;
