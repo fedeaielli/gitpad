@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GitPad — Transit</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Martian+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: #111318; color: #e8e2d4; font: 13px/1.45 Archivo, system-ui, sans-serif; }
+  .shell { display: flex; flex-direction: column; height: 100vh; }
+  .titlebar {
+    height: 42px; display: flex; align-items: center; gap: 14px; padding: 0 12px;
+    background: #0b0d11; border-bottom: 1px solid #2a2f38; flex: 0 0 auto;
+  }
+  .badge {
+    width: 22px; height: 22px; display: grid; place-items: center; background: #e4572e;
+    color: #fff; font: 600 11px Martian Mono, monospace;
+  }
+  .brand { font-weight: 700; letter-spacing: .08em; font-size: 12px; }
+  .menu { display: flex; gap: 13px; color: #9aa0a6; font-size: 12px; }
+  .search {
+    width: 430px; margin: 0 auto; height: 26px; display: flex; align-items: center; gap: 8px;
+    padding: 0 9px; border: 1px solid #39404a; background: #171a20; color: #8a9198; font-size: 12px;
+  }
+  .search .key { margin-left: auto; font: 10px Martian Mono, monospace; }
+  .wins { display: flex; gap: 18px; color: #8a9198; font-size: 11px; }
+  .body { display: flex; flex: 1; min-height: 0; }
+  .rail {
+    width: 58px; flex: 0 0 auto; background: #0b0d11; border-right: 1px solid #2a2f38;
+    position: relative; padding-top: 22px; display: flex; flex-direction: column; align-items: center; gap: 58px;
+  }
+  .rail::before {
+    content: ""; position: absolute; top: 36px; bottom: 70px; left: 28px; width: 3px; background: #e4572e;
+  }
+  .rail button {
+    width: 44px; height: 30px; border: 0; background: none; color: #8a9198;
+    font: 8px Martian Mono, monospace; display: grid; justify-items: center; gap: 3px; position: relative;
+  }
+  .rail i {
+    width: 13px; height: 13px; border: 2px solid #e8e2d4; border-radius: 50%; background: #0b0d11; z-index: 1;
+  }
+  .rail button.on { color: #fff; }
+  .rail button.on i { width: 17px; height: 17px; border-color: #e4572e; background: #fff; box-shadow: 0 0 0 3px #0b0d11; }
+  .side { width: 264px; flex: 0 0 auto; background: #14171c; border-right: 1px solid #2a2f38; display: flex; flex-direction: column; }
+  .side-head {
+    height: 42px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #2a2f38; color: #9aa0a6; font: 10px Martian Mono, monospace; letter-spacing: .14em;
+  }
+  .line-name { padding: 9px 12px 7px; color: #e4572e; font: 600 11px Martian Mono, monospace; letter-spacing: .12em; }
+  .stop {
+    height: 31px; display: flex; align-items: center; gap: 9px; padding: 0 12px; color: #b9b5a8;
+    font-size: 12px; border-top: 1px solid #1c2027;
+  }
+  .stop i { width: 7px; height: 7px; flex: 0 0 auto; border: 1px solid #6f7a80; border-radius: 50%; }
+  .stop .time { margin-left: auto; color: #6f7a80; font: 9px Martian Mono, monospace; }
+  .stop.on { background: #e4572e; color: #fff; }
+  .stop.on i { border-color: #fff; background: #fff; }
+  .stop.on .time { color: #ffd9cb; }
+  .stop.sub { padding-left: 30px; }
+  .side-foot {
+    margin-top: auto; padding: 10px 12px; border-top: 1px solid #2a2f38; color: #6f7a80;
+    font: 9px Martian Mono, monospace; letter-spacing: .1em; display: flex; justify-content: space-between;
+  }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .tabs { height: 42px; flex: 0 0 auto; display: flex; align-items: stretch; background: #0b0d11; border-bottom: 1px solid #2a2f38; }
+  .tab {
+    display: flex; align-items: center; gap: 9px; padding: 0 15px; border-right: 1px solid #2a2f38;
+    color: #8a9198; font-size: 12px; position: relative;
+  }
+  .tab .no {
+    width: 19px; height: 19px; display: grid; place-items: center; border: 1px solid #39404a;
+    font: 9px Martian Mono, monospace;
+  }
+  .tab.on { background: #14171c; color: #fff; }
+  .tab.on::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #e4572e; }
+  .tab.on .no { border-color: #e4572e; color: #e4572e; }
+  .tabspacer { flex: 1; }
+  .mode { align-self: center; margin-right: 10px; padding: 3px 8px; border: 1px solid #39404a; color: #9aa0a6; font: 9px Martian Mono, monospace; letter-spacing: .1em; }
+  .crumb {
+    height: 27px; flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 0 14px;
+    color: #6f7a80; font: 10px Martian Mono, monospace; border-bottom: 1px solid #1c2027;
+  }
+  .crumb b { color: #d8d3c6; font-weight: 500; }
+  .workspace { flex: 1; min-height: 0; display: flex; }
+  .editor { width: 57%; min-width: 0; background: #0e1014; padding: 18px 0 0; border-right: 1px solid #2a2f38; overflow: hidden; }
+  .line { display: flex; height: 21px; align-items: center; white-space: pre; }
+  .ln { width: 46px; flex: 0 0 auto; text-align: right; padding-right: 14px; color: #4b545c; font: 11px Martian Mono, monospace; }
+  .code { font: 12.5px Martian Mono, monospace; color: #d5d0c3; }
+  .code .h { color: #f0ebdb; font-weight: 500; }
+  .code .s { color: #8fb0a9; }
+  .code .a { color: #e4572e; }
+  .code .k { color: #8fa9c0; }
+  .code .big { font-size: 26px; letter-spacing: -.02em; color: #fff; }
+  .preview { flex: 1; min-width: 0; background: #14171c; padding: 26px 34px; overflow: hidden; }
+  .preview .kicker { color: #e4572e; font: 9px Martian Mono, monospace; letter-spacing: .16em; }
+  .preview h1 { margin: 8px 0 14px; font: 700 30px/1.05 Archivo, sans-serif; letter-spacing: -.025em; color: #fff; }
+  .preview h2 { margin: 21px 0 8px; font: 600 16px Archivo, sans-serif; color: #efe9db; }
+  .preview p, .preview li { color: #bdb8ab; font-size: 12.5px; line-height: 1.65; }
+  .preview ul { padding-left: 18px; }
+  .preview blockquote { margin: 14px 0; padding: 2px 0 2px 13px; border-left: 3px solid #e4572e; color: #a9a497; }
+  .preview pre { margin: 12px 0 0; padding: 11px 13px; background: #0e1014; border: 1px solid #2a2f38; color: #8fb0a9; font: 11px Martian Mono, monospace; line-height: 1.6; }
+  .departures {
+    height: 66px; flex: 0 0 auto; display: flex; align-items: center; gap: 18px; padding: 0 16px;
+    background: #0b0d11; border-top: 1px solid #2a2f38;
+  }
+  .departures .tag { color: #e4572e; font: 600 9px Martian Mono, monospace; letter-spacing: .16em; width: 76px; }
+  .times { display: flex; flex: 1; gap: 0; max-width: 700px; }
+  .time {
+    flex: 1; padding: 0 14px; border-left: 1px solid #2a2f38; display: grid; gap: 3px;
+  }
+  .time span { color: #6f7a80; font: 8px Martian Mono, monospace; letter-spacing: .12em; }
+  .time b { color: #e8e2d4; font: 500 17px Martian Mono, monospace; letter-spacing: -.02em; }
+  .time.now b { color: #e4572e; }
+  .time.next b { color: #f2c14e; }
+  .track { position: relative; width: 210px; height: 30px; flex: 0 0 auto; }
+  .track::before { content: ""; position: absolute; left: 0; right: 0; top: 14px; height: 3px; background: #39404a; }
+  .track::after { content: ""; position: absolute; left: 0; width: 62%; top: 14px; height: 3px; background: #e4572e; }
+  .dot { position: absolute; top: 10px; width: 11px; height: 11px; border: 2px solid #e8e2d4; border-radius: 50%; background: #0b0d11; }
+  .dot.a { left: 0; }
+  .dot.b { left: 33%; }
+  .dot.c { left: 62%; background: #e4572e; border-color: #e4572e; }
+  .dot.d { left: 100%; border-color: #f2c14e; }
+  .status {
+    height: 27px; flex: 0 0 auto; display: flex; align-items: center; gap: 18px; padding: 0 12px;
+    background: #e4572e; color: #fff; font: 9.5px Martian Mono, monospace;
+  }
+  .status .right { margin-left: auto; display: flex; gap: 16px; }
+  .status .muted { color: #ffd9cb; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="titlebar">
+    <span class="badge">04</span><span class="brand">GITPAD</span>
+    <span class="menu"><span>File</span><span>Edit</span><span>Selection</span><span>View</span></span>
+    <div class="search"><span>Search files, or type &gt; for commands</span><span class="key">Ctrl+P</span></div>
+    <span class="wins"><span>—</span><span>▢</span><span>×</span></span>
+  </div>
+  <div class="body">
+    <nav class="rail">
+      <button class="on"><i></i>FILES</button>
+      <button><i></i>GIT</button>
+      <button><i></i>HIST</button>
+      <button><i></i>SET</button>
+    </nav>
+    <aside class="side">
+      <div class="side-head"><span>NORTHBOUND</span><span>04 / 04</span></div>
+      <div class="line-name">NOTES LINE</div>
+      <div class="stop"><i></i>repo / notes<span class="time">09:10</span></div>
+      <div class="stop sub"><i></i>inbox<span class="time">09:10</span></div>
+      <div class="stop sub"><i></i>ideas.md<span class="time">09:11</span></div>
+      <div class="stop sub on"><i></i>Release-1.0.4.md<span class="time">09:12</span></div>
+      <div class="stop sub"><i></i>projects<span class="time">09:14</span></div>
+      <div class="stop"><i></i>README.md<span class="time">09:18</span></div>
+      <div class="side-foot"><span>LOCAL 09:12</span><span>NEXT 09:42</span></div>
+    </aside>
+    <section class="main">
+      <div class="tabs">
+        <div class="tab on"><span class="no">06</span>Release-1.0.4.md<span>×</span></div>
+        <div class="tab"><span class="no">05</span>README.md<span>×</span></div>
+        <div class="tabspacer"></div>
+        <span class="mode">PLATFORM 2 · PREVIEW</span>
+      </div>
+      <div class="crumb"><span>NOTES LINE</span><span>/</span><span>03</span><span>/</span><b>Release-1.0.4.md</b><span>·</span><span>ARRIVING</span></div>
+      <div class="workspace">
+        <div class="editor">
+          <div class="line"><span class="ln">1</span><span class="code h"># Release 1.0.4</span></div>
+          <div class="line"><span class="ln">2</span><span class="code"></span></div>
+          <div class="line"><span class="ln">3</span><span class="code">Notes for the next release. Everything here is a file,</span></div>
+          <div class="line"><span class="ln">4</span><span class="code">reviewable like any other.</span></div>
+          <div class="line"><span class="ln">5</span><span class="code"></span></div>
+          <div class="line"><span class="ln">6</span><span class="code h">## Shipped</span></div>
+          <div class="line"><span class="ln">7</span><span class="code"></span></div>
+          <div class="line"><span class="ln">8</span><span class="code">- Notes are cloned next to <span class="a">**Documents**</span>, not in a hidden folder.</span></div>
+          <div class="line"><span class="ln">9</span><span class="code">- The palette splits the folder from the file name.</span></div>
+          <div class="line"><span class="ln">10</span><span class="code">- Restoring a file from History keeps the tab open.</span></div>
+          <div class="line"><span class="ln">11</span><span class="code"></span></div>
+          <div class="line"><span class="ln">12</span><span class="code h">## Open</span></div>
+          <div class="line"><span class="ln">13</span><span class="code"></span></div>
+          <div class="line"><span class="ln">14</span><span class="code">1. Sort order that survives a restart.</span></div>
+          <div class="line"><span class="ln">15</span><span class="code">2. A screenshot in the README.</span></div>
+          <div class="line"><span class="ln">16</span><span class="code">3. [x] Real <span class="s">`git revert`</span> from the sidebar</span></div>
+          <div class="line"><span class="ln">17</span><span class="code"></span></div>
+          <div class="line"><span class="ln">18</span><span class="code">&gt; Sync is a fast-forward when it can be, a merge when it cannot.</span></div>
+          <div class="line"><span class="ln">19</span><span class="code">&gt; A conflict opens the dialog, not a crash.</span></div>
+          <div class="line"><span class="ln">20</span><span class="code"></span></div>
+          <div class="line"><span class="ln">21</span><span class="code">```rust</span></div>
+          <div class="line"><span class="ln">22</span><span class="code">fn commit(&amp;self, message: &amp;str) -&gt; <span class="k">Result</span>&lt;(), GitError&gt; {</span></div>
+          <div class="line"><span class="ln">23</span><span class="code">    let mut index = self.repo.index()?;</span></div>
+          <div class="line"><span class="ln">24</span><span class="code">    index.write()?;</span></div>
+          <div class="line"><span class="ln">25</span><span class="code">    <span class="k">Ok</span>(())</span></div>
+          <div class="line"><span class="ln">26</span><span class="code">}</span></div>
+          <div class="line"><span class="ln">27</span><span class="code">```</span></div>
+          <div class="line"><span class="ln">28</span><span class="code"></span></div>
+          <div class="line"><span class="ln">29</span><span class="code h">## Today</span></div>
+          <div class="line"><span class="ln">30</span><span class="code"></span></div>
+          <div class="line"><span class="ln">31</span><span class="code">| Time  | What          | Where       |</span></div>
+          <div class="line"><span class="ln">32</span><span class="code">| ----- | ------------- | ----------- |</span></div>
+          <div class="line"><span class="ln">33</span><span class="code">| 09:10 | Release build | `src-tauri` |</span></div>
+          <div class="line"><span class="ln">34</span><span class="code">| 11:45 | Icon upload   | GitHub App  |</span></div>
+          <div class="line"><span class="ln">35</span><span class="code">| 14:20 | README pass   | `docs`      |</span></div>
+        </div>
+        <div class="preview">
+          <div class="kicker">PLATFORM 2 · PREVIEW</div>
+          <h1>Release 1.0.4</h1>
+          <p>Notes for the next release. Everything here is a file, committed and reviewable like any other.</p>
+          <h2>Shipped</h2>
+          <ul><li>Notes are cloned next to <b>Documents</b>, not in a hidden folder.</li><li>The palette splits the folder from the file name.</li><li>Restoring a file from History keeps the tab open.</li></ul>
+          <h2>Open</h2>
+          <p>1. Sort order that survives a restart.<br>2. A screenshot in the README.<br>3. Real <code>git revert</code> from the sidebar.</p>
+          <blockquote>Sync is a fast-forward when it can be, a merge when it cannot. A conflict opens the dialog, not a crash.</blockquote>
+          <pre>fn commit(&amp;self, message: &amp;str) -&gt; Result&lt;(), GitError&gt; {
+    let mut index = self.repo.index()?;
+    index.write()?;
+    Ok(())
+}</pre>
+        </div>
+      </div>
+      <div class="departures">
+        <span class="tag">DEPARTURES</span>
+        <div class="times">
+          <div class="time"><span>LOCAL</span><b>09:12</b></div>
+          <div class="time now"><span>COMMIT</span><b>09:12</b></div>
+          <div class="time"><span>PUSH</span><b>09:13</b></div>
+          <div class="time next"><span>NEXT</span><b>09:42</b></div>
+        </div>
+        <div class="track"><span class="dot a"></span><span class="dot b"></span><span class="dot c"></span><span class="dot d"></span></div>
+      </div>
+      <div class="status">
+        <span>NOTES LINE · NORTHBOUND</span><span>SYNCED</span>
+        <span class="right"><span class="muted">Ln 14, Col 1</span><span>Markdown</span><span>UTF-8</span></span>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>
