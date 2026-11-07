@@ -121,4 +121,32 @@
     background: transparent;
     color: var(--text);
   }
+  /* github-markdown-css hardcodes cool greys instead of variables: these few
+     rules carry the warm palette into the elements that actually show. */
+  .markdown-body :global(:is(h1, h2, h3, h4, h5, h6)) {
+    border-bottom-color: var(--border);
+  }
+  .markdown-body :global(hr) {
+    background-color: var(--border);
+  }
+  .markdown-body :global(blockquote) {
+    border-left-color: var(--border-strong);
+    color: var(--muted);
+  }
+  .markdown-body :global(:is(th, td)) {
+    border-color: var(--border);
+  }
+  .markdown-body :global(table tr) {
+    background-color: var(--surface-0);
+    border-color: var(--border);
+  }
+  .markdown-body :global(table tr:nth-child(2n)) {
+    background-color: var(--surface-1);
+  }
+  .markdown-body :global(:not(pre) > code) {
+    background-color: color-mix(in srgb, var(--muted) 15%, transparent);
+  }
+  .markdown-body :global(a) {
+    color: var(--accent-fg);
+  }
 </style>
