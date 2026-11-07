@@ -186,7 +186,7 @@
     /* Same height as the tab bar so the two headers line up. */
     box-sizing: border-box;
     min-height: var(--h-tabbar);
-    padding: 2px 8px;
+    padding: 0 10px;
     color: var(--muted);
     font-size: var(--fs-xs);
     letter-spacing: 0.06em;
@@ -201,19 +201,19 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 22px;
+    height: 26px;
     border: 0;
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
     font-size: var(--fs-lg);
-    line-height: 22px;
+    line-height: 26px;
     padding: 0 5px;
   }
   .actions svg {
     display: block;
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     fill: none;
     stroke: currentColor;
     stroke-width: 1.2;

@@ -608,7 +608,7 @@
     flex: 1;
     gap: 0;
     min-height: 0;
-    padding: var(--sp-1);
+    padding: var(--sp-2);
   }
   .left {
     display: flex;
@@ -628,10 +628,10 @@
   .gutter {
     position: relative;
     z-index: 1;
-    flex: 0 0 var(--sp-1);
+    flex: 0 0 var(--sp-2);
     touch-action: none;
   }
-  /* 6px is too thin to hit, so the grab area leans into the sidebar. */
+  /* 8px is too thin to hit, so the grab area leans into the sidebar. */
   .gutter::before {
     position: absolute;
     inset: 0 -4px 0 -10px;
