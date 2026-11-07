@@ -486,7 +486,7 @@
       renderWhitespace: 'selection',
       // Keeps the first line off the tab bar so tab and document read as one surface.
       padding: { top: 6 },
-      scrollbar: { vertical: 'hidden', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+      scrollbar: { vertical: 'hidden', verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
       // Without this Monaco adds a view zone on top and pushes the first lines
       // down whenever find or replace opens.
       find: { addExtraSpaceOnTop: false },

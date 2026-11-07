@@ -254,26 +254,39 @@ select {
   pointer-events: none;
 }
 
-/* Thin scrollbars: the thumb only shows while the area is hovered. */
+/* Thin scrollbars in the VS Code shape: 8px, an always-visible thumb that
+   brightens on hover. Dark is the default; the other themes override the
+   thumb only, the track and corner stay transparent everywhere. */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
 }
-:hover::-webkit-scrollbar-thumb {
-  background: var(--border);
-}
-:hover::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+:root[data-theme='vs'] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+:root[data-theme='vs'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme='hc-black'] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.5);
+}
+:root[data-theme='hc-black'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.75);
 }
 
 /* Monaco leaves the find widget shadow unset; a deeper selector beats its own
