@@ -74,7 +74,7 @@
     width: min(420px, 92vw);
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-overlay);
     background: var(--surface-2);
     box-shadow: var(--shadow-2);
   }
@@ -83,7 +83,7 @@
     align-items: center;
     justify-content: space-between;
     padding: var(--sp-3) var(--sp-4);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--divider);
     background: var(--surface-1);
   }
   h2 {
