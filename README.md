@@ -23,7 +23,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
-> **Status:** `v1.0.5`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** `v1.0.6`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
@@ -49,6 +49,9 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 - **Slash commands.** Type `/` at the start of a line to insert a heading, emphasis, a code block with its language, a table, a task list, and the rest of GitHub-flavoured Markdown. With text selected the command wraps it.
 - **Markdown tables that edit themselves.** `Tab` and `Shift+Tab` move between cells and add a row at the end; inside a cell, `/row`, `/col`, `/delrow` and `/delcol` change the shape. Every change re-renders the whole table with its columns aligned.
 - **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and scroll sync.
+- **Warm Graphite theme.** A curated dark, light, and high-contrast palette with rounded surfaces, an 8 px gutter between panels, and a consistent 10/11/12.5/14/16/20 px type scale. The UI font is Hanken Grotesk (bundled, variable 400–700, latin subset), falling back to system UI.
+- **Thin scrollbars.** 8 px wide, always visible in the theme's own colours (light grey on dark, dark grey on light, cyan on high contrast), brightening on hover. Monaco's scrollbars match.
+- **File icons from vscode-icons.** The tree shows the real vscode-icons artwork for 29 common file types and folders, with generic fallbacks.
 
 ### Git and sync
 
@@ -61,10 +64,12 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 
 - **File tree.** Create, rename, delete, import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`. Folders are sorted by name, date, or type, and the choice is remembered.
 - **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search; press it again to close.
+- **Drag handles on every splitter.** A 4 px bar inside each gap: transparent at rest, theme border under the pointer, accent while dragging. The timeline height handle keeps a visible pill.
+- **History and File Timeline.** Hash + date on one line, message on the next. Restore / Revert buttons reach the 32 px desktop target.
 
 ### Settings and logs
 
-- **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings. Everything is saved to `config.json` and restored on the next start.
+- **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings. Controls are capped at 280 px so dropdowns don't span the whole dialog; the tab content sits on `surface-0` under a `surface-1` dialog for a clear layering. Everything is saved to `config.json` and restored on the next start.
 - **Session logs.** *Settings → Logs* shows the current session and the previous ones, filterable by severity, category (editor, git, app), and free text.
   Tracked: repository open/move/import/clone, every commit, pull and push outcome, conflicts, folder and file changes, sign-in and sign-out (never the token), GitHub calls by status code, startup, shutdown, and every message the UI shows as a toast or a crash. File contents and request bodies are never logged.
 - **Credentials in the OS keyring.** The GitHub token is never written to `config.json`; when the keyring is unavailable it goes to a mode-0600 file under the app data dir.
