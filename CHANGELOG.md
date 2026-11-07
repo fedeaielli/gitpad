@@ -1,5 +1,53 @@
 # Changelog
 
+## 1.0.6 — 2026-11-07
+
+Visual pass: the "Warm Graphite" palette, rounded surfaces, Hanken Grotesk as
+the UI font, and matching scrollbars and file icons.
+
+### Added
+- File icons from the vscode-icons set (vscode-icons-js + vendored MIT SVGs),
+  replacing the five hand-drawn glyphs.
+- Thin scrollbars (8px) in the theme's own colours: light grey on dark,
+  dark grey on light, cyan on high contrast; always visible, brightening on
+  hover. Editor scrollbars keep step.
+- Drag handles on every splitter: a 4px bar inside the gap, transparent at
+  rest, border-strong under the pointer, accent while dragging. The timeline
+  height handle keeps a visible pill.
+- History and File Timeline: hash + date on one line, message on the next;
+  Restore / Revert reach the 32px desktop target.
+- Settings: controls capped at 280px, tab content on surface-0 under a
+  surface-1 dialog, the dark-only override block removed (tokens invert by
+  themselves).
+
+### Changed
+- Warm Graphite surfaces, borders, text and muted tones across all three
+  themes (dark, light, hc-black).
+- Radii scale: 6 / 9 / 14 / 18, panel gutters 8px, tab bar 40px, status bar
+  26px, title bar 38px.
+- Type scale: 10 / 11 / 12.5 / 14 / 16 / 20 px via CSS variables, all 71
+  hardcoded sizes replaced.
+- UI font: Hanken Grotesk (variable 400–700, latin subset) bundled and
+  preloaded, system-ui fallback.
+- Monaco themes aligned to the palette (dark, light; hc-black unchanged).
+- Markdown preview warmed (headings, tables, blockquotes, links, inline code)
+  via scoped overrides; syntax palette untouched.
+- Dialogs and overlays use the 18px overlay radius with the two-level
+  shadow; menus and toasts use the first level.
+- Active row in the file tree, palette and tabs marked by an inset accent
+  bar (2px) instead of a background fill.
+
+### Fixed
+- The keyring probe runs off the main thread; the onboarding no longer
+  waits for it before polling.
+- Light theme sidebar surface now one step darker than the editor so the
+  two panels read as separate layers.
+- Command palette list retriggers after backspace; `/h1`..`/h6` accept a
+  digit after the hash; `/sublist` and `/subnumber` work.
+- File timeline restore buttons no longer flicker between half and full
+  opacity; they are always fully visible.
+- Settings hover tab no longer looks identical to the active tab.
+
 ## Unreleased
 
 ### Added
