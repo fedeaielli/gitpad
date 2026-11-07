@@ -418,12 +418,12 @@
   .error {
     margin: 4px 8px;
     color: var(--err);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .hint {
     margin: 4px 8px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .skeleton {
     display: flex;

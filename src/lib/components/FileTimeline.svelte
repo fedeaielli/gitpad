@@ -495,7 +495,7 @@
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
-    font-size: 15px;
+    font-size: var(--fs-lg);
     line-height: 1;
   }
   .close:hover {
@@ -586,7 +586,7 @@
   code {
     flex: 0 0 auto;
     color: var(--accent-fg);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .msg {
     flex: 1;
@@ -598,12 +598,12 @@
   .meta {
     flex: 0 0 auto;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .badge {
     flex: 0 0 auto;
     color: var(--accent-fg);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
@@ -615,7 +615,7 @@
   }
   .sha {
     flex: 0 0 auto;
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .restore {
     flex: 0 0 auto;
@@ -624,7 +624,7 @@
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--text);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     opacity: 0.55;
   }
   /* :not(:disabled): otherwise a hover wakes the button on the Current row. */

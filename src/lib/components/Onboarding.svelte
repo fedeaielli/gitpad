@@ -381,7 +381,7 @@
   }
   .sub {
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .lead {
     font-size: var(--fs-lg);
@@ -412,7 +412,7 @@
   }
   .label {
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
@@ -454,7 +454,7 @@
   }
   h1 {
     margin: 0;
-    font-size: 18px;
+    font-size: var(--fs-xl);
     font-weight: 600;
   }
   p {
@@ -463,11 +463,11 @@
   }
   code {
     font-family: ui-monospace, monospace;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .muted {
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     overflow-wrap: anywhere;
   }
   .shortcuts {
@@ -494,17 +494,17 @@
     border-radius: var(--r-sm);
     background: var(--surface-2);
     font-family: ui-monospace, monospace;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .error {
     color: var(--err);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     overflow-wrap: anywhere;
   }
 
   .warn {
     color: var(--warn);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     overflow-wrap: anywhere;
   }
   .stage {
@@ -536,7 +536,7 @@
     border-radius: var(--r-sm);
     background: var(--surface-1);
     color: var(--muted);
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
   .pick svg {
     flex: 0 0 auto;
@@ -555,7 +555,7 @@
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     background: var(--surface-1);
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
   .choose:hover:not(:disabled) {
     border-color: var(--accent);
@@ -571,7 +571,7 @@
     background: var(--surface-1);
   }
   .repo-name code {
-    font-size: 15px;
+    font-size: var(--fs-lg);
   }
   .repo-url {
     max-width: 100%;
@@ -583,7 +583,7 @@
     border: 1px solid var(--border);
     border-radius: 999px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     line-height: 1.6;
   }
   .divider {
@@ -591,7 +591,7 @@
     align-items: center;
     gap: 10px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
@@ -604,7 +604,7 @@
   }
   a {
     color: var(--accent-fg);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   button {
     padding: 6px 12px;
@@ -633,16 +633,16 @@
     border-radius: var(--r-md);
     background: var(--accent);
     color: var(--on-accent);
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
   .full {
     padding: 8px 14px;
     border-radius: var(--r-md);
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
   .helper {
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     text-align: center;
   }
   .skip {
@@ -651,7 +651,7 @@
     border: 0;
     background: none;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .skip:hover {
     color: var(--text);

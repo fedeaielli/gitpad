@@ -62,9 +62,9 @@ export function applyUiFont(font: string) {
 /// Panel surface the accent is drawn on, mirroring --surface-1 in app.css.
 export function surfaceForTheme() {
   const theme = document.documentElement.dataset.theme
-  if (theme === 'vs') return '#f3f3f3'
+  if (theme === 'vs') return '#f2eee4'
   if (theme === 'hc-black') return '#0a0a0a'
-  return '#252526'
+  return '#23211e'
 }
 
 /// An empty accent drops the overrides and falls back to the theme's own.

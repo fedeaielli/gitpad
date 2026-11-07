@@ -188,7 +188,7 @@
     min-height: var(--h-tabbar);
     padding: 2px 8px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
@@ -206,7 +206,7 @@
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
-    font-size: 15px;
+    font-size: var(--fs-lg);
     line-height: 22px;
     padding: 0 5px;
   }

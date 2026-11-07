@@ -574,7 +574,7 @@
     border-radius: var(--r-md);
     background: transparent;
     color: var(--muted);
-    font-size: 18px;
+    font-size: var(--fs-xl);
     cursor: pointer;
   }
   .close:hover {
@@ -632,7 +632,7 @@
     display: flex;
     align-items: center;
     gap: var(--sp-4);
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
   .field > span:first-child {
     min-width: 120px;
@@ -660,7 +660,7 @@
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .field > span:first-child {
     /* Keep muted labels readable on the lighter dialog surface. */
-    color: #9a9a9a;
+    color: var(--muted);
   }
   :global(:root:not([data-theme='vs']):not([data-theme='hc-black'])) .close:hover {
     background: var(--surface-2);
@@ -715,7 +715,7 @@
   .hint,
   .note {
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .path {
     overflow-wrap: anywhere;
@@ -808,7 +808,7 @@
     margin: 0 0 14px;
     padding: 0;
     list-style: none;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .extensions li {
     display: flex;
