@@ -33,7 +33,8 @@
     "marked": "^18.1.2",
     "monaco-editor": "^0.57.0",
     "monaco-emacs": "^0.3.0",
-    "monaco-vim": "^0.4.4"
+    "monaco-vim": "^0.4.4",
+    "vscode-icons-js": "^11.6.1"
   },
   "overrides": {
     "dompurify": "^3.4.17"
