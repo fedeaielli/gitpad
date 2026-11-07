@@ -70,7 +70,7 @@
     width: min(420px, calc(100vw - 48px));
     padding: 16px;
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-overlay);
     background: var(--surface-3);
     box-shadow: var(--shadow-2);
   }

@@ -252,7 +252,7 @@
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-3);
-    box-shadow: var(--shadow-2);
+    box-shadow: var(--shadow-1);
     font-size: var(--fs-sm);
   }
   .menu hr {

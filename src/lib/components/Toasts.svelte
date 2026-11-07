@@ -53,7 +53,7 @@
     border-left: 3px solid var(--kind);
     border-radius: var(--r-md);
     background: var(--surface-2);
-    box-shadow: var(--shadow-2);
+    box-shadow: var(--shadow-1);
     pointer-events: auto;
   }
   .toast.error {
