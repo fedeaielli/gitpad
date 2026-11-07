@@ -355,7 +355,7 @@
     padding: 20px;
     background: var(--surface-3);
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
   }
   .head {
