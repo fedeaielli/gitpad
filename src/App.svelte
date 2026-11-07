@@ -365,6 +365,15 @@
       ui.commandPaletteOpen = true
       return
     }
+    // Ctrl+B toggles the sidebar. Unlike Ctrl+N/O, this is a pure UI action that
+    // should work regardless of editor focus or open dialogs, so we don't call
+    // editorOwnsKey() and we don't gate on settingsOpen/shortcutsOpen.
+    if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b') {
+      e.preventDefault()
+      if (e.repeat) return
+      ui.sidebarOpen = !ui.sidebarOpen
+      return
+    }
     // Comment toggles: Monaco only ships them as Ctrl+K chords, which the
     // shortcut list already owns, so they get their own keys here.
     if (
