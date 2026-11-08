@@ -286,7 +286,7 @@
       minimap: { enabled: false },
       overviewRulerBorder: false,
       scrollBeyondLastLine: false,
-      scrollbar: { vertical: 'hidden', verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+      scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
       // Inline diffs keep the original gutter next to the modified one; one
       // column of numbers is enough in a panel this narrow. Not in the 0.57
       // typings yet, hence the cast.

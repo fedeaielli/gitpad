@@ -265,24 +265,28 @@ select {
   pointer-events: none;
 }
 
-/* Thin scrollbars in the VS Code shape: 8px, an always-visible thumb that
+/* Thin scrollbars in the VS Code shape: 6px, an always-visible thumb that
    brightens on hover. Dark is the default; the other themes override the
    thumb only, the track and corner stay transparent everywhere. */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.4);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.55);
 }
 ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+/* Monaco draws its own scrollbars: same 6px, no track behind the slider. */
+.monaco-scrollable-element > .scrollbar {
   background: transparent;
 }
 

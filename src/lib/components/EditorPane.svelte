@@ -83,6 +83,10 @@
       'badge.background': '#35312c',
       'badge.foreground': '#d8d3ca',
       'editorLink.activeForeground': '#4daafc',
+      // Monaco's own scrollbar, matched to the app thumbs in app.css.
+      'scrollbarSlider.background': 'rgba(216, 211, 202, 0.4)',
+      'scrollbarSlider.hoverBackground': 'rgba(216, 211, 202, 0.55)',
+      'scrollbarSlider.activeBackground': 'rgba(216, 211, 202, 0.7)',
     },
   })
 
@@ -117,6 +121,9 @@
       'badge.background': '#e8e3d7',
       'badge.foreground': '#24211d',
       'editorLink.activeForeground': '#005fb8',
+      'scrollbarSlider.background': 'rgba(36, 33, 29, 0.45)',
+      'scrollbarSlider.hoverBackground': 'rgba(36, 33, 29, 0.6)',
+      'scrollbarSlider.activeBackground': 'rgba(36, 33, 29, 0.75)',
     },
   })
 
@@ -137,6 +144,9 @@
       'editorWidget.background': '#1a1a1a',
       'editorWidget.foreground': '#ffffff',
       'widget.border': '#6fc3df',
+      'scrollbarSlider.background': 'rgba(0, 255, 255, 0.5)',
+      'scrollbarSlider.hoverBackground': 'rgba(0, 255, 255, 0.75)',
+      'scrollbarSlider.activeBackground': 'rgba(0, 255, 255, 0.9)',
     },
   })
 
@@ -486,7 +496,7 @@
       renderWhitespace: 'selection',
       // Keeps the first line off the tab bar so tab and document read as one surface.
       padding: { top: 6 },
-      scrollbar: { vertical: 'hidden', verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+      scrollbar: { vertical: 'auto', verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
       // Without this Monaco adds a view zone on top and pushes the first lines
       // down whenever find or replace opens.
       find: { addExtraSpaceOnTop: false },
