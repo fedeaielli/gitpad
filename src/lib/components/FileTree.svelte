@@ -377,9 +377,10 @@
     background: var(--surface-2);
   }
   .row.active {
-    /* Follows the accent, at a strength that keeps --text above 4.5:1. */
-    background: var(--selection);
-    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    /* Neutral fill plus the thin accent rail VS Code's explorer uses: the
+       accent marks the open file, it does not fill the row.
+       Inset shadow, not a border: a real border would shift the row's content. */
+    background: var(--surface-2);
     box-shadow: inset 2px 0 0 var(--accent);
     color: var(--text);
   }

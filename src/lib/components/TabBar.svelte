@@ -67,10 +67,9 @@
     box-sizing: border-box;
     flex: 0 0 var(--h-tabbar);
     overflow: hidden;
-    padding: 5px 6px;
-    border-bottom: 1px solid var(--divider);
+    padding: 0 6px;
     border-radius: var(--r-lg) var(--r-lg) 0 0;
-    background: var(--surface-1);
+    background: var(--surface-0);
   }
   .tabs {
     display: flex;
@@ -86,7 +85,9 @@
     align-items: center;
     flex: 0 0 auto;
     max-width: 200px;
-    border-radius: var(--r-md);
+    /* Rounded at the top only: the open tab joins the editor below it. */
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    background: var(--surface-0);
     color: var(--muted);
   }
   /* Hover is a lifted grey, never the surface the open tab shows. */
@@ -94,9 +95,10 @@
     background: var(--surface-2);
     color: var(--text);
   }
+  /* The open tab is the editor surface: no accent, no divider under it, so the
+     strip and the document read as one continuous area. */
   .tab.active {
-    background: var(--surface-3);
-    box-shadow: inset 0 2px 0 var(--accent);
+    background: var(--editor-surface);
     color: var(--text);
   }
   .label {
