@@ -163,7 +163,7 @@
       <p class="conflicts">⚠ {gitStatus.conflicts.length} conflict(s)</p>
     {/if}
     {#if gitStatus.error}
-      <p class="error">{gitStatus.error}</p>
+      <p class="error" role="alert">{gitStatus.error}</p>
     {/if}
 
     <div class="section">Changes {gitStatus.changes.length}</div>

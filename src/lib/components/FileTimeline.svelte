@@ -345,7 +345,7 @@
   </header>
 
   {#if error}
-    <div class="error">
+    <div class="error" role="alert">
       <span>{error}</span>
       <button onclick={() => void (commit ? loadCommit() : load())}>Retry</button>
     </div>

@@ -542,7 +542,7 @@
     {/if}
   </div>
   {#if saveError}
-    <p class="error">{saveError}</p>
+    <p class="error" role="alert">{saveError}</p>
   {/if}
 </div>
 

@@ -10,17 +10,23 @@
 </script>
 
 <div class="tabbar">
-  <div class="tabs">
+  <div class="tabs" role="tablist" aria-label="Open files">
     {#each tabs.tabs as tab (tab.id)}
       <div
         class="tab"
+        role="presentation"
         class:active={tab.id === tabs.activeTabId}
         onauxclick={(e) => {
           if (e.button === 1) closeTab(tab.id)
         }}
       >
-        <button class="label" onclick={() => activateTab(tab.id)}>
-          {#if tab.modified}<span class="dot" aria-label="modified"></span>{/if}
+        <button
+          class="label"
+          role="tab"
+          aria-selected={tab.id === tabs.activeTabId}
+          onclick={() => activateTab(tab.id)}
+        >
+          {#if tab.modified}<span class="dot" role="img" aria-label="modified"></span>{/if}
           <FileIcon name={tab.path} />
           <span class="name">{tab.path}</span>
         </button>

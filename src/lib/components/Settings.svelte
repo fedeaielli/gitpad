@@ -481,7 +481,7 @@
           <button class="primary" onclick={addExtension}>Add</button>
         </div>
         {#if extMessage}
-          <p class="note">{extMessage}</p>
+          <p class="note" role="status">{extMessage}</p>
         {/if}
       {:else if tab === 'logs'}
         <LogsPane />
@@ -511,6 +511,8 @@
                 type="password"
                 placeholder="ghp_…"
                 aria-label="Personal access token"
+                aria-invalid={!!accountError}
+                aria-describedby={accountError ? 'pat-account-error' : undefined}
                 bind:value={pat}
                 onkeydown={(e) => e.key === 'Enter' && signIn()}
               />
@@ -520,7 +522,7 @@
             </div>
           </div>
           {#if accountError}
-            <p class="note">{accountError}</p>
+            <p class="note" id="pat-account-error" role="alert">{accountError}</p>
           {/if}
         {/if}
       {/if}

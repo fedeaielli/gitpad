@@ -174,7 +174,7 @@
           </div>
         {/if}
         {#if error}
-          <p class="error">{error}</p>
+          <p class="error" role="alert">{error}</p>
         {/if}
       </section>
     </div>

@@ -173,7 +173,7 @@
 </div>
 
 {#if error}
-  <p class="note">{error}</p>
+  <p class="note" role="alert">{error}</p>
 {/if}
 
 <p class="note">

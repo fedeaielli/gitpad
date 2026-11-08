@@ -288,7 +288,7 @@
   </ul>
 {/snippet}
 
-<div class="tree" role="tree" tabindex="0" aria-label="Files" oncontextmenu={(e) => openMenu(e, null)}>
+<div class="tree" role="group" aria-label="Files" oncontextmenu={(e) => openMenu(e, null)}>
   {#if loading}
     <div class="skeleton" aria-label="Loading files">
       {#each { length: 5 } as _, i (i)}
@@ -299,7 +299,7 @@
     {#if noRepo}
       <p class="hint">No repository yet. Clone one from the Git panel.</p>
     {:else if error}
-      <p class="error">{error}</p>
+      <p class="error" role="alert">{error}</p>
     {/if}
     {#if creating}
       <form class="create" onsubmit={submitCreate}>
@@ -342,12 +342,18 @@
       <button onclick={() => (menu = null)}>Cancel</button>
     {:else}
       <form onsubmit={submitName}>
-        <input bind:value={name} aria-label="File name" placeholder="Name" />
+        <input
+          bind:value={name}
+          aria-label="File name"
+          aria-invalid={!!error}
+          aria-describedby={error ? 'file-name-error' : undefined}
+          placeholder="Name"
+        />
         <button type="submit">OK</button>
       </form>
     {/if}
     {#if error}
-      <p class="error">{error}</p>
+      <p class="error" id="file-name-error" role="alert">{error}</p>
     {/if}
   </div>
 {/if}

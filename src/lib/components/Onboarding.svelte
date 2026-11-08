@@ -232,6 +232,8 @@
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
+          aria-invalid={!!error}
+          aria-describedby={error ? 'pat-error' : undefined}
         />
         <button class="primary inline" disabled={busy || !token.trim()} onclick={validatePat}>
           {busy ? 'Validating…' : 'Validate'}
@@ -330,7 +332,7 @@
       <p class="warn">{storageNote}</p>
     {/if}
     {#if error}
-      <p class="error">{error}</p>
+      <p class="error" id="pat-error" role="alert">{error}</p>
     {/if}
     <button class="skip" onclick={onskip}>Skip configuration</button>
   </div>
