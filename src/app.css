@@ -285,9 +285,10 @@ select {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
-/* Monaco draws its own scrollbars: same 6px, no track behind the slider. */
-.monaco-scrollable-element > .scrollbar {
-  background: transparent;
+/* Monaco injects its own `.monaco-scrollable-element > .scrollbar` rule into
+   <head> at runtime, so a plain declaration here loses on source order. */
+.monaco-scrollable-element .scrollbar {
+  background: transparent !important;
 }
 
 :root[data-theme='vs'] ::-webkit-scrollbar-thumb {

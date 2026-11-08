@@ -83,10 +83,12 @@
       'badge.background': '#35312c',
       'badge.foreground': '#d8d3ca',
       'editorLink.activeForeground': '#4daafc',
-      // Monaco's own scrollbar, matched to the app thumbs in app.css.
-      'scrollbarSlider.background': 'rgba(216, 211, 202, 0.4)',
-      'scrollbarSlider.hoverBackground': 'rgba(216, 211, 202, 0.55)',
-      'scrollbarSlider.activeBackground': 'rgba(216, 211, 202, 0.7)',
+      // Monaco parses these with Color.fromHex(), which only accepts #hex and
+      // falls back to pure red on anything else: rgba() silently painted the
+      // scrollbar red. Keep the notation #RRGGBBAA.
+      'scrollbarSlider.background': '#d8d3ca66',
+      'scrollbarSlider.hoverBackground': '#d8d3ca8c',
+      'scrollbarSlider.activeBackground': '#d8d3cab3',
     },
   })
 
@@ -121,9 +123,9 @@
       'badge.background': '#e8e3d7',
       'badge.foreground': '#24211d',
       'editorLink.activeForeground': '#005fb8',
-      'scrollbarSlider.background': 'rgba(36, 33, 29, 0.45)',
-      'scrollbarSlider.hoverBackground': 'rgba(36, 33, 29, 0.6)',
-      'scrollbarSlider.activeBackground': 'rgba(36, 33, 29, 0.75)',
+      'scrollbarSlider.background': '#24211d73',
+      'scrollbarSlider.hoverBackground': '#24211d99',
+      'scrollbarSlider.activeBackground': '#24211dbf',
     },
   })
 
@@ -144,9 +146,9 @@
       'editorWidget.background': '#1a1a1a',
       'editorWidget.foreground': '#ffffff',
       'widget.border': '#6fc3df',
-      'scrollbarSlider.background': 'rgba(0, 255, 255, 0.5)',
-      'scrollbarSlider.hoverBackground': 'rgba(0, 255, 255, 0.75)',
-      'scrollbarSlider.activeBackground': 'rgba(0, 255, 255, 0.9)',
+      'scrollbarSlider.background': '#00ffff80',
+      'scrollbarSlider.hoverBackground': '#00ffffbf',
+      'scrollbarSlider.activeBackground': '#00ffffe6',
     },
   })
 
