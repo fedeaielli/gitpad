@@ -67,8 +67,10 @@
     box-sizing: border-box;
     flex: 0 0 var(--h-tabbar);
     overflow: hidden;
-    padding: 5px 6px;
-    border-bottom: 1px solid var(--border);
+    /* No bottom border: the line is drawn by the tabs' own bottom borders, so
+       the open tab can leave its 1px out. No bottom padding either, so the tabs
+       hang flush onto the editor below. */
+    padding: 5px 6px 0;
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     background: var(--surface-0);
   }
@@ -76,17 +78,23 @@
     display: flex;
     flex: 1;
     min-width: 0;
-    gap: 2px;
+    /* Adjacent, as in VS Code: the tabs' bottom borders have to join into one
+       continuous line, so there is no gap between them. */
+    gap: 0;
     overflow-x: auto;
     overflow-y: hidden;
   }
   .tab {
-    position: relative;
     display: flex;
     align-items: center;
     flex: 0 0 auto;
+    box-sizing: border-box;
     max-width: 200px;
-    border-radius: var(--r-md);
+    /* Top and side borders stay transparent: the open tab gets real 1px edges,
+       and without them its label would shift sideways on activation. */
+    border: 1px solid transparent;
+    border-bottom-color: var(--border);
+    border-radius: var(--r-md) var(--r-md) 0 0;
     background: var(--surface-0);
     color: var(--muted);
   }
@@ -96,19 +104,16 @@
     color: var(--text);
   }
   .tab.active {
-    background: var(--surface-2);
+    /* Editor surface. The bottom border keeps its 1px, so the label never
+       moves, but it is transparent: the background is painted under the border
+       area too (background-clip stays border-box), so the tab's own colour
+       reaches its last pixel and runs on into the pane. The strip line stops
+       at the tab for the same reason. */
+    border-color: var(--border);
+    border-top-color: var(--accent);
+    border-bottom-color: transparent;
+    background: var(--editor-surface);
     color: var(--text);
-  }
-  /* Underline only: the accent marks the open tab without a second edge on
-     top, so the strip keeps one clear line at the bottom. */
-  .tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--accent);
   }
   .label {
     display: flex;
