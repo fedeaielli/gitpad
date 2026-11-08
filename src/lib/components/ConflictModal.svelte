@@ -115,12 +115,25 @@
   function close() {
     ui.conflictsHidden = true
   }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Escape' || busy) return
+    e.preventDefault()
+    close()
+  }
 </script>
 
+<svelte:window onkeydown={onKeydown} />
 <div class="overlay">
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Merge conflicts" use:focusTrap>
+  <div
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="conflict-title"
+    use:focusTrap
+  >
     <header>
-      <span>Merge conflicts ({files.length})</span>
+      <span id="conflict-title">Merge conflicts ({files.length})</span>
       <button class="close" aria-label="Close" onclick={close}>×</button>
     </header>
 
