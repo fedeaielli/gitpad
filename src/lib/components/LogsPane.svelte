@@ -228,7 +228,7 @@
   select,
   input {
     padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);
@@ -248,7 +248,7 @@
   }
   .chip {
     padding: 3px 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
@@ -262,7 +262,7 @@
   .refresh,
   .more {
     padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);

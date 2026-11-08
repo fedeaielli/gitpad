@@ -131,7 +131,7 @@
     box-sizing: border-box;
     height: 22px;
     padding: 0 6px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: var(--surface-2);
     color: var(--text);

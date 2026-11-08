@@ -280,7 +280,7 @@
   .actions button,
   .done button {
     padding: 4px 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: var(--surface-2);
   }

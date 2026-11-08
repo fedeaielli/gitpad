@@ -288,7 +288,7 @@
     box-sizing: border-box;
     width: 100%;
     padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);

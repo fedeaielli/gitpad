@@ -474,7 +474,7 @@
     /* Desktop target, not touch: 32px is the smallest that still reads as one. */
     min-height: 32px;
     padding: 0 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--text);

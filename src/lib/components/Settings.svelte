@@ -660,7 +660,7 @@
     box-sizing: border-box;
     height: 28px;
     padding: 0 var(--sp-2);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);
@@ -705,7 +705,7 @@
   }
   .field button.change {
     padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);
@@ -743,7 +743,7 @@
     /* Centred inside the 28 px row the other controls set. */
     margin: 2px 0;
     padding: 0;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--swatch-color);
     cursor: pointer;
@@ -831,7 +831,7 @@
   .add button {
     flex: 0 0 auto;
     padding: 4px 14px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: var(--surface-0);
   }

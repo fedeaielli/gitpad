@@ -425,7 +425,7 @@
   input {
     margin: 8px;
     padding: 8px 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-2);
     color: var(--text);

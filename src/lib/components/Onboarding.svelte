@@ -422,7 +422,7 @@
     align-items: center;
     gap: 4px;
     padding: 3px 3px 3px 10px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: var(--surface-1);
   }
@@ -549,7 +549,7 @@
   .choose {
     flex: 0 0 auto;
     padding: 0 14px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: var(--surface-1);
     font-size: var(--fs-sm);
@@ -605,7 +605,7 @@
   }
   button {
     padding: 6px 12px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: var(--surface-2);
   }

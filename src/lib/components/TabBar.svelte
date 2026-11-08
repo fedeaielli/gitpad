@@ -155,7 +155,7 @@
     box-sizing: border-box;
     height: 22px;
     padding: 0 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--muted);

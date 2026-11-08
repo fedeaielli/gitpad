@@ -122,7 +122,7 @@
   }
   .actions button {
     padding: 4px 12px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     background: transparent;
     color: var(--text);
     font-size: var(--fs-sm);
