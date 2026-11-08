@@ -67,11 +67,10 @@
     box-sizing: border-box;
     flex: 0 0 var(--h-tabbar);
     overflow: hidden;
-    /* No bottom padding or rule: the active tab's own bottom border is what
-       reaches the editor, so the strip has nothing to bridge. */
-    padding: 5px 6px 0;
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--divider);
     border-radius: var(--r-lg) var(--r-lg) 0 0;
-    background: var(--surface-0);
+    background: var(--surface-1);
   }
   .tabs {
     display: flex;
@@ -86,12 +85,8 @@
     display: flex;
     align-items: center;
     flex: 0 0 auto;
-    box-sizing: border-box;
     max-width: 200px;
-    border-top: 1px solid transparent;
-    border-bottom: 1px solid transparent;
-    border-radius: var(--r-md) var(--r-md) 0 0;
-    background: var(--surface-0);
+    border-radius: var(--r-md);
     color: var(--muted);
   }
   /* Hover is a lifted grey, never the surface the open tab shows. */
@@ -100,12 +95,8 @@
     color: var(--text);
   }
   .tab.active {
-    /* A thin accent rail, not a filled block: the surface carries the
-       selection. The bottom border is the editor surface so the open tab
-       merges into the pane below instead of floating on a gap. */
-    background: var(--surface-2);
-    border-top: 1px solid var(--accent);
-    border-bottom: 1px solid var(--editor-surface);
+    background: var(--surface-3);
+    box-shadow: inset 0 2px 0 var(--accent);
     color: var(--text);
   }
   .label {
