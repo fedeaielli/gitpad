@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import { errorMessage } from '../stores/git.svelte'
+  import { debounce } from '../utils/debounce'
   import {
     buildSessions,
     isStartOnly,
@@ -37,7 +38,11 @@
   let error = $state('')
   let level = $state<LogLevel | 'all'>('all')
   let categories = $state<LogCategory[]>([])
+  // The typed value and the filter it feeds: filtering every keystroke rebuilds
+  // the whole list, so the two are separated by a short debounce.
+  let queryInput = $state('')
   let query = $state('')
+  const applyQuery = debounce(() => (query = queryInput), 150)
   let limit = $state(300)
 
   const sessions = $derived(
@@ -166,7 +171,13 @@
       </button>
     {/each}
   </div>
-  <input type="search" placeholder="Search messages" aria-label="Search logs" bind:value={query} />
+  <input
+    type="search"
+    placeholder="Search messages"
+    aria-label="Search logs"
+    bind:value={queryInput}
+    oninput={applyQuery.run}
+  />
   <button type="button" class="refresh" disabled={loading} onclick={() => void refresh()}>
     {loading ? 'Loading…' : 'Refresh'}
   </button>

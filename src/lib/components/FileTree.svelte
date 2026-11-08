@@ -12,7 +12,7 @@
 
   let error = $state<string | null>(null)
   let loading = $state(true)
-  /// The backend stops at 20 000 entries instead of sending a payload that
+  /// The backend stops at 5 000 entries instead of sending a payload that
   /// can take the window down; the tree is real, just partial.
   let truncated = $state(false)
   let noRepo = $state(false)
@@ -323,7 +323,7 @@
     {/if}
     {@render tree(ui.fileTree)}
     {#if truncated}
-      <p class="hint">Folder too large: only part of it is listed.</p>
+      <p class="hint">Showing the first 5 000 entries. Use search to reach the rest.</p>
     {/if}
   {/if}
 </div>

@@ -113,7 +113,7 @@ fn parse_families(stdout: &str) -> Vec<String> {
 
 /// A full walk costs one stat per entry and travels to the webview as a single
 /// message: past these bounds the payload alone can take the window down.
-const MAX_TREE_ENTRIES: usize = 20_000;
+const MAX_TREE_ENTRIES: usize = 5_000;
 const MAX_TREE_DEPTH: usize = 40;
 
 #[derive(Serialize)]
