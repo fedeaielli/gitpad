@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ui } from '../stores/ui.svelte'
+  import { focusTrap } from '../utils/focus'
 
   const SHORTCUTS: Array<{ label: string; keys: string[] }> = [
     { label: 'Command palette', keys: ['Ctrl', 'P'] },
@@ -32,7 +33,7 @@
 
 <div class="overlay" role="presentation">
   <button class="backdrop" aria-label="Close keyboard shortcuts" onclick={close}></button>
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" use:focusTrap>
     <header>
       <h2>Keyboard shortcuts</h2>
       <button class="close" aria-label="Close keyboard shortcuts" onclick={close}>×</button>

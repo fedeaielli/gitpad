@@ -7,6 +7,7 @@
   import { tabs, openTab } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { monacoTheme } from '../utils/themes'
+  import { focusTrap } from '../utils/focus'
 
   interface Versions {
     ours: string
@@ -116,8 +117,8 @@
   }
 </script>
 
-<div class="overlay" role="dialog" aria-label="Merge conflicts">
-  <div class="modal">
+<div class="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Merge conflicts" use:focusTrap>
     <header>
       <span>Merge conflicts ({files.length})</span>
       <button class="close" aria-label="Close" onclick={close}>×</button>

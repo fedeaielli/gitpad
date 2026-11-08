@@ -5,6 +5,7 @@
   import { tabs, openTab } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { debounce } from '../utils/debounce'
+  import { focusTrap } from '../utils/focus'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { saveAndSync } from '../utils/save-and-sync'
   import { newFileError } from '../utils/new-file'
@@ -318,9 +319,9 @@
   })
 </script>
 
-<div class="overlay" role="dialog" aria-label="Command palette">
-  <button class="backdrop" aria-label="Close" onclick={close}></button>
-  <div class="palette">
+<div class="overlay" role="dialog" aria-modal="true" aria-label="Command palette">
+  <button class="backdrop" tabindex="-1" aria-label="Close" onclick={close}></button>
+  <div class="palette" use:focusTrap>
     <input
       bind:this={inputEl}
       bind:value={text}

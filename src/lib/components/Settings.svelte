@@ -5,6 +5,7 @@
   import { pushToast } from '../stores/toasts.svelte'
   import { contrast } from '../utils/color'
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
+  import { focusTrap } from '../utils/focus'
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
   import { auth, forgetUser, loadUser, setUser } from '../stores/auth.svelte'
@@ -248,7 +249,7 @@
 <div class="overlay" role="presentation">
   <button class="backdrop" aria-label="Close settings" onclick={() => (ui.settingsOpen = false)}
   ></button>
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Settings">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Settings" use:focusTrap>
     <header>
       <h2>Settings</h2>
       <button class="close" aria-label="Close settings" onclick={() => (ui.settingsOpen = false)}>
