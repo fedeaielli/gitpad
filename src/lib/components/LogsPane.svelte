@@ -244,11 +244,6 @@
     background: var(--surface-0);
     color: var(--text);
   }
-  select:focus,
-  input:focus {
-    border-color: var(--accent-fg);
-    outline: none;
-  }
   input {
     flex: 1;
     min-width: 140px;
@@ -280,7 +275,7 @@
   }
   .refresh:hover:not(:disabled),
   .more:hover {
-    border-color: var(--accent-fg);
+    border-color: var(--border-strong);
   }
   .note {
     margin: 0;

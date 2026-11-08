@@ -437,7 +437,7 @@
   .actions button {
     min-height: 32px;
     padding: 0 12px;
-    border: 1px solid var(--accent);
+    border: 1px solid var(--border-strong);
     background: transparent;
     color: var(--accent-fg);
     font-size: var(--fs-xs);

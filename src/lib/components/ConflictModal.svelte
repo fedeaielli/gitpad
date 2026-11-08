@@ -285,7 +285,7 @@
     background: var(--surface-2);
   }
   .actions button:hover:not(:disabled) {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
   }
   button:disabled {
     opacity: 0.5;

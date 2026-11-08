@@ -300,11 +300,6 @@
     min-height: 64px;
     resize: none;
   }
-  textarea:focus,
-  .clone input:focus {
-    border-color: var(--accent-fg);
-    outline: none;
-  }
   textarea::placeholder,
   .clone input::placeholder {
     color: var(--muted);

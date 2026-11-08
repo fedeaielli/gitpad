@@ -139,12 +139,8 @@
     text-align: left;
   }
   .search:hover {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
     color: var(--text);
-  }
-  .search:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: 1px;
   }
   /* Undo / redo, bare chevrons beside the search field, as in the VS Code title bar. */
   .nav {

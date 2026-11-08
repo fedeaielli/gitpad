@@ -438,10 +438,6 @@
     color: var(--text);
     font: inherit;
   }
-  input:focus {
-    border-color: var(--accent);
-    outline: none;
-  }
   .searching {
     min-height: 18px;
     margin: 0 16px 4px;

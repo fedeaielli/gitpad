@@ -675,12 +675,6 @@
   .modal input[type='number']::-webkit-inner-spin-button {
     display: none;
   }
-  .modal select:focus,
-  .modal input[type='text']:focus,
-  .modal input[type='number']:focus {
-    border-color: var(--accent-fg);
-    outline: none;
-  }
   .inline {
     display: flex;
     align-items: center;
@@ -713,7 +707,7 @@
     color: var(--text);
   }
   .field button.change:hover:not(:disabled) {
-    border-color: var(--accent-fg);
+    border-color: var(--border-strong);
   }
   .import {
     display: flex;
@@ -838,7 +832,7 @@
     background: var(--surface-0);
   }
   .add button:hover {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
   }
   .account {
     display: flex;

@@ -429,7 +429,7 @@
     background: var(--surface-1);
   }
   .field:focus-within {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
   }
   .field input {
     flex: 1;
@@ -557,7 +557,7 @@
     font-size: var(--fs-sm);
   }
   .choose:hover:not(:disabled) {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
   }
   .box {
     display: flex;
@@ -612,7 +612,7 @@
     background: var(--surface-2);
   }
   button:hover:not(:disabled) {
-    border-color: var(--accent);
+    border-color: var(--border-strong);
   }
   button:disabled {
     opacity: 0.5;
