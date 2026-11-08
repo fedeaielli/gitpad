@@ -15,6 +15,8 @@
         "title": "GitPad",
         "width": 1200,
         "height": 800,
+        "minWidth": 720,
+        "minHeight": 480,
         "resizable": true,
         "fullscreen": false,
         "decorations": false,
