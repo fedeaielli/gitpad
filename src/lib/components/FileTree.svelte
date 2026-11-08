@@ -377,12 +377,19 @@
     background: var(--surface-2);
   }
   .row.active {
-    /* Neutral fill plus the thin accent rail VS Code's explorer uses: the
-       accent marks the open file, it does not fill the row.
-       Inset shadow, not a border: a real border would shift the row's content. */
-    background: var(--surface-2);
-    box-shadow: inset 2px 0 0 var(--accent);
+    /* Lighter fill than hover, plus the thin accent rail VS Code's explorer
+       uses: the accent marks the open file, it does not fill the row.
+       A real border, not an inset shadow, so it lines up with the tree edge;
+       padding drops by the same 2px so the label never shifts. */
+    background: var(--surface-3);
+    border-left: 2px solid var(--accent);
+    padding-left: 6px;
     color: var(--text);
+  }
+  /* hc-black aliases surface-3 onto surface-1, so the fill would sit darker
+     than the hover state it is meant to outrank. */
+  :global(:root[data-theme='hc-black']) .row.active {
+    background: var(--surface-2);
   }
   .rename {
     padding: 0 8px;
