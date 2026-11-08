@@ -109,8 +109,10 @@ describe.each(THEMES)('theme $name', ({ vars }) => {
     expect(contrast(vars, '--text', '--selection')).toBeGreaterThanOrEqual(4.5)
   })
 
-  it('strong borders reach 3:1 on surface-0', () => {
-    expect(contrast(vars, '--border-strong', '--surface-0')).toBeGreaterThanOrEqual(3)
+  it('strong borders reach 3:1 on every surface', () => {
+    for (const surface of ['--surface-0', '--surface-1', '--surface-2', '--surface-3']) {
+      expect(contrast(vars, '--border-strong', surface)).toBeGreaterThanOrEqual(3)
+    }
   })
 })
 
