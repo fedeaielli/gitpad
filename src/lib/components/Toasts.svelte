@@ -50,7 +50,6 @@
     gap: 10px;
     padding: 11px 12px 11px 14px;
     border: 1px solid var(--border);
-    border-left: 3px solid var(--kind);
     border-radius: var(--r-md);
     background: var(--surface-2);
     box-shadow: var(--shadow-1);

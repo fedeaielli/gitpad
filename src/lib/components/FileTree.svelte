@@ -255,7 +255,11 @@
             }}
             onclick={() => toggle(node.path)}
           >
-            <span class="chevron">{ui.expanded.includes(node.path) ? '▾' : '▸'}</span>
+            <span class="chevron" class:open={ui.expanded.includes(node.path)}>
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M6 3.5 10.5 8 6 12.5" />
+              </svg>
+            </span>
             <span class="icon"><FileIcon name={node.name} dir size={16} /></span>
             <span class="name">{node.name}</span>
           </button>
@@ -409,8 +413,25 @@
     padding: 1px 4px;
   }
   .chevron {
-    width: 8px;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 12px;
     color: var(--muted);
+    transition: transform var(--t-fast);
+  }
+  .chevron.open {
+    transform: rotate(90deg);
+  }
+  .chevron svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .icon {
     display: inline-flex;

@@ -80,7 +80,11 @@
           aria-expanded={menuOpen}
           onclick={() => (menuOpen = !menuOpen)}
         >
-          ⋯
+          <svg class="dots" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="3.4" cy="8" r="1.25" />
+            <circle cx="8" cy="8" r="1.25" />
+            <circle cx="12.6" cy="8" r="1.25" />
+          </svg>
         </button>
       </div>
       {#if menuOpen}
@@ -223,6 +227,11 @@
   .actions button:hover {
     color: var(--text);
     background: var(--surface-2);
+  }
+  .dots {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
   }
   .scrim {
     position: fixed;

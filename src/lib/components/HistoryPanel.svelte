@@ -232,7 +232,11 @@
               aria-label={expanded === commit.hash ? 'Hide files' : 'Show files'}
               onclick={() => toggle(commit)}
             >
-              <span class="chev">›</span>
+              <span class="chev">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M6 3.5 10.5 8 6 12.5" />
+                </svg>
+              </span>
             </button>
           </div>
           {#if expanded === commit.hash}
@@ -376,7 +380,17 @@
     color: var(--text);
   }
   .chev {
+    display: inline-flex;
     transition: transform var(--t-fast);
+  }
+  .chev svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .expand.open .chev {
     transform: rotate(90deg);
