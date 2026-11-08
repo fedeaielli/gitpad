@@ -337,9 +337,15 @@ select {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Progress must stay visible: slower beats frozen, which reads as broken. */
+  .loading,
+  .spinner,
+  .spinning svg,
+  .bone {
+    animation-duration: 2s !important;
+    animation-iteration-count: infinite !important;
   }
 }
