@@ -66,10 +66,13 @@
     align-items: stretch;
     box-sizing: border-box;
     flex: 0 0 var(--h-tabbar);
-    overflow: hidden;
-    /* No bottom border: the line is drawn by the tabs' own bottom borders, so
-       the open tab can leave its 1px out. No bottom padding either, so the tabs
-       hang flush onto the editor below. */
+    /* Visible, not hidden: the open tab's concave corners hang outside its box
+       and must not be clipped by the strip. Horizontal scrolling is handled by
+       .tabs itself. */
+    overflow: visible;
+    /* No bottom border: the line under the strip is the inactive tabs' own
+       bottom border, and the open tab omits its slice. No bottom padding
+       either, so the tabs hang flush onto the editor. */
     padding: 5px 6px 0;
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     background: var(--surface-0);
@@ -83,8 +86,14 @@
     gap: 0;
     overflow-x: auto;
     overflow-y: hidden;
+    /* The open tab's concave corners sit 8px outside its box. This padding is
+       the room they need at the two ends of the strip; the negative margin
+       cancels it so the tabs keep their original inset. */
+    padding-inline: 8px;
+    margin-inline: -8px;
   }
   .tab {
+    position: relative;
     display: flex;
     align-items: center;
     flex: 0 0 auto;
@@ -104,16 +113,50 @@
     color: var(--text);
   }
   .tab.active {
-    /* Editor surface. The bottom border keeps its 1px, so the label never
-       moves, but it is transparent: the background is painted under the border
-       area too (background-clip stays border-box), so the tab's own colour
-       reaches its last pixel and runs on into the pane. The strip line stops
-       at the tab for the same reason. */
+    /* Editor surface, no bottom border. Heights are stretched, so dropping the
+       bottom border does not shorten the tab: its background simply paints the
+       pixel the line used to occupy, which is the merge. No negative margin,
+       because the scroll container clips anything that leaves the strip. */
+    z-index: 1;
     border-color: var(--border);
     border-top-color: var(--accent);
-    border-bottom-color: transparent;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
     background: var(--editor-surface);
     color: var(--text);
+  }
+  /* Concave bottom corners: an 8px square with one rounded corner, filled by a
+     hard offset shadow in the editor surface. The rounded corner is the curve
+     the tab peels away with; the rest of the square covers the strip line
+     beside the tab, so the two surfaces read as one. */
+  .tab.active::before,
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 8px;
+    height: 8px;
+    background: transparent;
+  }
+  .tab.active::before {
+    left: -8px;
+    border-bottom-right-radius: 6px;
+    box-shadow: 3px 1px 0 1px var(--editor-surface);
+  }
+  .tab.active::after {
+    right: -8px;
+    border-bottom-left-radius: 6px;
+    box-shadow: -3px 1px 0 1px var(--editor-surface);
+  }
+  .tab.active::before {
+    left: -8px;
+    border-bottom-right-radius: 6px;
+    box-shadow: 3px 1px 0 1px var(--editor-surface);
+  }
+  .tab.active::after {
+    right: -8px;
+    border-bottom-left-radius: 6px;
+    box-shadow: -3px 1px 0 1px var(--editor-surface);
   }
   .label {
     display: flex;
