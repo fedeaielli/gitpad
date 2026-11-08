@@ -273,14 +273,14 @@
 
     <div class="body">
       {#if tab === 'appearance'}
-        <div class="field">
+        <label class="field">
           <span>Theme</span>
           <select bind:value={ui.editorTheme}>
             {#each THEMES as theme (theme)}
               <option value={theme}>{theme}</option>
             {/each}
           </select>
-        </div>
+        </label>
         <div class="field">
           <span>Accent color</span>
           <div class="accent-picker">
@@ -316,7 +316,7 @@
             {/if}
           </div>
         </div>
-        <div class="field">
+        <label class="field">
           <span>Font size</span>
           <div class="inline">
             <input
@@ -329,8 +329,8 @@
             />
             <span class="hint">8–32 px</span>
           </div>
-        </div>
-        <div class="field">
+        </label>
+        <label class="field">
           <span>Font family</span>
           <select class="wide" bind:value={ui.fontFamily}>
             <option value={DEFAULT_FONT}>Default (monospace)</option>
@@ -338,7 +338,7 @@
               <option value={font}>{font}</option>
             {/each}
           </select>
-        </div>
+        </label>
       {:else if tab === 'sync'}
         <div class="field">
           <span>Auto-sync</span>
@@ -385,6 +385,7 @@
               type="text"
               class="wide"
               placeholder="https://github.com/user/repo.git"
+              aria-label="Repository URL to import"
               bind:value={importUrl}
               onkeydown={(e) => {
                 if (e.key === 'Enter') void importRepo()
@@ -411,7 +412,7 @@
             </div>
           </div>
         {/if}
-        <div class="field">
+        <label class="field">
           <span>Save debounce</span>
           <div class="inline">
             <input
@@ -424,8 +425,8 @@
             />
             <span class="value">{ui.saveDebounceMs / 1000}s</span>
           </div>
-        </div>
-        <div class="field">
+        </label>
+        <label class="field">
           <span>Push after idle</span>
           <div class="inline">
             <input
@@ -438,16 +439,16 @@
             />
             <span class="hint">seconds, 5–300</span>
           </div>
-        </div>
+        </label>
       {:else if tab === 'editor'}
-        <div class="field">
+        <label class="field">
           <span>Keybindings</span>
           <select bind:value={ui.keybindings}>
             {#each KEYBINDINGS as mode (mode)}
               <option value={mode}>{mode}</option>
             {/each}
           </select>
-        </div>
+        </label>
         <p class="note">
           {ui.keybindings === 'vscode'
             ? 'Standard Monaco shortcuts.'
@@ -464,10 +465,15 @@
           {/each}
         </ul>
         <div class="add">
-          <input placeholder="ext" bind:value={newExt} onkeydown={(e) => {
-            if (e.key === 'Enter') addExtension()
-          }} />
-          <select bind:value={newLang}>
+          <input
+            placeholder="ext"
+            aria-label="File extension"
+            bind:value={newExt}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') addExtension()
+            }}
+          />
+          <select bind:value={newLang} aria-label="Language for the extension">
             {#each LANGUAGES as lang (lang)}
               <option value={lang}>{lang}</option>
             {/each}
@@ -504,6 +510,7 @@
               <input
                 type="password"
                 placeholder="ghp_…"
+                aria-label="Personal access token"
                 bind:value={pat}
                 onkeydown={(e) => e.key === 'Enter' && signIn()}
               />

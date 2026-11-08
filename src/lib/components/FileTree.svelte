@@ -342,7 +342,7 @@
       <button onclick={() => (menu = null)}>Cancel</button>
     {:else}
       <form onsubmit={submitName}>
-        <input bind:value={name} placeholder="Name" />
+        <input bind:value={name} aria-label="File name" placeholder="Name" />
         <button type="submit">OK</button>
       </form>
     {/if}

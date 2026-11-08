@@ -327,6 +327,7 @@
       bind:value={text}
       oninput={onInput}
       onkeydown={onKeydown}
+      aria-label="Search files or run a command"
       placeholder={prompt
         ? `New ${prompt} name`
         : searching

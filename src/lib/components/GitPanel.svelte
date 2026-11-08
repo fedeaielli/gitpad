@@ -92,7 +92,11 @@
         void clone()
       }}
     >
-      <input bind:value={cloneUrl} placeholder="https://github.com/user/repo.git" />
+      <input
+        bind:value={cloneUrl}
+        aria-label="Repository URL to clone"
+        placeholder="https://github.com/user/repo.git"
+      />
       <button type="submit" class="commit" disabled={cloning}>
         {cloning ? 'Cloning…' : 'Clone'}
       </button>
@@ -140,7 +144,12 @@
         void commit()
       }}
     >
-      <textarea bind:value={commitMessage} placeholder="Commit message" rows="3"></textarea>
+      <textarea
+        bind:value={commitMessage}
+        aria-label="Commit message"
+        placeholder="Commit message"
+        rows="3"
+      ></textarea>
       <button
         type="submit"
         class="commit"
