@@ -7,10 +7,10 @@
   import FileIcon from './FileIcon.svelte'
   import { sortNodes, visibleNodes } from '../utils/file-sort'
   import { errorMessage, isNoRepoError } from '../stores/git.svelte'
+  import { pushToast } from '../stores/toasts.svelte'
 
   type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'delete'
 
-  let error = $state<string | null>(null)
   let loading = $state(true)
   /// The backend stops at 5 000 entries instead of sending a payload that
   /// can take the window down; the tree is real, just partial.
@@ -27,7 +27,6 @@
     if (noRepo) return
     menu = null
     name = ''
-    error = null
     creating = kind
   }
 
@@ -56,7 +55,6 @@
     renaming = null
     const to = join(parentOf(node.path), value)
     if (!value || to === node.path) return
-    error = null
     try {
       await invoke('fs_rename', { from: node.path, to })
       retarget(node.path, to)
@@ -67,7 +65,7 @@
       )
       await loadTree()
     } catch (e) {
-      error = errorMessage(e)
+      pushToast(`Rename failed: ${errorMessage(e)}`)
     }
   }
 
@@ -92,13 +90,12 @@
       })
       ui.fileTree = listing.entries
       truncated = listing.truncated
-      error = null
       noRepo = false
     } catch (e) {
       ui.fileTree = []
       truncated = false
       noRepo = isNoRepoError(e)
-      error = noRepo ? null : errorMessage(e)
+      if (!noRepo) pushToast(`Could not read the notes folder: ${errorMessage(e)}`)
     } finally {
       loading = false
     }
@@ -113,7 +110,7 @@
     try {
       await openFileInTab(node.path)
     } catch (e) {
-      error = errorMessage(e)
+      pushToast(`Could not open ${node.name}: ${errorMessage(e)}`)
     }
   }
 
@@ -133,7 +130,6 @@
     if (!menu) return
     const base = menu.node ? (menu.node.type === 'dir' ? menu.node.path : parentOf(menu.node.path)) : ''
     menu = null
-    error = null
     try {
       const path = await pickAndImport(directory, base || null)
       if (!path) return
@@ -143,7 +139,7 @@
         await openFile({ name: path.split('/').pop() ?? path, path, type: 'file' })
       }
     } catch (e) {
-      error = errorMessage(e)
+      pushToast(`Import failed: ${errorMessage(e)}`)
     }
   }
 
@@ -162,7 +158,6 @@
   async function submitName(event: SubmitEvent) {
     event.preventDefault()
     if (!menu || !name.trim()) return
-    error = null
     const value = name.trim()
     const kind = menu.mode
     const base = menu.node ? (menu.node.type === 'dir' ? menu.node.path : parentOf(menu.node.path)) : ''
@@ -170,20 +165,19 @@
       await createIn(base, kind, value)
       menu = null
     } catch (e) {
-      error = errorMessage(e)
+      pushToast(`Could not create ${value}: ${errorMessage(e)}`)
     }
   }
 
   async function submitCreate(event: SubmitEvent) {
     event.preventDefault()
     if (!creating || !name.trim()) return
-    error = null
     const kind = creating === 'file' ? 'new-file' : 'new-folder'
     try {
       await createIn('', kind, name.trim())
       creating = null
     } catch (e) {
-      error = errorMessage(e)
+      pushToast(`Could not create ${name.trim()}: ${errorMessage(e)}`)
     }
   }
 
@@ -191,25 +185,24 @@
     if (!menu) return
     const path = menu.node?.path ?? ''
     menu = null
-    error = null
     try {
       await invoke('reveal_in_filemanager', { path })
     } catch (e) {
-      error = errorMessage(e)
+      pushToast(`Could not reveal the file: ${errorMessage(e)}`)
     }
   }
 
   async function remove() {
     if (!menu?.node) return
-    error = null
     const path = menu.node.path
+    const label = menu.node.name
     try {
       await invoke('fs_delete', { path })
       discardUnder(path)
       menu = null
       await loadTree()
     } catch (e) {
-      error = errorMessage(e)
+      pushToast(`Could not delete ${label}: ${errorMessage(e)}`)
     }
   }
 </script>
@@ -302,8 +295,6 @@
   {:else}
     {#if noRepo}
       <p class="hint">No repository yet. Clone one from the Git panel.</p>
-    {:else if error}
-      <p class="error" role="alert">{error}</p>
     {/if}
     {#if creating}
       <form class="create" onsubmit={submitCreate}>
@@ -349,15 +340,10 @@
         <input
           bind:value={name}
           aria-label="File name"
-          aria-invalid={!!error}
-          aria-describedby={error ? 'file-name-error' : undefined}
           placeholder="Name"
         />
         <button type="submit">OK</button>
       </form>
-    {/if}
-    {#if error}
-      <p class="error" id="file-name-error" role="alert">{error}</p>
     {/if}
   </div>
 {/if}
@@ -443,11 +429,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .error {
-    margin: 4px 8px;
-    color: var(--err);
-    font-size: var(--fs-xs);
   }
   .hint {
     margin: 4px 8px;
