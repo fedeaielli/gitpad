@@ -458,7 +458,7 @@
     gap: 10px;
     width: 100%;
     padding: 6px 8px;
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     text-align: left;
   }
   .item:hover {

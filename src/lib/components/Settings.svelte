@@ -834,7 +834,7 @@
     flex: 0 0 auto;
     padding: 4px 14px;
     border: 1px solid var(--border-strong);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--surface-0);
   }
   .add button:hover {

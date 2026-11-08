@@ -425,7 +425,7 @@
     gap: 4px;
     padding: 3px 3px 3px 10px;
     border: 1px solid var(--border-strong);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--surface-1);
   }
   .field:focus-within {
@@ -552,7 +552,7 @@
     flex: 0 0 auto;
     padding: 0 14px;
     border: 1px solid var(--border-strong);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--surface-1);
     font-size: var(--fs-sm);
   }
@@ -608,7 +608,7 @@
   button {
     padding: 6px 12px;
     border: 1px solid var(--border-strong);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--surface-2);
   }
   button:hover:not(:disabled) {

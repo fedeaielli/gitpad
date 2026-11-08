@@ -281,7 +281,7 @@
   .done button {
     padding: 4px 10px;
     border: 1px solid var(--border-strong);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: var(--surface-2);
   }
   .actions button:hover:not(:disabled) {

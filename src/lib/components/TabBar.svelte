@@ -138,6 +138,7 @@
   .icon {
     display: flex;
     padding: 3px;
+    /* 22px square: the shared 9px radius would read as a circle here. */
     border-radius: var(--r-sm);
     color: var(--text);
   }

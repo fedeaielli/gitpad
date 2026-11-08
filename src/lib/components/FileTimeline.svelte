@@ -495,6 +495,7 @@
     height: 24px;
     margin-left: auto;
     border: 0;
+    /* 24px square: the shared 9px radius would read as a circle here. */
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--muted);
@@ -525,7 +526,7 @@
     flex: 0 0 auto;
     padding: 1px 6px;
     border: 1px solid var(--border);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: transparent;
     color: var(--text);
     font-size: var(--fs-xs);
@@ -659,7 +660,7 @@
     min-height: 32px;
     padding: 0 10px;
     border: 1px solid var(--border-strong);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     background: transparent;
     color: var(--text);
     font-size: var(--fs-xs);
