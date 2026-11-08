@@ -176,6 +176,17 @@ button:not(.win) {
   border-radius: var(--r-md);
 }
 
+/* One press response for every control: a 1px sink, no layout shift. */
+button:not(.win):not(:disabled) {
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast);
+}
+button:not(.win):not(:disabled):active {
+  transform: translateY(1px);
+}
+
 input,
 select {
   padding: 3px 6px;

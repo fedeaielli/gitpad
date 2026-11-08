@@ -72,6 +72,9 @@
     flex: 1;
   }
   .badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
     padding: 0 6px;
     border-radius: var(--r-pill);
     background: var(--surface-1);

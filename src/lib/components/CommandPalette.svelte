@@ -41,6 +41,8 @@
   let results = $state<SearchResult[]>([])
   let error = $state<string | null>(null)
   let busy = $state(false)
+  // In flight, not just in search mode: the row reserves its height to avoid a shift.
+  let pending = $state(false)
   let listEl: HTMLDivElement
   let inputEl: HTMLInputElement
   // Esc closes the palette by unmounting it; the focus goes back where it was.
@@ -264,6 +266,7 @@
       results = []
       return
     }
+    pending = true
     try {
       const found = await invoke<SearchResult[]>('search_global', { query })
       // A slower search for an older query must not overwrite the current one.
@@ -275,6 +278,9 @@
       if (text.trim() !== query) return
       results = []
       error = String(e)
+    } finally {
+      // A newer query owns the flag until it finishes.
+      if (text.trim() === query) pending = false
     }
   }
 
@@ -335,6 +341,7 @@
           : 'Search files by name, or > for commands'}
       spellcheck="false"
     />
+    <p class="searching" role="status">{pending ? 'Searching…' : ''}</p>
     <div class="list" bind:this={listEl}>
       {#if prompt}
         <p class="hint">
@@ -434,6 +441,12 @@
   input:focus {
     border-color: var(--accent);
     outline: none;
+  }
+  .searching {
+    min-height: 18px;
+    margin: 0 16px 4px;
+    color: var(--muted);
+    font-size: var(--fs-xs);
   }
   .list {
     padding: 0 6px 6px;

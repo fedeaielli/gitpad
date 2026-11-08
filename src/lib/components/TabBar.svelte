@@ -159,7 +159,7 @@
     display: flex;
     align-items: center;
     box-sizing: border-box;
-    height: 22px;
+    height: 24px;
     padding: 0 8px;
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);

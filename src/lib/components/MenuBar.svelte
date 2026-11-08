@@ -218,7 +218,7 @@
     position: relative;
   }
   .trigger {
-    height: 22px;
+    height: 24px;
     padding: 0 8px;
     border: 0;
     border-radius: var(--r-sm);

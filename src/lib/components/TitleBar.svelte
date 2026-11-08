@@ -129,7 +129,7 @@
     gap: 6px;
     min-width: 0;
     box-sizing: border-box;
-    height: 22px;
+    height: 24px;
     padding: 0 6px;
     border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);

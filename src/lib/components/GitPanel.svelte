@@ -402,8 +402,8 @@
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: 0;
     border-radius: var(--r-sm);
