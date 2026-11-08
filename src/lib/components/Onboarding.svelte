@@ -436,9 +436,6 @@
     border: 0;
     background: transparent;
   }
-  .field input:focus-visible {
-    outline: none;
-  }
   .inline {
     flex: 0 0 auto;
   }
