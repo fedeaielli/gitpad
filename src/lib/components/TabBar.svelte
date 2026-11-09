@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tabs, activateTab, closeTab } from '../stores/tabs.svelte'
-  import { ui, cyclePreview } from '../stores/ui.svelte'
+  import { ui } from '../stores/ui.svelte'
   import FileIcon from './FileIcon.svelte'
   import { tip } from '../utils/tooltip'
 
@@ -58,9 +58,46 @@
           </svg>
         </button>
         {#if isMarkdown}
-          <button class="preview" onclick={cyclePreview} use:tip={'Cycle preview (Ctrl+Shift+P)'}>
-            Preview · {ui.previewMode}
-          </button>
+          <div class="seg" role="group" aria-label="Markdown preview">
+            <button
+              class="icon"
+              class:active={ui.previewMode === 'off'}
+              aria-pressed={ui.previewMode === 'off'}
+              aria-label="Editor only"
+              use:tip={'Editor only'}
+              onclick={() => (ui.previewMode = 'off')}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M11.9 2.6a1.7 1.7 0 0 1 2.4 2.4l-7.6 7.6-3.2.8.8-3.2 7.6-7.6z" />
+              </svg>
+            </button>
+            <button
+              class="icon"
+              class:active={ui.previewMode === 'split'}
+              aria-pressed={ui.previewMode === 'split'}
+              aria-label="Split preview"
+              use:tip={'Split preview'}
+              onclick={() => (ui.previewMode = 'split')}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" />
+                <path d="M8 2.5v11" />
+              </svg>
+            </button>
+            <button
+              class="icon"
+              class:active={ui.previewMode === 'full'}
+              aria-pressed={ui.previewMode === 'full'}
+              aria-label="Preview only"
+              use:tip={'Preview only'}
+              onclick={() => (ui.previewMode = 'full')}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M1.5 8S3.9 3.8 8 3.8 14.5 8 14.5 8 12.1 12.2 8 12.2 1.5 8 1.5 8Z" />
+                <circle cx="8" cy="8" r="1.7" />
+              </svg>
+            </button>
+          </div>
         {/if}
       {/if}
     </div>
@@ -81,7 +118,7 @@
     /* No bottom border: the line under the strip is its own ::after, and the
        open tab paints over its slice. No bottom padding either, so the tabs
        hang flush onto the editor. */
-    padding: 4px 6px 0;
+    padding: 4px var(--r-md) 0;
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     background: var(--tabstrip-bg);
   }
@@ -108,11 +145,11 @@
     gap: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    /* The open tab's concave corners sit 6px outside its box. This padding is
-       the room they need at the two ends of the strip; the negative margin
-       cancels it so the tabs keep their original inset. */
-    padding-inline: 6px;
-    margin-inline: -6px;
+    /* The open tab's concave corners sit one radius outside its box. This
+       padding is the room they need at the two ends of the strip; the negative
+       margin cancels it so the tabs keep their original inset. */
+    padding-inline: var(--r-md);
+    margin-inline: calc(-1 * var(--r-md));
   }
   .tab {
     position: relative;
@@ -127,7 +164,7 @@
     /* Top and side borders stay transparent: the open tab paints over them, and
        without the reserved 1px its label would shift on activation. */
     border: 1px solid transparent;
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     color: var(--muted);
   }
   /* Hover is a lifted grey, never the surface the open tab shows. */
@@ -144,7 +181,7 @@
     margin-bottom: 0;
     border-color: var(--border);
     border-bottom: none;
-    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    border-radius: var(--r-md) var(--r-md) 0 0;
     background: var(--editor-surface);
     color: var(--text);
   }
@@ -157,8 +194,8 @@
     content: '';
     position: absolute;
     bottom: 0;
-    width: 6px;
-    height: 6px;
+    width: var(--r-md);
+    height: var(--r-md);
     box-sizing: border-box;
     border-bottom: 1px solid var(--border);
     background: transparent;
@@ -167,14 +204,14 @@
   .tab.active::before {
     right: 100%;
     border-right: 1px solid var(--border);
-    border-bottom-right-radius: 6px;
-    box-shadow: 3px 3px 0 3px var(--editor-surface);
+    border-bottom-right-radius: var(--r-md);
+    box-shadow: calc(var(--r-md) / 2) calc(var(--r-md) / 2) 0 calc(var(--r-md) / 2) var(--editor-surface);
   }
   .tab.active::after {
     left: 100%;
     border-left: 1px solid var(--border);
-    border-bottom-left-radius: 6px;
-    box-shadow: -3px 3px 0 3px var(--editor-surface);
+    border-bottom-left-radius: var(--r-md);
+    box-shadow: calc(-1 * var(--r-md) / 2) calc(var(--r-md) / 2) 0 calc(var(--r-md) / 2) var(--editor-surface);
   }
   .label {
     display: flex;
@@ -226,23 +263,38 @@
   .actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex: 0 0 auto;
     margin-left: auto;
-    padding: 0 8px;
-    border-left: 1px solid var(--border);
+    padding: 0 6px;
+  }
+  /* A short divider, not a full-height border: the strip already has its own
+     line along the floor and the two would meet in a T. */
+  .actions::before {
+    align-self: center;
+    width: 1px;
+    height: 16px;
+    background: var(--border);
+    content: '';
   }
   .icon {
     display: flex;
-    padding: 3px;
-    /* 22px square: the shared 9px radius would read as a circle here. */
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 24px;
+    height: 24px;
+    padding: 0;
     border-radius: var(--r-sm);
-    color: var(--text);
+    color: var(--muted);
   }
   .icon:hover {
     background: var(--surface-2);
+    color: var(--text);
   }
+  /* Fill and colour together: colour alone is not a state. */
   .icon.active {
+    background: var(--surface-2);
     color: var(--accent-fg);
   }
   .icon svg {
@@ -251,24 +303,19 @@
     fill: none;
     stroke: currentColor;
     stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
-  /* A toggle next to the tab icons: same height, same border, no accent. */
-  .preview {
+  /* One outline, three segments: the editor is one place, not three buttons. */
+  .seg {
     display: flex;
-    align-items: center;
-    box-sizing: border-box;
-    height: 24px;
-    padding: 0 8px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-0);
-    color: var(--muted);
-    font-size: var(--fs-xs);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
   }
-  .preview:hover {
-    border-color: var(--border-strong);
-    color: var(--text);
+  .seg .icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 0;
   }
 </style>
