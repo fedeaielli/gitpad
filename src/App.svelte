@@ -640,10 +640,11 @@
     flex: 0 0 var(--sp-2);
     touch-action: none;
   }
-  /* 8px is too thin to hit, so the grab area leans into the sidebar. */
+  /* 8px is too thin to hit, so the grab area leans into the editor. Never into
+     the sidebar: its scrollbar lives on that edge and would lose the pointer. */
   .gutter::before {
     position: absolute;
-    inset: 0 -4px 0 -10px;
+    inset: 0 -4px 0 0;
     content: '';
   }
   /* The slot is the gap between panels, so the bar is drawn inside it: a 4px
