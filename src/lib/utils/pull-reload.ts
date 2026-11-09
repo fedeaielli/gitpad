@@ -9,6 +9,8 @@ export interface ReloadTab {
   modified: boolean
   /// Last content written to disk: lets reloadTab tell our own write from an edit.
   savedContent?: string
+  /// Current buffer; only read to detect a no-op reload of a clean tab.
+  content?: string
 }
 
 export interface PullReloadPlan {
@@ -41,4 +43,16 @@ export function planPullReload(
     plan.reload.push(change.path)
   }
   return plan
+}
+
+export type ReloadAction = 'stale' | 'keep' | 'apply'
+
+/// Decides what reloadTab does with the content it just read. `raced` means a
+/// write started, or the user typed, during the read: nothing can be trusted.
+export function decideReload(tab: ReloadTab, content: string, raced: boolean): ReloadAction {
+  if (raced) return 'stale'
+  // Dirty and disk is exactly our last write: the watcher echoing our autosave,
+  // not a conflict. Keep the unsaved keystrokes.
+  if (tab.modified) return content === tab.savedContent ? 'keep' : 'stale'
+  return content === tab.content ? 'keep' : 'apply'
 }

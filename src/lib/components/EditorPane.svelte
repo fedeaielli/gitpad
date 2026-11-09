@@ -29,7 +29,7 @@
   import { registerTableEditing } from '../editor/table-register'
   import { registerListEditing } from '../editor/list'
 
-  import { planPullReload, type UpstreamChange } from '../utils/pull-reload'
+  import { planPullReload, decideReload, type UpstreamChange } from '../utils/pull-reload'
   import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
@@ -484,15 +484,10 @@
       return
     }
     // The user may have typed, or a save may have started, during the read.
-    if (inFlight.has(path) || pendingId === tab.id || tab.content !== before) {
-      markStale(path)
-      return
-    }
-    // Dirty buffer whose disk content is exactly our last write: that is the
-    // watcher echoing our own autosave, not a conflict. Keep the keystrokes.
-    if (tab.modified && content === tab.savedContent) return
-    if (tab.modified) return markStale(path)
-    if (content === tab.content) return
+    const raced = inFlight.has(path) || pendingId === tab.id || tab.content !== before
+    const action = decideReload(tab, content, raced)
+    if (action === 'stale') return markStale(path)
+    if (action === 'keep') return
     tab.content = content
     tab.savedContent = content
     tab.modified = false

@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { planPullReload, type ReloadTab } from './pull-reload'
+import { decideReload, planPullReload, type ReloadTab } from './pull-reload'
 
-const tab = (path: string, modified = false): ReloadTab => ({ id: path, path, modified })
+const tab = (path: string, modified = false, savedContent?: string, content = savedContent): ReloadTab => ({
+  id: path,
+  path,
+  modified,
+  savedContent,
+  content,
+})
 const notBusy = () => false
+const busyOn = (busyPath: string) => (path: string) => path === busyPath
 
 describe('planPullReload', () => {
   it('reloads clean tabs for modified and added files', () => {
@@ -22,33 +29,28 @@ describe('planPullReload', () => {
     expect(plan).toEqual({ reload: [], close: ['a.md'], stale: [] })
   })
 
-  it('marks dirty tabs stale instead of reloading a deleted file', () => {
-    const plan = planPullReload([{ path: 'a.md', status: 'D' }], [tab('a.md', true)], notBusy)
-    expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
-  })
-
   it('sends a dirty tab to reload so reloadTab can compare disk to savedContent', () => {
     const plan = planPullReload([{ path: 'a.md', status: 'M' }], [tab('a.md', true)], notBusy)
     expect(plan).toEqual({ reload: ['a.md'], close: [], stale: [] })
   })
 
-  it('reloads a resolved path even when the tab has edits', () => {
-    const changes = [{ path: 'note.md', status: 'M' }]
-    expect(planPullReload(changes, [tab('note.md')], notBusy)).toEqual({
-      reload: ['note.md'],
-      close: [],
-      stale: [],
-    })
-    expect(planPullReload(changes, [tab('note.md', true)], notBusy)).toEqual({
-      reload: ['note.md'],
-      close: [],
-      stale: [],
-    })
+  it('marks a dirty tab stale instead of reloading a deleted file', () => {
+    const plan = planPullReload([{ path: 'a.md', status: 'D' }], [tab('a.md', true)], notBusy)
+    expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
   })
 
-  it('marks tabs with a save in flight stale', () => {
-    const plan = planPullReload([{ path: 'a.md', status: 'M' }], [tab('a.md')], (path) => path === 'a.md')
-    expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
+  it('marks tabs with a save in flight stale, clean or dirty', () => {
+    const change = [{ path: 'a.md', status: 'M' }]
+    expect(planPullReload(change, [tab('a.md')], busyOn('a.md'))).toEqual({
+      reload: [],
+      close: [],
+      stale: ['a.md'],
+    })
+    expect(planPullReload(change, [tab('a.md', true)], busyOn('a.md'))).toEqual({
+      reload: [],
+      close: [],
+      stale: ['a.md'],
+    })
   })
 
   it('ignores paths with no open tab', () => {
@@ -59,5 +61,30 @@ describe('planPullReload', () => {
   it('returns empty lists for an empty change set', () => {
     const plan = planPullReload([], [tab('a.md')], notBusy)
     expect(plan).toEqual({ reload: [], close: [], stale: [] })
+  })
+})
+
+describe('decideReload', () => {
+  it('keeps a dirty tab when disk equals savedContent: our own autosave echo', () => {
+    const dirty = tab('a.md', true, 'saved')
+    expect(decideReload(dirty, 'saved', false)).toBe('keep')
+  })
+
+  it('marks a dirty tab stale when disk differs from savedContent', () => {
+    const dirty = tab('a.md', true, 'saved')
+    expect(decideReload(dirty, 'someone else', false)).toBe('stale')
+  })
+
+  it('marks a tab stale when a save or keystroke raced the read', () => {
+    expect(decideReload(tab('a.md', true, 'saved'), 'saved', true)).toBe('stale')
+    expect(decideReload(tab('a.md'), 'other', true)).toBe('stale')
+  })
+
+  it('applies new content to a clean tab', () => {
+    expect(decideReload(tab('a.md', false, 'old'), 'new', false)).toBe('apply')
+  })
+
+  it('keeps a clean tab whose content already matches disk', () => {
+    expect(decideReload(tab('a.md', false, 'same'), 'same', false)).toBe('keep')
   })
 })
