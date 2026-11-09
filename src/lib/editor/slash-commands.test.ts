@@ -73,10 +73,13 @@ describe('block commands', () => {
     expect(cmd('number').build('', 'text').text).toBe('1. ')
   })
 
-  it('indents the nested lists by two spaces', () => {
-    expect(cmd('sublist').build('a\nb', 'text').text).toBe('  - a\n  - b')
-    expect(cmd('sublist').build('', 'text')).toEqual({ text: '  - ', select: [4, 4] })
-    expect(cmd('subnumber').build('a\nb', 'text').text).toBe('  1. a\n  2. b')
+  // Three spaces, not two: an ordered marker is three wide, so marked needs
+  // all three to read the next line as a child of the item above.
+  it('indents the nested lists by three spaces', () => {
+    expect(cmd('sublist').build('a\nb', 'text').text).toBe('   - a\n   - b')
+    expect(cmd('sublist').build('', 'text')).toEqual({ text: '   - ', select: [5, 5] })
+    expect(cmd('subnumber').build('a\nb', 'text').text).toBe('   1. a\n   2. b')
+    expect(cmd('subnumber').build('', 'text')).toEqual({ text: '   1. ', select: [6, 6] })
   })
 
   it('inserts a table or a rule on their own', () => {
