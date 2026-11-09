@@ -4,6 +4,7 @@ mod fs;
 mod git;
 mod github;
 mod search;
+mod watcher;
 
 use tauri::AppHandle;
 use tauri_plugin_log::log;
@@ -57,6 +58,8 @@ pub struct AppState {
     /// `repo_gate.read()` and only inside `spawn_blocking`, never across an
     /// `await`: the order is always repo_gate.read() -> commit_gate.lock().
     pub commit_gate: std::sync::Arc<std::sync::Mutex<()>>,
+    /// The watch on the active repository; `None` until one is started.
+    pub watcher: std::sync::Mutex<Option<crate::watcher::Handle>>,
 }
 
 static SHUTTING_DOWN: AtomicBool = AtomicBool::new(false);
@@ -372,11 +375,20 @@ pub fn run() {
                 repo_path: std::sync::Mutex::new(None),
                 repo_gate: std::sync::Arc::new(std::sync::RwLock::new(())),
                 commit_gate: std::sync::Arc::new(std::sync::Mutex::new(())),
+                watcher: std::sync::Mutex::new(None),
             });
             // Warm the clone path once, off the main thread, so no command
-            // pays for the directory scan on the hot path.
+            // pays for the directory scan on the hot path. The watch starts on
+            // the same task: a missing repository is fine.
             let prime = app.handle().clone();
-            tauri::async_runtime::spawn_blocking(move || git::prime_repo_path(&prime));
+            tauri::async_runtime::spawn_blocking(move || {
+                git::prime_repo_path(&prime);
+                if let Ok(root) = git::repo_dir(&prime) {
+                    if let Err(e) = watcher::ensure(&prime, &root) {
+                        log::warn!(target: "app", "watcher: {e}");
+                    }
+                }
+            });
             if let Some(set) = sigterm {
                 let term = app.handle().clone();
                 std::thread::spawn(move || {
