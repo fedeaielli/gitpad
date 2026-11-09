@@ -343,6 +343,14 @@ select {
   border-radius: var(--r-sm) !important;
 }
 
+/* The `/` menu is Monaco's suggest widget. Same card treatment as the quick
+   access above, or it reads as a foreign panel inside the editor. */
+.monaco-editor .suggest-widget {
+  overflow: hidden;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
