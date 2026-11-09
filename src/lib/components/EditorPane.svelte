@@ -484,7 +484,8 @@
       return
     }
     // The user may have typed, or a save may have started, during the read.
-    const raced = inFlight.has(path) || pendingId === tab.id || tab.content !== before
+    // pendingId is not checked: it marks a scheduled save, not one in flight.
+    const raced = inFlight.has(path) || tab.content !== before
     const action = decideReload(tab, content, raced)
     if (action === 'stale') return markStale(path)
     if (action === 'keep') return
