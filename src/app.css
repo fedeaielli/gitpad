@@ -21,6 +21,9 @@
   /* Window chrome and the floor behind floating panels. */
   --surface-base: #171513;
   --editor-surface: #191715;
+  /* The tab strip sits under the editor colour so the open tab reads as the
+     page it leads to, the way VS Code does it. */
+  --tabstrip-bg: #131110;
 
   --text: #d8d3ca;
   --muted: #a39d93;
@@ -47,7 +50,7 @@
   /* Region sizes. The sidebar header and the tab bar share --h-tabbar so their
      bottom borders line up. */
   --h-titlebar: 38px;
-  --h-tabbar: 40px;
+  --h-tabbar: 32px;
   --h-statusbar: 26px;
   --w-activitybar: 48px;
 
@@ -90,6 +93,7 @@
   --surface-3: #fffdf8;
   --surface-base: #f4f1ea;
   --editor-surface: #fffdf8;
+  --tabstrip-bg: #eeeade;
 
   --text: #24211d;
   --muted: #676257;
@@ -126,6 +130,7 @@
   --surface-3: #0a0a0a;
   --surface-base: #000000;
   --editor-surface: #000000;
+  --tabstrip-bg: #000000;
 
   --text: #ffffff;
   --muted: #d4d4d4;

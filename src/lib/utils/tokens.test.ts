@@ -63,6 +63,7 @@ const COLOUR_TOKENS = [
   '--surface-1',
   '--surface-2',
   '--surface-3',
+  '--tabstrip-bg',
   '--text',
   '--muted',
   '--disabled',
@@ -80,7 +81,7 @@ const COLOUR_TOKENS = [
 
 describe.each(THEMES)('theme $name', ({ vars }) => {
   it('primary text reaches 4.5:1 on every surface', () => {
-    for (const surface of ['--surface-0', '--surface-1', '--surface-2', '--surface-3']) {
+    for (const surface of ['--surface-0', '--surface-1', '--surface-2', '--surface-3', '--tabstrip-bg']) {
       expect(contrast(vars, '--text', surface)).toBeGreaterThanOrEqual(4.5)
     }
   })
