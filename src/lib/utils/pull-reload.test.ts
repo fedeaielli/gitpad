@@ -22,17 +22,17 @@ describe('planPullReload', () => {
     expect(plan).toEqual({ reload: [], close: ['a.md'], stale: [] })
   })
 
-  it('marks dirty tabs stale instead of reloading them', () => {
-    const plan = planPullReload([{ path: 'a.md', status: 'M' }], [tab('a.md', true)], notBusy)
-    expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
-  })
-
-  it('marks a dirty tab stale when the file was deleted upstream', () => {
+  it('marks dirty tabs stale instead of reloading a deleted file', () => {
     const plan = planPullReload([{ path: 'a.md', status: 'D' }], [tab('a.md', true)], notBusy)
     expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
   })
 
-  it('reloads a resolved path unless the tab has edits', () => {
+  it('sends a dirty tab to reload so reloadTab can compare disk to savedContent', () => {
+    const plan = planPullReload([{ path: 'a.md', status: 'M' }], [tab('a.md', true)], notBusy)
+    expect(plan).toEqual({ reload: ['a.md'], close: [], stale: [] })
+  })
+
+  it('reloads a resolved path even when the tab has edits', () => {
     const changes = [{ path: 'note.md', status: 'M' }]
     expect(planPullReload(changes, [tab('note.md')], notBusy)).toEqual({
       reload: ['note.md'],
@@ -40,9 +40,9 @@ describe('planPullReload', () => {
       stale: [],
     })
     expect(planPullReload(changes, [tab('note.md', true)], notBusy)).toEqual({
-      reload: [],
+      reload: ['note.md'],
       close: [],
-      stale: ['note.md'],
+      stale: [],
     })
   })
 

@@ -470,21 +470,28 @@
 
   async function reloadTab(path: string) {
     const tab = tabs.tabs.find((candidate) => candidate.path === path)
-    if (!tab || tab.modified) return markStale(path)
+    if (!tab) return
     const before = tab.content
     let content: string
     try {
       content = await invoke<string>('fs_read_file', { path })
     } catch (e) {
-      if (isMissing(e)) closeRemoved(path)
-      else markStale(path)
+      // A dirty buffer must not be dropped because the file vanished.
+      if (isMissing(e)) {
+        if (tab.modified) markStale(path)
+        else closeRemoved(path)
+      } else markStale(path)
       return
     }
-    // The user may have typed during the read.
-    if (tab.modified || tab.content !== before || inFlight.has(path) || pendingId === tab.id) {
+    // The user may have typed, or a save may have started, during the read.
+    if (inFlight.has(path) || pendingId === tab.id || tab.content !== before) {
       markStale(path)
       return
     }
+    // Dirty buffer whose disk content is exactly our last write: that is the
+    // watcher echoing our own autosave, not a conflict. Keep the keystrokes.
+    if (tab.modified && content === tab.savedContent) return
+    if (tab.modified) return markStale(path)
     if (content === tab.content) return
     tab.content = content
     tab.savedContent = content
