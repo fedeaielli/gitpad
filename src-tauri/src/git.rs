@@ -219,7 +219,12 @@ fn remember_repo(app: &AppHandle, path: PathBuf) {
     *app.state::<crate::AppState>()
         .repo_path
         .lock()
-        .unwrap_or_else(|e| e.into_inner()) = Some(path);
+        .unwrap_or_else(|e| e.into_inner()) = Some(path.clone());
+    // Every path change goes through here: one call site, never forgotten.
+    // A watch that fails to start is not fatal, the tree still refreshes on focus.
+    if let Err(e) = crate::watcher::ensure(app, &path) {
+        log::warn!(target: "app", "watcher: {e}");
+    }
 }
 
 fn repo_name_from_url(url: &str) -> Result<String, GitError> {
