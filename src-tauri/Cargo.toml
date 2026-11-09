@@ -32,6 +32,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 ignore = "0.4"
+# Debounced filesystem watch; re-exports `notify`, so it is not a direct dependency.
+notify-debouncer-full = "0.7"
 nix = { version = "0.29", features = ["signal"] }
 
 [profile.release]
