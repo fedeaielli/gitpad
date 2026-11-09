@@ -245,9 +245,9 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **One repository at a time.** *Settings → Sync* switches to another local folder, but there is no "close repository" state and picking a folder inside the current one creates a nested repository.
 - **One window.** Launching GitPad again raises the window already open instead of starting a second copy, which would autosave, commit and push twice.
 - **Only `origin` is recognized.** A repository whose remote has another name is treated as local-only.
-- **External edits are focus-based.** Changes made outside GitPad appear after the window regains focus; an open tab is not reloaded automatically.
+- **External edits reload open tabs.** GitPad watches the repository with inotify. A file changed by another editor, the `git` CLI, or a script reloads its tab when the tab has no unsaved edits; a tab with unsaved edits is marked stale and its autosave pauses, so nothing is overwritten. Deleting a file elsewhere closes its tab with a "deleted externally" toast.
+- **The watcher skips `.git` and `.gitignore`d paths.** GitPad's own saves and commits never trigger a reload, and build output stays quiet. If the watch cannot start (inotify limit, a folder moved under it), GitPad falls back to refreshing the tree and the Git status when the window regains focus.
 - **Remote images are blocked in preview.** The content security policy allows local/data images and GitHub avatars, not arbitrary remote images.
-- **No filesystem watcher.** The file tree refreshes on focus, not through inotify.
 - **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes.
 - **Crash safety.** `SIGTERM` commits and pushes files already written before exit. `SIGKILL` or a crash cannot be caught; the last edits remain local until the next start.
 - **Logs stop at 5 files.** Rotation keeps five 5 MB files, so the oldest sessions are dropped once the folder reaches roughly 25 MB.
@@ -316,6 +316,7 @@ src-tauri/src/          Rust back end
   github.rs             GitHub API
   auth.rs               OS keyring, protected-file fallback
   search.rs             repository search
+  watcher.rs            debounced inotify watch on the repository
 ```
 
 ---
