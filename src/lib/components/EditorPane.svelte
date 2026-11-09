@@ -454,7 +454,7 @@
     if (!tab) return
     discarded.add(tab.path)
     closeTab(tab.id)
-    pushToast(`${path} removed upstream`, 'info')
+    pushToast(`${path} deleted externally`, 'info')
   }
 
   function markStale(path: string) {
@@ -463,7 +463,7 @@
     tab.staleUpstream = true
     tab.modified = true
     pushToast(
-      `${path} changed upstream — autosave paused for this tab, copy your text and reopen it`,
+      `${path} changed on disk — autosave paused for this tab, copy your text and reopen it`,
       'warning',
     )
   }

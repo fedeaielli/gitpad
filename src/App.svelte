@@ -236,6 +236,20 @@
     }
   }
 
+  /// Files changed on disk outside GitPad (another editor, the git CLI, a script).
+  /// Clean tabs reload; dirty ones are marked stale, exactly like a pull.
+  async function onFsChanged(changes: FileChange[]) {
+    if (!booted || ui.quitting) return
+    await reloadOpenTabs(changes)
+    ui.treeVersion += 1
+    try {
+      applyGitStatus(await invoke<GitStatus>('git_status'))
+    } catch (e) {
+      if (isNoRepoError(e)) gitStatus.configured = false
+      else pushToast(errorMessage(e), 'error', 'git')
+    }
+  }
+
   /// In Vim/Emacs the editor keeps Ctrl+N and Ctrl+O while it has focus.
   function editorOwnsKey(): boolean {
     return ui.keybindings !== 'vscode' && !!document.activeElement?.closest('.monaco-editor')
@@ -407,6 +421,9 @@
       unlistens.push(fn)
     })
     void listen<FileChange[]>('pull-changed', (e) => void reloadOpenTabs(e.payload)).then((fn) => {
+      unlistens.push(fn)
+    })
+    void listen<FileChange[]>('fs-changed', (e) => void onFsChanged(e.payload)).then((fn) => {
       unlistens.push(fn)
     })
     void listen('app-closing', async () => {
