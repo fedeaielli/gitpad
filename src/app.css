@@ -20,10 +20,10 @@
   --surface-3: #35312c;
   /* Window chrome and the floor behind floating panels. */
   --surface-base: #171513;
-  --editor-surface: #191715;
-  /* The tab strip sits under the editor colour so the open tab reads as the
-     page it leads to, the way VS Code does it. */
-  --tabstrip-bg: #131110;
+  --editor-surface: #131110;
+  /* The tab strip sits above the editor colour, one step lighter, so the open
+     tab reads as the page it leads to, the way VS Code does it. */
+  --tabstrip-bg: #191715;
 
   --text: #d8d3ca;
   --muted: #a39d93;
@@ -92,8 +92,8 @@
   --surface-2: #e8e3d7;
   --surface-3: #fffdf8;
   --surface-base: #f4f1ea;
-  --editor-surface: #fffdf8;
-  --tabstrip-bg: #eeeade;
+  --editor-surface: #eeeade;
+  --tabstrip-bg: #fffdf8;
 
   --text: #24211d;
   --muted: #676257;

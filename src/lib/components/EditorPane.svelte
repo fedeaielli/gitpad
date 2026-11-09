@@ -55,7 +55,7 @@
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#191715',
+      'editor.background': '#131110',
       'editor.foreground': '#d8d3ca',
       'editorLineNumber.foreground': '#857f75',
       'editorLineNumber.activeForeground': '#d8d3ca',
@@ -97,7 +97,7 @@
     inherit: true,
     rules: [],
     colors: {
-      'editor.background': '#fffdf8',
+      'editor.background': '#eeeade',
       'editor.foreground': '#24211d',
       'editorLineNumber.foreground': '#6b665c',
       'editorLineNumber.activeForeground': '#24211d',
