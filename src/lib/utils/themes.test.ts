@@ -17,6 +17,19 @@ describe('monaco theme colors', () => {
     expect(values.length).toBeGreaterThan(50)
     expect(values.filter((v) => !/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(v))).toEqual([])
   })
+
+  // A neutral source (#ffffff, #797979, --text at low alpha) composites to a
+  // chroma-free grey, which is what "the scrollbar looks cold" means in
+  // practice. The warm palette has to survive the alpha blend.
+  it('keeps the scrollbar sliders warm', () => {
+    const sliders = [...PANE.matchAll(/'scrollbarSlider\.\w+':\s*'(#[0-9a-f]{6})([0-9a-f]{2})'/g)]
+    expect(sliders.length).toBe(9)
+    const chroma = (hex: string) => {
+      const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+      return Math.max(...v) - Math.min(...v)
+    }
+    for (const [, hex] of sliders) expect(chroma(hex)).toBeGreaterThan(15)
+  })
 })
 
 describe('cleanFamily', () => {

@@ -96,9 +96,11 @@
       // Monaco parses these with Color.fromHex(), which only accepts #hex and
       // falls back to pure red on anything else: rgba() silently painted the
       // scrollbar red. Keep the notation #RRGGBBAA.
-      'scrollbarSlider.background': '#d8d3ca66',
-      'scrollbarSlider.hoverBackground': '#d8d3ca8c',
-      'scrollbarSlider.activeBackground': '#d8d3cab3',
+      // The source is a warm taupe, not --text: #d8d3ca only has 14 levels of
+      // chroma and 40% alpha over this surface washes it down to a neutral grey.
+      'scrollbarSlider.background': '#c8b89c80',
+      'scrollbarSlider.hoverBackground': '#c8b89ca6',
+      'scrollbarSlider.activeBackground': '#c8b89ccc',
     },
   })
 
@@ -141,9 +143,10 @@
       'badge.background': '#e8e3d7',
       'badge.foreground': '#24211d',
       'editorLink.activeForeground': '#005fb8',
-      'scrollbarSlider.background': '#24211d73',
-      'scrollbarSlider.hoverBackground': '#24211d99',
-      'scrollbarSlider.activeBackground': '#24211dbf',
+      // Same reasoning as gitpad-dark: a warm brown at low alpha, not --text.
+      'scrollbarSlider.background': '#6b6152bf',
+      'scrollbarSlider.hoverBackground': '#6b6152e0',
+      'scrollbarSlider.activeBackground': '#6b6152f5',
     },
   })
 

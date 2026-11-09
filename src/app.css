@@ -272,7 +272,8 @@ select {
 
 /* Thin scrollbars in the VS Code shape: 6px, an always-visible thumb that
    brightens on hover. Dark is the default; the other themes override the
-   thumb only, the track and corner stay transparent everywhere. */
+   thumb only, the track and corner stay transparent everywhere.
+   The thumb is a warm taupe, not white: a neutral overlay reads as cold grey. */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -281,11 +282,11 @@ select {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(200, 184, 156, 0.5);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(200, 184, 156, 0.65);
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
@@ -295,12 +296,17 @@ select {
 .monaco-scrollable-element .scrollbar {
   background: transparent !important;
 }
+/* Monaco draws the slider as a square bar; 3px on the 6px track rounds it to
+   the same pill as the native thumb above. */
+.monaco-scrollable-element .scrollbar .slider {
+  border-radius: 3px !important;
+}
 
 :root[data-theme='vs'] ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(107, 97, 82, 0.75);
 }
 :root[data-theme='vs'] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(107, 97, 82, 0.88);
 }
 
 :root[data-theme='hc-black'] ::-webkit-scrollbar-thumb {
