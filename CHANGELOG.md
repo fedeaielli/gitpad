@@ -48,7 +48,9 @@ the UI font, and matching scrollbars and file icons.
   opacity; they are always fully visible.
 - Settings hover tab no longer looks identical to the active tab.
 
-## Unreleased
+## 1.1.0 — 2026-11-09
+
+Tabs that read like the editor they open, and Markdown that types itself.
 
 ### Added
 - The `/` menu in Markdown notes: type `/` at the start of a line to insert a
@@ -58,6 +60,19 @@ the UI font, and matching scrollbars and file icons.
 - Markdown tables edit themselves: `Tab` and `Shift+Tab` walk the cells and add
   a row at the end, and `/row`, `/col`, `/delrow`, `/delcol` inside a cell
   change the shape. Each change re-renders the table with its columns aligned.
+
+### Changed
+- The tab bar follows VS Code: the open tab merges into the editor through
+  concave shoulders, the strip shares the side panel surface, and the toolbar
+  holds icons only.
+- The `/` menu wears the same card treatment as the rest of the app.
+- Scrollbars are warm taupe with rounded sliders, in both themes.
+
+### Fixed
+- The sidebar resize gutter no longer covers the sidebar scrollbar.
+- `Enter` continues a Markdown list and clears an empty item.
+- `/sublist` and `/subnumber` indent three spaces, so the preview nests them
+  instead of flattening the list.
 
 ## 1.0.5 — 2026-11-06
 

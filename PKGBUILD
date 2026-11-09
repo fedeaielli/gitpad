@@ -1,7 +1,7 @@
 # Maintainer: https://github.com/fedeaielli
 # The v$pkgver tag must exist on the remote.
 pkgname=gitpad
-pkgver=1.0.6
+pkgver=1.1.0
 pkgrel=1
 pkgdesc="Markdown notes in a Git repository you own"
 arch=('x86_64')
