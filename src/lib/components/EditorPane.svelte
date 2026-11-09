@@ -68,6 +68,16 @@
       'editorWidget.background': '#2b2824',
       'editorWidget.foreground': '#d8d3ca',
       'widget.border': '#6f685d',
+      // The `/` menu. Its own colours, not list.*: the selected row was VS
+      // Code's cool blue, which reads as a foreign panel on this warm surface.
+      'editorSuggestWidget.background': '#2b2824',
+      'editorSuggestWidget.border': '#6f685d',
+      'editorSuggestWidget.foreground': '#d8d3ca',
+      'editorSuggestWidget.selectedBackground': '#35312c',
+      'editorSuggestWidget.selectedForeground': '#ffffff',
+      'editorSuggestWidget.highlightForeground': '#4daafc',
+      'editorSuggestWidget.focusHighlightForeground': '#4daafc',
+      'editorSuggestWidgetStatus.foreground': '#a39d93',
       // Widgets that otherwise inherit VS Code's cool greys.
       'list.hoverBackground': '#2b2824',
       'list.activeSelectionBackground': '#264f78',
@@ -109,6 +119,14 @@
       'editorWidget.background': '#f2eee4',
       'editorWidget.foreground': '#24211d',
       'widget.border': '#8f887b',
+      'editorSuggestWidget.background': '#f2eee4',
+      'editorSuggestWidget.border': '#8f887b',
+      'editorSuggestWidget.foreground': '#24211d',
+      'editorSuggestWidget.selectedBackground': '#e8e3d7',
+      'editorSuggestWidget.selectedForeground': '#24211d',
+      'editorSuggestWidget.highlightForeground': '#005fb8',
+      'editorSuggestWidget.focusHighlightForeground': '#005fb8',
+      'editorSuggestWidgetStatus.foreground': '#6b665c',
       'list.hoverBackground': '#e8e3d7',
       'list.activeSelectionBackground': '#d6e6f7',
       'list.activeSelectionForeground': '#24211d',
@@ -146,6 +164,16 @@
       'editorWidget.background': '#1a1a1a',
       'editorWidget.foreground': '#ffffff',
       'widget.border': '#6fc3df',
+      // Inverted on purpose: Monaco's hc defaults paint the selection white, so
+      // the text has to go black or it disappears into it.
+      'editorSuggestWidget.background': '#1a1a1a',
+      'editorSuggestWidget.border': '#6fc3df',
+      'editorSuggestWidget.foreground': '#ffffff',
+      'editorSuggestWidget.selectedBackground': '#ffffff',
+      'editorSuggestWidget.selectedForeground': '#000000',
+      'editorSuggestWidget.highlightForeground': '#6fc3df',
+      'editorSuggestWidget.focusHighlightForeground': '#000000',
+      'editorSuggestWidgetStatus.foreground': '#d4d4d4',
       'scrollbarSlider.background': '#00ffff80',
       'scrollbarSlider.hoverBackground': '#00ffffbf',
       'scrollbarSlider.activeBackground': '#00ffffe6',
@@ -502,6 +530,9 @@
       // Without this Monaco adds a view zone on top and pushes the first lines
       // down whenever find or replace opens.
       find: { addExtraSpaceOnTop: false },
+      // The `/` menu items are commands, not symbols: Monaco's kind glyphs are
+      // all the same square here, so they only add noise.
+      suggest: { showIcons: false },
     })
     setEditor(editor)
     const slashSub = registerSlashCommands(monaco, editor)
