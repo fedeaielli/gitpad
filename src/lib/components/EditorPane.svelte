@@ -348,6 +348,15 @@
     setEditorInstance(next)
   }
 
+  // Three lines of air under the last line: cursorSurroundingLines cannot do it
+  // alone, because at the end of the document there is no scrollable room.
+  // Line height follows the font, so this is recomputed, not set once.
+  function syncBottomPadding() {
+    if (!editor) return
+    const lineHeight = editor.getOption(monaco.editor.EditorOption.lineHeight)
+    editor.updateOptions({ padding: { top: 6, bottom: 3 * lineHeight } })
+  }
+
   function applyActive() {
     const tab = activeTab()
     const path = tab?.path ?? ''
@@ -416,6 +425,7 @@
     const fontSize = ui.fontSize
     const fontFamily = ui.fontFamily
     editor?.updateOptions({ fontSize, fontFamily })
+    syncBottomPadding()
   })
 
   // Vim/Emacs keymaps wrap the single editor instance; swapping presets disposes the old one.
@@ -528,6 +538,9 @@
       fontSize: ui.fontSize,
       fontFamily: ui.fontFamily,
       scrollBeyondLastLine: false,
+      // Three lines of air under the caret, so typing at the fold scrolls the
+      // view instead of leaving the cursor glued to the bottom edge.
+      cursorSurroundingLines: 3,
       renderWhitespace: 'selection',
       // Keeps the first line off the tab bar so tab and document read as one surface.
       padding: { top: 6 },
@@ -540,6 +553,7 @@
       suggest: { showIcons: false },
     })
     setEditor(editor)
+    syncBottomPadding()
     const slashSub = registerSlashCommands(monaco, editor)
     const tableSub = registerTableEditing(monaco, editor)
     const listSub = registerListEditing(monaco, editor)

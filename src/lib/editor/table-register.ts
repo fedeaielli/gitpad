@@ -26,8 +26,14 @@ export function writeTable(
   ])
   // The delimiter row sits between the header and the first data row, so a
   // data row is one line further down than its index suggests.
+  // setPosition alone never scrolls: only Monaco's own key path reveals the caret.
   const index = Math.min(row === 0 ? 0 : row + 1, rendered.length - 1)
-  editor.setPosition({ lineNumber: table.start + index + 1, column: contentColumn(rendered[index], cell) })
+  const target = {
+    lineNumber: table.start + index + 1,
+    column: contentColumn(rendered[index], cell),
+  }
+  editor.setPosition(target)
+  editor.revealPosition(target)
   editor.focus()
 }
 
@@ -53,7 +59,9 @@ export function registerTableEditing(m: typeof monaco, editor: Editor): () => vo
     const go = (targetRow: number, targetCell: number) => {
       const index = targetRow === 0 ? 0 : targetRow + 1
       const line = table.start + index + 1
-      editor.setPosition({ lineNumber: line, column: contentColumn(lines[line - 1], targetCell) })
+      const target = { lineNumber: line, column: contentColumn(lines[line - 1], targetCell) }
+      editor.setPosition(target)
+      editor.revealPosition(target)
       editor.focus()
     }
 

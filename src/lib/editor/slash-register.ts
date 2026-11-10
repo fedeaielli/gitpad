@@ -142,7 +142,9 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
     editor.executeEdits('slash', [{ range, text: '```' + language + '\n\n```\n' }])
     applying = false
     // The fence is open on the line above: put the caret on the empty line.
-    editor.setPosition({ lineNumber: position.lineNumber + 1, column: 1 })
+    const inside = { lineNumber: position.lineNumber + 1, column: 1 }
+    editor.setPosition(inside)
+    editor.revealPosition(inside)
     editor.focus()
   }
 

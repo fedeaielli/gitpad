@@ -48,6 +48,10 @@ export function registerListEditing(m: typeof monaco, editor: Editor): () => voi
     event.preventDefault()
     event.stopPropagation()
 
+    // setPosition alone never scrolls: only Monaco's own key path reveals the
+    // caret, so a hand-placed caret would sit below the fold until the next key.
+    // setPosition alone never scrolls: only Monaco's own key path reveals the
+    // caret, so a hand-placed caret would sit below the fold until the next key.
     if (item.empty) {
       const line = position.lineNumber
       editor.executeEdits('list', [{ range: new m.Range(line, 1, line, item.end + 1), text: '' }])
@@ -59,7 +63,9 @@ export function registerListEditing(m: typeof monaco, editor: Editor): () => voi
     editor.executeEdits('list', [
       { range: new m.Range(line, column, line, column), text: '\n' + item.prefix },
     ])
-    editor.setPosition({ lineNumber: line + 1, column: item.prefix.length + 1 })
+    const next = { lineNumber: line + 1, column: item.prefix.length + 1 }
+    editor.setPosition(next)
+    editor.revealPosition(next)
   })
   return () => sub.dispose()
 }
