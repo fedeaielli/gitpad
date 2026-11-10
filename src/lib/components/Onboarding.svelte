@@ -488,7 +488,13 @@
     background: var(--surface-1);
   }
   .field:focus-within {
+    outline: var(--focus-ring);
+    outline-offset: -1px;
     border-color: var(--border-strong);
+  }
+  .field input:focus-visible,
+  .field .inline:focus-visible {
+    outline: none;
   }
   .field input {
     flex: 1;
