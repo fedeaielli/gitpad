@@ -11,7 +11,7 @@
   import { errorMessage, isNoRepoError } from '../stores/git.svelte'
   import { pushToast } from '../stores/toasts.svelte'
 
-  type MenuMode = 'menu' | 'new-file' | 'new-folder' | 'delete'
+  type MenuMode = 'menu' | 'delete'
 
   let loading = $state(true)
   /// The backend stops at 5 000 entries instead of sending a payload that
@@ -19,17 +19,24 @@
   let truncated = $state(false)
   let noRepo = $state(false)
   let menu = $state<{ x: number; y: number; node: FileNode | null; mode: MenuMode } | null>(null)
-  let name = $state('')
   let renaming = $state<string | null>(null)
   let renameValue = $state('')
-  let creating = $state<'file' | 'folder' | null>(null)
+
+  /// Creation runs through the palette, so the tree has one flow and not two.
+  /// An optional base folder is written into the prompt as a path prefix.
+  function createAt(base: string, kind: 'file' | 'folder') {
+    menu = null
+    // Expanded up front, like the import flow: the new entry must be visible.
+    if (base && !ui.expanded.includes(base)) ui.expanded = [...ui.expanded, base]
+    ui.palettePrompt = kind
+    ui.paletteQuery = base ? `${base}/` : ''
+    ui.commandPaletteOpen = true
+  }
 
   /// Opened from the header buttons: the new entry always lands at the root.
   export function createAtRoot(kind: 'file' | 'folder') {
     if (noRepo) return
-    menu = null
-    name = ''
-    creating = kind
+    createAt('', kind)
   }
 
   /// Dot files stay hidden unless the options menu enables them.
@@ -122,15 +129,17 @@
     menu = { x: event.clientX, y: event.clientY, node, mode: 'menu' }
   }
 
-  function start(mode: MenuMode) {
-    if (!menu) return
-    name = ''
-    menu = { ...menu, mode }
+  /// The folder a context-menu action applies to: the node itself when it is a
+  /// directory, otherwise its parent. Root context menus have no node.
+  function menuBase(): string {
+    const node = menu?.node
+    if (!node) return ''
+    return node.type === 'dir' ? node.path : parentOf(node.path)
   }
 
   async function importFromPicker(directory: boolean) {
     if (!menu) return
-    const base = menu.node ? (menu.node.type === 'dir' ? menu.node.path : parentOf(menu.node.path)) : ''
+    const base = menuBase()
     menu = null
     try {
       const path = await pickAndImport(directory, base || null)
@@ -142,44 +151,6 @@
       }
     } catch (e) {
       pushToast(`Import failed: ${errorMessage(e)}`)
-    }
-  }
-
-  async function createIn(base: string, kind: MenuMode, value: string) {
-    if (kind === 'new-file') {
-      const target = join(base, value)
-      await invoke('fs_write_file', { path: target, content: '' })
-      await loadTree()
-      await openFile({ name: value, path: target, type: 'file' })
-      return
-    }
-    await invoke('fs_create_dir', { path: join(base, value) })
-    await loadTree()
-  }
-
-  async function submitName(event: SubmitEvent) {
-    event.preventDefault()
-    if (!menu || !name.trim()) return
-    const value = name.trim()
-    const kind = menu.mode
-    const base = menu.node ? (menu.node.type === 'dir' ? menu.node.path : parentOf(menu.node.path)) : ''
-    try {
-      await createIn(base, kind, value)
-      menu = null
-    } catch (e) {
-      pushToast(`Could not create ${value}: ${errorMessage(e)}`)
-    }
-  }
-
-  async function submitCreate(event: SubmitEvent) {
-    event.preventDefault()
-    if (!creating || !name.trim()) return
-    const kind = creating === 'file' ? 'new-file' : 'new-folder'
-    try {
-      await createIn('', kind, name.trim())
-      creating = null
-    } catch (e) {
-      pushToast(`Could not create ${name.trim()}: ${errorMessage(e)}`)
     }
   }
 
@@ -300,22 +271,6 @@
     {#if noRepo}
       <p class="hint">No repository yet. Clone one from the Git panel.</p>
     {/if}
-    {#if creating}
-      <form class="create" onsubmit={submitCreate}>
-        <input
-          bind:value={name}
-          use:focusInput
-          placeholder={creating === 'file' ? 'File name' : 'Folder name'}
-          aria-label={creating === 'file' ? 'New file name' : 'New folder name'}
-          onkeydown={(e) => {
-            if (e.key === 'Escape') {
-              e.preventDefault()
-              creating = null
-            }
-          }}
-        />
-      </form>
-    {/if}
     {@render tree(ui.fileTree)}
     {#if truncated}
       <p class="hint">Showing the first 5 000 entries. Use search to reach the rest.</p>
@@ -327,27 +282,18 @@
   <button class="backdrop" type="button" aria-label="Close menu" onclick={() => (menu = null)}></button>
   <div class="menu" style="left: {menu.x}px; top: {menu.y}px">
     {#if menu.mode === 'menu'}
-      <button onclick={() => start('new-file')}>New File</button>
-      <button onclick={() => start('new-folder')}>New Folder</button>
+      <button onclick={() => createAt(menuBase(), 'file')}>New File</button>
+      <button onclick={() => createAt(menuBase(), 'folder')}>New Folder</button>
       <button onclick={() => importFromPicker(false)}>Import File…</button>
       <button onclick={() => importFromPicker(true)}>Import Folder…</button>
       <button onclick={reveal}>Reveal in File Manager</button>
       {#if menu.node}
-        <button onclick={() => (menu = { ...menu!, mode: 'delete' })}>Delete</button>
+        <button class="danger" onclick={() => (menu = { ...menu!, mode: 'delete' })}>Delete</button>
       {/if}
     {:else if menu.mode === 'delete'}
       <p>Delete {menu.node?.name}?</p>
       <button class="danger" onclick={remove}>Delete</button>
       <button onclick={() => (menu = null)}>Cancel</button>
-    {:else}
-      <form onsubmit={submitName}>
-        <input
-          bind:value={name}
-          aria-label="File name"
-          placeholder="Name"
-        />
-        <button type="submit">OK</button>
-      </form>
     {/if}
   </div>
 {/if}
@@ -395,14 +341,6 @@
     padding: 0 8px;
   }
   .rename input {
-    width: 100%;
-    padding: 1px 4px;
-  }
-  .create {
-    padding: 2px 8px;
-  }
-  .create input {
-    box-sizing: border-box;
     width: 100%;
     padding: 1px 4px;
   }
@@ -493,10 +431,5 @@
   .menu p {
     margin: 4px 8px;
     white-space: nowrap;
-  }
-  .menu form {
-    display: flex;
-    gap: 4px;
-    padding: 4px;
   }
 </style>
