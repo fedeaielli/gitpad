@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { fade, fly } from 'svelte/transition'
+  import { cubicOut } from 'svelte/easing'
+  import { prefersReducedMotion } from 'svelte/motion'
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
 
@@ -167,8 +170,14 @@
 
 </script>
 
-<div class="overlay">
-  <div class="card">
+<div
+  class="overlay"
+  out:fade={{ duration: prefersReducedMotion.current ? 0 : 160, easing: cubicOut }}
+>
+  <div
+    class="card"
+    out:fly={{ y: 6, opacity: 1, duration: prefersReducedMotion.current ? 0 : 160, easing: cubicOut }}
+  >
     {#if step === 'welcome'}
       <div class="head">
         <div class="brand"><span class="mark" aria-hidden="true"></span></div>
