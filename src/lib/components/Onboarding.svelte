@@ -170,8 +170,11 @@
 
 </script>
 
+<!-- The overlay covers the title bar, so it carries the drag region itself:
+     clicks on the card and its controls stay normal (Tauri skips those). -->
 <div
   class="overlay"
+  data-tauri-drag-region
   out:fade={{ duration: prefersReducedMotion.current ? 0 : 160, easing: cubicOut }}
 >
   <div
