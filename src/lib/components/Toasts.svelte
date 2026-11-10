@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fly } from 'svelte/transition'
   import { flip } from 'svelte/animate'
+  import { prefersReducedMotion } from 'svelte/motion'
   import { toasts, dismissToast, type ToastKind } from '../stores/toasts.svelte'
 
   function icon(kind: ToastKind) {
@@ -14,8 +15,8 @@
     <div
       class="toast {toast.kind}"
       role={toast.kind === 'error' ? 'alert' : 'status'}
-      transition:fly={{ y: 6, duration: 120 }}
-      animate:flip={{ duration: 150 }}
+      transition:fly={{ y: 6, duration: prefersReducedMotion.current ? 0 : 120 }}
+      animate:flip={{ duration: prefersReducedMotion.current ? 0 : 150 }}
     >
       <span class="icon" aria-hidden="true">{icon(toast.kind)}</span>
       <span class="message">{toast.message}</span>

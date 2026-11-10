@@ -722,6 +722,7 @@
     gap: var(--sp-2);
     background: var(--surface-0);
     color: var(--muted);
+    animation: gp-fade-in var(--t-fast) var(--ease-out);
   }
   .empty-title {
     margin: 0;
@@ -740,5 +741,10 @@
     color: var(--text);
     font-family: inherit;
     font-size: var(--fs-xs);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .empty {
+      animation: none;
+    }
   }
 </style>

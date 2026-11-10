@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { slide } from 'svelte/transition'
+  import { prefersReducedMotion } from 'svelte/motion'
   import { invoke } from '@tauri-apps/api/core'
   import { ui, type FileNode } from '../stores/ui.svelte'
   import { tabs, discardUnder, retarget } from '../stores/tabs.svelte'
@@ -257,7 +259,9 @@
             <span class="name">{node.name}</span>
           </button>
           {#if ui.expanded.includes(node.path)}
-            {@render tree(node.children ?? [])}
+            <div transition:slide={{ duration: prefersReducedMotion.current ? 0 : 120 }}>
+              {@render tree(node.children ?? [])}
+            </div>
           {/if}
         {:else}
           <button
@@ -466,6 +470,7 @@
     z-index: 10;
     min-width: 160px;
     padding: 4px;
+    animation: gp-pop-in var(--t-fast) var(--ease-out);
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--r-md);

@@ -56,6 +56,7 @@
     z-index: 110;
     display: grid;
     place-items: center;
+    animation: gp-fade-in var(--t-base) var(--ease-out);
   }
   .scrim {
     position: absolute;
@@ -73,6 +74,7 @@
     border-radius: var(--r-overlay);
     background: var(--surface-3);
     box-shadow: var(--shadow-2);
+    animation: gp-panel-in var(--t-base) var(--ease-out);
   }
   .head {
     display: flex;

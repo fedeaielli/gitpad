@@ -190,6 +190,7 @@
     align-items: center;
     justify-content: center;
     background: var(--scrim);
+    animation: gp-fade-in var(--t-base) var(--ease-out);
   }
   .modal {
     display: flex;
@@ -201,6 +202,7 @@
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
+    animation: gp-panel-in var(--t-base) var(--ease-out);
   }
   header {
     display: flex;

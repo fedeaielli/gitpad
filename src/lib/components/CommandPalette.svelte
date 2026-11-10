@@ -416,18 +416,7 @@
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
-    animation: drop var(--t-fast) ease-out;
-  }
-  @keyframes drop {
-    from {
-      opacity: 0;
-      transform: translateY(-6px) scale(0.99);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .palette {
-      animation: none;
-    }
+    animation: gp-pop-in var(--t-fast) var(--ease-out);
   }
   input {
     margin: 8px;

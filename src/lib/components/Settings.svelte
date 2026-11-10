@@ -538,6 +538,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: gp-fade-in var(--t-base) var(--ease-out);
   }
   .backdrop {
     position: absolute;
@@ -555,6 +556,7 @@
     border-radius: var(--r-overlay);
     background: var(--surface-1);
     box-shadow: var(--shadow-2);
+    animation: gp-panel-in var(--t-base) var(--ease-out);
   }
   header {
     display: flex;

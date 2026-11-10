@@ -293,6 +293,7 @@
     flex-direction: column;
     min-width: 190px;
     padding: var(--sp-1);
+    animation: gp-pop-in var(--t-fast) var(--ease-out);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-3);

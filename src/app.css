@@ -75,6 +75,7 @@
 
   --t-fast: 150ms;
   --t-base: 180ms;
+  --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
 
   /* Two levels, each with a 1px inset highlight so edges catch light. */
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.32),
@@ -224,6 +225,25 @@ select {
   }
 }
 
+@keyframes gp-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes gp-panel-in {
+  from {
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+@keyframes gp-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 /* Monaco's own drag handles (hidden diff regions) would otherwise borrow the
    focus border, which is the accent here and reads as a stray purple bar. */
 .monaco-editor .diff-hidden-lines:not(.dragging) .top:hover,
@@ -362,6 +382,8 @@ select {
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
   /* Progress must stay visible: slower beats frozen, which reads as broken. */
