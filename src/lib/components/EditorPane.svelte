@@ -510,11 +510,9 @@
   }
 
   async function applyPullChanges(changes: UpstreamChange[]) {
-    const plan = planPullReload(
-      changes,
-      tabs.tabs,
-      (path) => inFlight.has(path) || pendingId === path,
-    )
+    // Only an in-flight write is busy: a scheduled save is not, reloadTab tells
+    // our own autosave echo (disk === savedContent) from a real external edit.
+    const plan = planPullReload(changes, tabs.tabs, (path) => inFlight.has(path))
     for (const path of plan.close) closeRemoved(path)
     for (const path of plan.stale) markStale(path)
     for (const path of plan.reload) await reloadTab(path)
