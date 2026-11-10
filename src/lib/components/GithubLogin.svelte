@@ -179,6 +179,9 @@
     font-size: var(--fs-md);
     animation: gp-pop-in var(--t-fast) var(--ease-out);
   }
+  .code + .hint {
+    animation: gp-fade-in var(--t-fast) var(--ease-out);
+  }
   .code strong {
     margin: 0 6px;
     font-family: ui-monospace, monospace;

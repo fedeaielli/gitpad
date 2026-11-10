@@ -363,6 +363,28 @@
       gp-fade-in 200ms var(--ease-out),
       gp-panel-in 200ms var(--ease-out);
   }
+  /* Each step's blocks mount fresh, so the cascade replays per step. */
+  .card > * {
+    animation: gp-step-in 160ms var(--ease-out) both;
+  }
+  .card > :nth-child(2) {
+    animation-delay: 30ms;
+  }
+  .card > :nth-child(3) {
+    animation-delay: 60ms;
+  }
+  .card > :nth-child(4) {
+    animation-delay: 90ms;
+  }
+  .card > :nth-child(n + 5) {
+    animation-delay: 120ms;
+  }
+  @keyframes gp-step-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
   .head {
     display: flex;
     align-items: center;
