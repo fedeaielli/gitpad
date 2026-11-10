@@ -317,9 +317,12 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    width: 100%;
-    min-height: 26px;
-    padding: 0 8px;
+    /* Inset by 4px a side: the hover/selected fill stops short of the panel
+       edge, and margin + padding still add up to the old 8px label offset. */
+    width: calc(100% - 8px);
+    margin: 0 4px;
+    min-height: 24px;
+    padding: 0 4px;
     text-align: left;
     border-radius: var(--r-sm);
   }
