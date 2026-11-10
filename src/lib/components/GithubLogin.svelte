@@ -177,6 +177,7 @@
     margin: 0;
     color: var(--text);
     font-size: var(--fs-md);
+    animation: gp-pop-in var(--t-fast) var(--ease-out);
   }
   .code strong {
     margin: 0 6px;

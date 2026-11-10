@@ -359,6 +359,9 @@
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
+    animation:
+      gp-fade-in 200ms var(--ease-out),
+      gp-panel-in 200ms var(--ease-out);
   }
   .head {
     display: flex;
@@ -394,6 +397,7 @@
     border-color: var(--ok);
     background: var(--ok-soft);
     color: var(--ok);
+    animation: gp-pop-in var(--t-base) var(--ease-out);
   }
   .hintbox {
     display: flex;
