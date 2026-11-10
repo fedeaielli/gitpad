@@ -309,7 +309,7 @@
       <div class="head">
         <div class="brand done">
           <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 8.6 6.4 12 13 4.6" />
+            <path pathLength="1" d="M3 8.6 6.4 12 13 4.6" />
           </svg>
         </div>
         <div>
@@ -428,7 +428,31 @@
     border-color: var(--ok);
     background: var(--ok-soft);
     color: var(--ok);
-    animation: gp-pop-in var(--t-base) var(--ease-out);
+    animation: gp-check-pop 240ms var(--ease-out);
+  }
+  .brand.done svg path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: gp-check-draw 180ms 100ms var(--ease-out) forwards;
+  }
+  @keyframes gp-check-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.86);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.04);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes gp-check-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
   }
   .hintbox {
     display: flex;

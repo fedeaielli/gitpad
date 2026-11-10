@@ -132,7 +132,7 @@
     {#if code}
       <p class="code">
         Code <strong>{code.userCode}</strong>
-        <button class="quiet" onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+        <button class="quiet" class:copied onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
       </p>
       <p class="hint">
         Enter it on
@@ -199,6 +199,9 @@
     color: var(--accent-fg);
     font: inherit;
     cursor: pointer;
+  }
+  .quiet.copied {
+    animation: gp-fade-in 120ms var(--ease-out);
   }
   .link {
     text-decoration: underline;
