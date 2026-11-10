@@ -155,7 +155,10 @@
     position: relative;
     display: flex;
     align-items: center;
-    flex: 0 0 auto;
+    /* An equal share of the strip, not the width of its label: with a content
+       sizing the unsaved dot sat a whole long path away from the neighbours. */
+    flex: 1 1 0;
+    min-width: 96px;
     box-sizing: border-box;
     max-width: 200px;
     /* 1px short of the strip floor, so the line stays visible under the tab.
@@ -216,6 +219,9 @@
   .label {
     display: flex;
     align-items: center;
+    /* Owns the empty stretch of the tab: the whole surface opens the file, and
+       the close control is pushed to the tab's right edge. */
+    flex: 1;
     gap: 6px;
     min-width: 0;
     padding: 0 4px 0 10px;
