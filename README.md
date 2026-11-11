@@ -23,7 +23,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Linux first.
 
-> **Status:** `v1.1.0`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** `v1.2.0`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
@@ -338,6 +338,12 @@ cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
 ---
+
+## Changelog
+
+Every release is documented in [CHANGELOG.md](CHANGELOG.md); the [releases
+page](https://github.com/fedeaielli/gitpad/releases) carries the same notes with
+the binaries attached.
 
 ## License
 

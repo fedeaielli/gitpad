@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.2.0 — 2026-11-11
+
+The editor notices changes made outside it, the tree creates things where you
+click, and the app moves.
+
+### Added
+- External changes: a debounced watch on the active repository reloads a tab
+  when its file changes on disk. Dirty, busy and deleted tabs are handled
+  instead of clobbered, autosave's own write is ignored, and the watch follows
+  you to another repository.
+- Create files and folders from the palette; the context menu prefills the
+  folder you right-clicked.
+- Entrance motion for dialogs, menus, toasts, folder expansion and the empty
+  state. The onboarding wizard cascades its steps, pops the success check and
+  fades out on close.
+- Remote images render in the Markdown preview (the CSP allows them).
+
+### Changed
+- Tabs share the strip equally; file tree rows are inset from the panel edge.
+
+### Fixed
+- A caret moved by a command (`Enter` on a list, `Tab` across table cells, the
+  code-block action) scrolls into view, with air above and below it.
+- Autosave no longer marks a tab stale or echoes back as an external change.
+- The onboarding token field draws its focus ring around the whole control;
+  the wizard overlay is a window drag region.
+
 ## 1.0.6 — 2026-11-07
 
 Visual pass: the "Warm Graphite" palette, rounded surfaces, Hanken Grotesk as
