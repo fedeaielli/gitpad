@@ -22,7 +22,10 @@ export async function formatText(text: string, language: string): Promise<string
 
 export async function formatDocument(editor: editor.ICodeEditor): Promise<void> {
   const model = editor.getModel()
-  if (!model) return
+  if (!model) {
+    pushToast('No document to format', 'info')
+    return
+  }
   const language = model.getLanguageId()
   if (language !== 'json' && language !== 'yaml') {
     pushToast('No formatter for this file type', 'info')
