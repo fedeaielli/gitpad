@@ -304,6 +304,16 @@ chmod -R u+w ~/.local/share/com.gitpad.app/repos/gitpad_notes
 
 A 5-second force-close watchdog only applies if the webview hangs; it is not active while the dialog is open.
 
+### Manual preview check
+
+The PDF and office viewers run inside WebKitGTK, where pdf.js and mammoth are
+not covered by the unit tests. Before a release, with a display:
+
+1. `npm run tauri dev`
+2. Open a `.pdf`: pages render, scrolling loads the next pages, no blank canvas.
+3. Open a `.docx` and an `.odt`: text and headings render, images do not break the layout.
+4. Toggle the Markdown preview on a `.md` file (Ctrl+Shift+P).
+
 ---
 
 ## Project layout
