@@ -282,45 +282,14 @@ async fn open_external(url: String) -> Result<(), String> {
     if !openable(&url) {
         return Err("only http(s) links can be opened".into());
     }
-    // A cold browser start keeps xdg-open alive for many seconds. Sync commands
+    // A cold browser start keeps the opener alive for many seconds. Sync commands
     // run on the main thread, where that wait froze the window before it could
     // paint the device code, so the wait belongs on the blocking pool.
-    tauri::async_runtime::spawn_blocking(move || open_blocking(&url))
-        .await
-        .map_err(|e| format!("open task: {e}"))?
-}
-
-/// `xdg-open` can exit without a browser on a bare desktop, so the two openers
-/// that exist there are tried in turn and every attempt is logged: the logs tab
-/// says which one failed.
-fn open_blocking(url: &str) -> Result<(), String> {
-    let mut failures = Vec::new();
-    for attempt in [("xdg-open", vec![url]), ("gio", vec!["open", url])] {
-        let (program, args) = attempt;
-        // Logged before the wait: a hung opener would otherwise leave no trace.
-        log::info!(target: "app", "open: {url} via {program}");
-        // The browser writes to the inherited stdout: keep its chatter out of
-        // our terminal, the exit status is all we need.
-        match std::process::Command::new(program)
-            .args(args)
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()
-        {
-            Ok(status) if status.success() => {
-                return Ok(());
-            }
-            Ok(status) => {
-                log::warn!(target: "app", "open: {program} exited with {status}");
-                failures.push(format!("{program}: {status}"));
-            }
-            Err(e) => {
-                log::warn!(target: "app", "open: {program} unavailable: {e}");
-                failures.push(format!("{program}: {e}"));
-            }
-        }
-    }
-    Err(format!("no browser found ({})", failures.join("; ")))
+    tauri::async_runtime::spawn_blocking(move || {
+        tauri_plugin_opener::open_url(&url, None::<&str>).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("open task: {e}"))?
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
