@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getIconForFile, getIconForFolder } from 'vscode-icons-js'
+  import { iconName } from '../utils/file-icon'
 
   let {
     name,
@@ -24,12 +24,8 @@
   const FOLDER = ICONS['default_folder']
   const FILE = ICONS['default_file']
 
-  // We ship one set, not the light-theme twin the mapping keeps asking for.
-  const icon = $derived.by(() => {
-    const picked = (dir ? getIconForFolder(name) : getIconForFile(name)) ?? ''
-    const flat = picked.replace('file_type_light_', 'file_type_').replace(/\.svg$/, '')
-    return ICONS[flat] ?? (dir ? FOLDER : FILE)
-  })
+  // One set is shipped, so the mapping only names an icon we already have.
+  const icon = $derived(ICONS[iconName(name, dir)] ?? (dir ? FOLDER : FILE))
 </script>
 
 <img class="fi" src={icon} width={size} height={size} alt="" aria-hidden="true" />
