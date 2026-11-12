@@ -228,8 +228,11 @@
     signingIn = true
     try {
       // Validate before storing: a bad token must never reach the keyring.
-      setUser(await invoke<UserInfo>('github_validate_token', { token }))
+      const info = await invoke<UserInfo>('github_validate_token', { token })
+      // Store before showing the user as signed in: a failed store must not look
+      // like a successful login.
       await invoke('auth_set_pat', { token })
+      setUser(info)
       pat = ''
       accountError = ''
     } catch (e) {
