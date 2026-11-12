@@ -438,6 +438,7 @@ pub fn run() {
             github::github_init_repo,
             github::github_device_flow_start,
             github::github_device_flow_poll,
+            github::github_device_flow_cancel,
             search::search_global,
             config::config_get,
             config::config_save,

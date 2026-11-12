@@ -40,13 +40,14 @@
     ticker = undefined
   }
 
-  /// Ends the wait only. The backend keeps polling in its own task, so a code
-  /// completed in the browser still stores the token; the next check finds it.
+  /// Ends the wait and stops the backend poll: a code completed later in the
+  /// browser must not sign the user in after they cancelled.
   function cancel() {
     stopTicker()
     busy = false
     code = null
     error = ''
+    void invoke('github_device_flow_cancel').catch(() => {})
   }
 
   onMount(() => {
@@ -72,6 +73,7 @@
     }).then((fn) => unlistens.push(fn))
     return () => {
       stopTicker()
+      void invoke('github_device_flow_cancel').catch(() => {})
       unlistens.forEach((fn) => fn())
     }
   })
@@ -91,7 +93,10 @@
       // Not awaited: a cold browser start takes seconds, and the code has to be
       // on screen (and the poll running) before that wait is over.
       void openExternal(code.verificationUri)
-      await invoke('github_device_flow_poll', { deviceCode: code.deviceCode })
+      await invoke('github_device_flow_poll', {
+        deviceCode: code.deviceCode,
+        interval: code.interval,
+      })
     } catch (e) {
       stopTicker()
       error = errorMessage(e)

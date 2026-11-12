@@ -1,5 +1,6 @@
 use crate::{auth, AppState};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::{AppHandle, Emitter, State};
 use tauri_plugin_log::log;
 
@@ -12,6 +13,8 @@ const GITHUB_CLIENT_ID: &str = match option_env!("GITHUB_CLIENT_ID") {
     None => "",
 };
 const DEVICE_CODE_TTL_SECS: u64 = 900;
+/// Bumped by a new flow or a cancel: an old poll stops at the next check.
+static FLOW_GEN: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all(serialize = "camelCase"))]
@@ -185,6 +188,8 @@ pub async fn github_device_flow_start(
         .await
         .map_err(|e| format!("github: {e}"))?;
     let code: DeviceCode = parse(res).await?;
+    // A new code invalidates any poll still waiting on an older one.
+    FLOW_GEN.fetch_add(1, Ordering::SeqCst);
     log::info!(target: "app", "auth: device flow started");
     Ok(code)
 }
@@ -194,21 +199,30 @@ pub fn github_device_flow_poll(
     app: AppHandle,
     state: State<'_, AppState>,
     device_code: String,
+    interval: u64,
 ) -> Result<(), String> {
     if GITHUB_CLIENT_ID.is_empty() {
         return Err("device flow not configured: set GITHUB_CLIENT_ID".into());
     }
     let http = state.http.clone();
+    let generation = FLOW_GEN.load(Ordering::SeqCst);
     tauri::async_runtime::spawn(async move {
-        let mut interval = std::time::Duration::from_secs(5);
+        let mut interval = std::time::Duration::from_secs(interval.max(1));
         let deadline =
             std::time::Instant::now() + std::time::Duration::from_secs(DEVICE_CODE_TTL_SECS);
         loop {
+            if FLOW_GEN.load(Ordering::SeqCst) != generation {
+                return;
+            }
             if std::time::Instant::now() > deadline {
                 auth_error(&app, "device code expired");
                 return;
             }
             tokio::time::sleep(interval).await;
+            // shortcut: a cancel takes effect after the current sleep, up to one interval.
+            if FLOW_GEN.load(Ordering::SeqCst) != generation {
+                return;
+            }
             let res = http
                 .post(format!("{OAUTH}/oauth/access_token"))
                 .header("Accept", "application/json")
@@ -267,6 +281,11 @@ pub fn github_device_flow_poll(
         }
     });
     Ok(())
+}
+
+#[tauri::command]
+pub fn github_device_flow_cancel() {
+    FLOW_GEN.fetch_add(1, Ordering::SeqCst);
 }
 
 #[cfg(test)]
