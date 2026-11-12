@@ -49,6 +49,8 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 - **Slash commands.** Type `/` at the start of a line to insert a heading, emphasis, a code block with its language, a table, a task list, and the rest of GitHub-flavoured Markdown. With text selected the command wraps it.
 - **Markdown tables that edit themselves.** `Tab` and `Shift+Tab` move between cells and add a row at the end; inside a cell, `/row`, `/col`, `/delrow` and `/delcol` change the shape. Every change re-renders the whole table with its columns aligned.
 - **Markdown preview.** Toggle off, split, or full screen with `Ctrl+Shift+P`; GitHub-flavored Markdown, syntax highlighting, and scroll sync.
+- **Format on demand.** `Ctrl+Shift+I` formats JSON and YAML with Prettier, comments included. Nothing is reformatted on save.
+- **Read-only viewers.** Images, PDFs, DOCX and ODT files open in their own tab: PDFs render page by page as you scroll, office documents become a clean HTML preview.
 - **Warm Graphite theme.** A curated dark, light, and high-contrast palette with rounded surfaces, an 8 px gutter between panels, and a consistent 10/11/12.5/14/16/20 px type scale. The UI font is Hanken Grotesk (bundled, variable 400–700, latin subset), falling back to system UI.
 - **Thin scrollbars.** 8 px wide, always visible in the theme's own colours (light grey on dark, dark grey on light, cyan on high contrast), brightening on hover. Monaco's scrollbars match.
 - **File icons from vscode-icons.** The tree shows the real vscode-icons artwork for 29 common file types and folders, with generic fallbacks.
@@ -197,6 +199,7 @@ A repository without an `origin` remote skips the fetch and push steps: commits 
 | Import a file or folder (into the repo root) | `Ctrl+O` |
 | Command palette (toggle) | `Ctrl+P` |
 | Cycle Markdown preview: off → split → full | `Ctrl+Shift+P` |
+| Format the open JSON or YAML document | `Ctrl+Shift+I` |
 | Find in files | `Ctrl+Shift+F` |
 | Find / find and replace in the open file | `Ctrl+F` / `Ctrl+R` |
 | Go to line (editor focused) | `Ctrl+G` |

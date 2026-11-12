@@ -13,6 +13,7 @@ open file now and pushes immediately. Autosave keeps running as before.
 | `Ctrl+O` | Import: opens the palette on `Import file…` / `Import folder…` |
 | `Ctrl+P` | Toggle the command palette (files, `>` commands, `>search`) |
 | `Ctrl+Shift+P` | Cycle the markdown preview: off → split → full (markdown tabs only) |
+| `Ctrl+Shift+I` | Format the open JSON or YAML document with Prettier |
 | `Ctrl+Shift+F` | Find in files: opens the palette on full-text search |
 | `Ctrl+F` | Open or close find in the current file |
 | `Ctrl+R` | Open or close find and replace in the current file |
@@ -57,6 +58,7 @@ Type `>` first to list them:
 - `Save and sync` — same as `Ctrl+S`
 - `Sync` — push the current notes now
 - `Toggle markdown preview` — same as `Ctrl+Shift+P`
+- `Format document` — same as `Ctrl+Shift+I`
 - `Theme: cycle` — rotate between the available editor themes
 - `New file` / `New folder` — create an entry by path
 - `Import file…` / `Import folder…` — copy into the repository root; same names
