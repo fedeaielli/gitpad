@@ -112,10 +112,13 @@
           void loadingTask.destroy()
           return
         }
+        // Every placeholder uses the first page size: one round-trip instead of
+        // one per page. render() fixes the ratio for pages of another size.
+        const first = await doc.getPage(1)
+        if (cancelled) return
+        const size = first.getViewport({ scale: 1 })
         host.replaceChildren()
         for (let index = 1; index <= doc.numPages; index++) {
-          const page = await doc.getPage(index)
-          const size = page.getViewport({ scale: 1 })
           const wrap = document.createElement('div')
           wrap.className = 'pdf-page'
           wrap.dataset.page = String(index)
@@ -130,6 +133,7 @@
           const wrap = wraps[index - 1]
           const page = await doc.getPage(index)
           const base = page.getViewport({ scale: 1 })
+          wrap.style.aspectRatio = `${base.width} / ${base.height}`
           const viewport = page.getViewport({
             scale: renderScale(host.clientWidth, base.width, window.devicePixelRatio),
           })
