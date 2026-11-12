@@ -429,7 +429,6 @@ pub fn run() {
             git::git_file_log,
             git::git_file_diff,
             git::git_status,
-            git::git_conflicts,
             git::git_resolve_conflict,
             git::git_conflict_versions,
             github::github_validate_token,

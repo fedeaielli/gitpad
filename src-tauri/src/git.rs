@@ -895,10 +895,6 @@ fn conflict_versions(root: &Path, path: &str) -> Result<ConflictVersions, GitErr
 fn emit_status(app: &AppHandle, status: &GitStatus) -> Result<(), GitError> {
     app.emit("sync-status", status)
         .map_err(|e| format!("emit: {e}"))?;
-    if !status.conflicts.is_empty() {
-        app.emit("conflict-detected", &status.conflicts)
-            .map_err(|e| format!("emit: {e}"))?;
-    }
     Ok(())
 }
 
@@ -1464,17 +1460,6 @@ pub async fn git_status(app: AppHandle) -> Result<GitStatus, GitError> {
     tokio::task::spawn_blocking(move || {
         let repo = open_repo(&path)?;
         status_of(&repo)
-    })
-    .await
-    .map_err(|e| format!("git task: {e}"))?
-}
-
-#[tauri::command]
-pub async fn git_conflicts(app: AppHandle) -> Result<Vec<ConflictFile>, GitError> {
-    let path = repo_dir(&app)?;
-    tokio::task::spawn_blocking(move || {
-        let repo = open_repo(&path)?;
-        Ok(status_of(&repo)?.conflicts)
     })
     .await
     .map_err(|e| format!("git task: {e}"))?
