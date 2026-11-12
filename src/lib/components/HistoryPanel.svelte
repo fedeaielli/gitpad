@@ -11,6 +11,7 @@
   import { confirmDialog } from '../stores/confirm.svelte'
   import { tabs } from '../stores/tabs.svelte'
   import { reloadTabFromDisk } from '../editor/bridge'
+  import { restoreFileAt } from '../utils/restore'
   import { tip } from '../utils/tooltip'
 
   interface CommitEntry {
@@ -96,12 +97,8 @@
     busy = true
     error = null
     try {
-      applyGitStatus(
-        await invoke<GitStatus>('git_restore_file', { hash: commit.hash, path: file.path }),
-      )
+      await restoreFileAt(commit.hash, file.path)
       // The tab stays open: EditorPane re-reads the file into its model.
-      await reloadTabFromDisk(file.path)
-      ui.treeVersion += 1
       await load()
     } catch (e) {
       error = errorMessage(e)

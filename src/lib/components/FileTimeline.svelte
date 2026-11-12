@@ -6,11 +6,11 @@
   import { tabs } from '../stores/tabs.svelte'
   import { languageFor } from '../utils/langmap'
   import { ui } from '../stores/ui.svelte'
-  import { applyGitStatus, errorMessage, gitStatus, type FileChange, type GitStatus } from '../stores/git.svelte'
+  import { errorMessage, gitStatus, type FileChange } from '../stores/git.svelte'
   import { logLine, pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { tip } from '../utils/tooltip'
-  import { reloadTabFromDisk } from '../editor/bridge'
+  import { restoreFileAt } from '../utils/restore'
   import { isCurrentVersion } from '../utils/file-history'
   import { clampTimelineHeight } from '../utils/timeline'
   import FileIcon from './FileIcon.svelte'
@@ -205,14 +205,9 @@
     busy = true
     error = null
     try {
-      applyGitStatus(
-        await invoke<GitStatus>('git_restore_file', { hash: commit.hash, path: target }),
-      )
-      // The tab stays put: EditorPane re-reads the file into its own model.
-      await reloadTabFromDisk(target)
+      await restoreFileAt(commit.hash, target)
       selected = ''
       setDiff(null, '')
-      ui.treeVersion += 1
       pushToast(`Restored ${target} from ${commit.shortHash}`, 'success')
       await load()
     } catch (e) {
