@@ -4,6 +4,7 @@
     applyGitStatus,
     errorMessage,
     gitStatus,
+    type CommitEntry,
     type FileChange,
     type GitStatus,
   } from '../stores/git.svelte'
@@ -13,15 +14,6 @@
   import { reloadTabFromDisk } from '../editor/bridge'
   import { restoreFileAt } from '../utils/restore'
   import { tip } from '../utils/tooltip'
-
-  interface CommitEntry {
-    hash: string
-    shortHash: string
-    message: string
-    author: string
-    timestamp: number
-    filesChanged: number
-  }
 
   interface CommitGroup {
     key: string

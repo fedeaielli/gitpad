@@ -24,6 +24,15 @@ export interface GitStatus {
   lastPush: number | null
 }
 
+export interface CommitEntry {
+  hash: string
+  shortHash: string
+  message: string
+  author: string
+  timestamp: number
+  filesChanged: number
+}
+
 export const gitStatus = $state({
   synced: true,
   syncing: false,
