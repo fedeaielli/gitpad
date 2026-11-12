@@ -8,16 +8,11 @@
   import { focusTrap } from '../utils/focus'
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
-  import { auth, forgetUser, loadUser, setUser } from '../stores/auth.svelte'
+  import { auth, forgetUser, loadUser, signInWithPat } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
   import LogsPane from './LogsPane.svelte'
   import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
   import { flushPendingSave } from '../editor/bridge'
-
-  interface UserInfo {
-    login: string
-    avatarUrl: string
-  }
 
   type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'logs' | 'account'
 
@@ -228,11 +223,7 @@
     signingIn = true
     try {
       // Validate before storing: a bad token must never reach the keyring.
-      const info = await invoke<UserInfo>('github_validate_token', { token })
-      // Store before showing the user as signed in: a failed store must not look
-      // like a successful login.
-      await invoke('auth_set_pat', { token })
-      setUser(info)
+      await signInWithPat(token)
       pat = ''
       accountError = ''
     } catch (e) {

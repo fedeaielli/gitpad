@@ -10,13 +10,9 @@
   import { openExternal } from '../utils/open'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
-  import { loadUser, setUser } from '../stores/auth.svelte'
+  import { loadUser, signInWithPat, type GithubUser } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
 
-  interface UserInfo {
-    login: string
-    avatarUrl: string
-  }
   interface RepoInfo {
     name: string
     fullName: string
@@ -37,7 +33,7 @@
 
   let step = $state<Step>('welcome')
   let token = $state('')
-  let user = $state<UserInfo | null>(null)
+  let user = $state<GithubUser | null>(null)
   let repo = $state<RepoInfo | null>(null)
   /// Folder that will hold the clone; empty keeps the app data dir.
   let folder = $state('')
@@ -80,12 +76,7 @@
     busy = true
     error = null
     try {
-      const info = await invoke<UserInfo>('github_validate_token', { token: token.trim() })
-      await invoke('auth_set_pat', { token: token.trim() })
-      user = info
-      // The activity bar reads the shared store: without this it stays signed
-      // out until its cached "no user" expires.
-      setUser(info)
+      user = await signInWithPat(token.trim())
       goRepo()
     } catch (e) {
       fail(e)

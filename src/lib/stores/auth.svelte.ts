@@ -27,9 +27,15 @@ export function setUser(user: GithubUser | null) {
 
 /// A plain logout: the next check has to ask the backend again.
 export function forgetUser() {
-  // setUser(null) already clears loadedAt; keeping it here says so out loud.
   setUser(null)
-  loadedAt = 0
+}
+
+/// Validates the token before storing it: a bad token never reaches the keyring.
+export async function signInWithPat(token: string): Promise<GithubUser> {
+  const user = await invoke<GithubUser>('github_validate_token', { token })
+  await invoke('auth_set_pat', { token })
+  setUser(user)
+  return user
 }
 
 /// Fetches the user unless a fresh copy is already in the store.
