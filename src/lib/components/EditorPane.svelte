@@ -189,7 +189,7 @@
   let host: HTMLDivElement
   let editor: monaco.editor.IStandaloneCodeEditor | undefined
   let saveError = $state<string | null>(null)
-  let pendingId = ''
+  const pending = new Set<string>()
   let currentPath = ''
   // setValue() fires onDidChangeModelContent: ignore those while reloading.
   let applyingExternal = false
@@ -241,29 +241,36 @@
   }
 
   async function savePending(): Promise<boolean> {
-    const id = pendingId
-    pendingId = ''
-    const tab = tabs.tabs.find((t) => t.id === id)
-    if (!tab) return true
-    const decision = saveDecision(tab)
-    if (decision === 'skip') {
-      tab.modified = false
-      return true
+    const ids = [...pending]
+    pending.clear()
+    let ok = true
+    for (const id of ids) {
+      const tab = tabs.tabs.find((t) => t.id === id)
+      if (!tab) continue
+      const decision = saveDecision(tab)
+      if (decision === 'skip') {
+        tab.modified = false
+        continue
+      }
+      if (decision === 'stale') {
+        tab.modified = true
+        saveError = 'file changed upstream — autosave paused'
+        ok = false
+        continue
+      }
+      if (decision === 'refuse') {
+        tab.modified = true
+        saveError = 'refusing to save an empty file — reopen the tab'
+        ok = false
+        continue
+      }
+      if (await writeTab(tab, tab.content)) armPush()
+      // Keep a failed write queued so the next flush retries it.
+      else {
+        pending.add(id)
+        ok = false
+      }
     }
-    if (decision === 'stale') {
-      tab.modified = true
-      saveError = 'file changed upstream — autosave paused'
-      return false
-    }
-    if (decision === 'refuse') {
-      tab.modified = true
-      saveError = 'refusing to save an empty file — reopen the tab'
-      return false
-    }
-    const ok = await writeTab(tab, tab.content)
-    if (ok) armPush()
-    // Keep it pending so the next flush retries instead of losing the buffer.
-    else if (!pendingId) pendingId = id
     return ok
   }
 
@@ -286,18 +293,14 @@
 
   async function flushBody(): Promise<{ ok: boolean; wrote: boolean }> {
     persist.cancel()
+    pending.clear()
     // A save started by the debounce may still be writing: wait for it so the
     // loop below sees the flag it sets instead of writing the same file twice.
     await Promise.allSettled([...inFlight.values()])
-    const attempted = pendingId
-    // `savePending` reports only success; a dirty tab that came back clean was
-    // written (a skip leaves it clean too, but then there was nothing to write).
-    const pendingTab = tabs.tabs.find((t) => t.id === attempted)
-    const pendingDirty = pendingTab?.modified ?? false
-    let ok = await savePending()
-    let wrote = pendingDirty && pendingTab?.modified === false
+    let ok = true
+    let wrote = false
     for (const tab of tabs.tabs) {
-      if (!tab.modified || tab.id === attempted) continue
+      if (!tab.modified) continue
       const decision = saveDecision(tab)
       if (decision === 'skip') {
         tab.modified = false
@@ -343,7 +346,7 @@
     if (!tab || !model) return
     tab.content = model.getValue()
     tab.modified = true
-    pendingId = tab.id
+    pending.add(tab.id)
     persist.run()
   }
 
@@ -368,7 +371,7 @@
     if (!editor) return
     if (path === currentPath) return
     if (editor && currentPath) viewStates.set(currentPath, editor.saveViewState())
-    if (pendingId && pendingId !== path) {
+    if (pending.size > 0 && !pending.has(path)) {
       persist.cancel()
       void savePending()
     }
@@ -447,8 +450,8 @@
   })
 
   async function onBlur() {
-    const hadEdits = pendingId !== '' || tabs.tabs.some((t) => t.modified)
-    if (pendingId) {
+    const hadEdits = pending.size > 0 || tabs.tabs.some((t) => t.modified)
+    if (pending.size > 0) {
       persist.cancel()
       await savePending()
     }
@@ -502,7 +505,7 @@
       return
     }
     // The user may have typed, or a save may have started, during the read.
-    // pendingId is not checked: it marks a scheduled save, not one in flight.
+    // The pending set is not checked: it marks scheduled saves, not writes in flight.
     const raced = inFlight.has(path) || tab.content !== before
     const action = decideReload(tab, content, raced)
     if (action === 'stale') return markStale(path)
