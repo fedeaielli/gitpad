@@ -6,6 +6,7 @@
   import { imageMime } from '../utils/file-kind'
   import { renderScale } from '../utils/pdf-render'
   import { odfToHtml } from '../utils/odf'
+  import { debounce } from '../utils/debounce'
 
   let { tab }: { tab: Tab } = $props()
 
@@ -95,6 +96,7 @@
     let loadingTask: import('pdfjs-dist').PDFDocumentLoadingTask | undefined
     let observer: IntersectionObserver | undefined
     let resize: ResizeObserver | undefined
+    let rerender: ReturnType<typeof debounce> | undefined
     const rendered = new Set<number>()
     const wraps: HTMLDivElement[] = []
 
@@ -161,13 +163,19 @@
         )
         for (const wrap of wraps) observer.observe(wrap)
 
-        // A width change invalidates the bitmap scale: redraw what was visible.
-        resize = new ResizeObserver(() => {
+        // A width change invalidates the bitmap scale: redraw what is visible
+        // once the drag settles. A height-only change keeps the same bitmaps.
+        let lastWidth = host.clientWidth
+        rerender = debounce(() => {
+          const width = host.clientWidth
+          if (width === lastWidth) return
+          lastWidth = width
           for (const index of [...rendered]) {
             rendered.delete(index)
             void render(index)
           }
-        })
+        }, 150)
+        resize = new ResizeObserver(() => rerender?.run())
         resize.observe(host)
       } catch (e) {
         if (!cancelled) error = errorMessage(e)
@@ -177,6 +185,7 @@
     return () => {
       cancelled = true
       observer?.disconnect()
+      rerender?.cancel()
       resize?.disconnect()
       void loadingTask?.destroy()
       host.replaceChildren()
