@@ -31,6 +31,7 @@
     errorMessage,
     isIgnorableSyncError,
     isNoRepoError,
+    pullOnly,
     type FileChange,
     type GitStatus,
   } from './lib/stores/git.svelte'
@@ -228,12 +229,7 @@
       return false
     })
     if (!hasToken) return
-    try {
-      applyGitStatus(await invoke<GitStatus>('git_pull'))
-    } catch (e) {
-      const message = errorMessage(e)
-      if (!isIgnorableSyncError(message)) gitStatus.error = message
-    }
+    await pullOnly()
   }
 
   /// Files changed on disk outside GitPad (another editor, the git CLI, a script).
