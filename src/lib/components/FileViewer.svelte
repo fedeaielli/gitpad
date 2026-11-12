@@ -3,6 +3,7 @@
   import DOMPurify from 'dompurify'
   import type { Tab } from '../stores/tabs.svelte'
   import { errorMessage } from '../stores/git.svelte'
+  import { logLine } from '../stores/toasts.svelte'
   import { imageMime } from '../utils/file-kind'
   import { renderScale } from '../utils/pdf-render'
   import { odfToHtml } from '../utils/odf'
@@ -139,8 +140,9 @@
           try {
             await page.render({ canvas, viewport }).promise
           } catch (e) {
-            // A cancelled render after a tab switch is not an error.
-            if (!cancelled) error = errorMessage(e)
+            // A cancelled render after a tab switch is not an error, and one bad
+            // page must not replace the whole document with an error message.
+            if (!cancelled) logLine('warn', `pdf page ${index}: ${errorMessage(e)}`, 'editor')
           }
         }
 
