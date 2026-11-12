@@ -165,7 +165,7 @@ same sentence.
 ## Quickstart
 
 1. **Connect GitHub.** Sign in with the OAuth device flow or a personal access token (classic) with the `repo` scope, created at <https://github.com/settings/tokens>. The token is stored in the OS keyring, not in a config file.
-2. **Choose a repository.** By default GitPad looks for a private repository named `gitpad_notes`, creates it if it does not exist, and clones it into your documents folder (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
+2. **Choose a repository.** GitPad uses a private repository named `gitpad_notes` (fixed), creates it if it does not exist, and clones it into your documents folder (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
 3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically. You can also skip the wizard and clone an existing repository from the Git panel.
 
 No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Open local folder*. GitPad opens an existing repository or initializes one in place when the folder is not a repository yet. A repository without an `origin` remote commits locally and skips sync until you add one.
