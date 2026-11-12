@@ -304,7 +304,7 @@ fn read_text(abs: &Path, label: &str) -> Result<String, git::GitError> {
     std::fs::read_to_string(abs).map_err(|e| read_error(label, e))
 }
 
-const MAX_BINARY_BYTES: u64 = 50 * 1024 * 1024;
+const MAX_BINARY_BYTES: u64 = 20 * 1024 * 1024;
 
 /// Read a binary file for a read-only viewer (image, PDF, office document).
 /// Returns raw bytes so the webview receives an ArrayBuffer, not a JSON array.
@@ -323,7 +323,8 @@ pub async fn fs_read_binary(
         if metadata.len() > MAX_BINARY_BYTES {
             let mb = metadata.len() as f64 / (1024.0 * 1024.0);
             return Err(git::GitError::Other(format!(
-                "{label}: file too large to open: {mb:.1} MB, limit 50 MB"
+                "{label}: file too large to open: {mb:.1} MB, limit {} MB",
+                MAX_BINARY_BYTES / (1024 * 1024)
             )));
         }
         std::fs::read(&abs).map_err(|e| read_error(&label, e))
