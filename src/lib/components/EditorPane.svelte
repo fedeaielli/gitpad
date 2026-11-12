@@ -427,6 +427,8 @@
       saved.delete(path)
       viewStates.delete(path)
     }
+    // Viewers never own a model, so their marker would never be consumed here.
+    for (const path of discarded) if (!models.has(path)) discarded.delete(path)
   })
 
   $effect(() => {
