@@ -25,9 +25,7 @@ prepare() {
 build() {
   cd "$pkgname"
   npm run build
-  # Public OAuth client id: the device flow must be compiled in, like the
-  # AppImage build does via the `npm run tauri` script.
-  export GITHUB_CLIENT_ID=Ov23lilamnIFNDISE1uQ
+  # The public OAuth client id is compiled in from .cargo/config.toml.
   # Tauri only serves the bundled assets with this feature on: without it the
   # binary thinks it is a dev build and loads devUrl (http://localhost:1420).
   (cd src-tauri && cargo build --release --locked --offline --features tauri/custom-protocol)

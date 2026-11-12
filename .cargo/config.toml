@@ -1,3 +1,7 @@
 [target.x86_64-unknown-linux-gnu]
 linker = "cc"
 rustflags = ["-C", "link-arg=-fuse-ld=bfd"]
+
+[env]
+# Public OAuth client id: compiled in by `option_env!` in github.rs.
+GITHUB_CLIENT_ID = "Ov23lilamnIFNDISE1uQ"
