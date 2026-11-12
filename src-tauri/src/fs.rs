@@ -498,23 +498,23 @@ fn unique_path(dir: &Path, name: &str) -> PathBuf {
 /// `skip_git` keeps a user's nested `.git` out of the notes repo, while a moved
 /// clone must carry its own.
 pub(crate) fn copy_tree(src: &Path, dst: &Path, skip_git: bool) -> Result<(), String> {
-    std::fs::create_dir_all(dst).map_err(|e| format!("import {}: {e}", src.display()))?;
-    let entries = std::fs::read_dir(src).map_err(|e| format!("import {}: {e}", src.display()))?;
+    std::fs::create_dir_all(dst).map_err(|e| format!("copy {}: {e}", src.display()))?;
+    let entries = std::fs::read_dir(src).map_err(|e| format!("copy {}: {e}", src.display()))?;
     for entry in entries {
-        let entry = entry.map_err(|e| format!("import {}: {e}", src.display()))?;
+        let entry = entry.map_err(|e| format!("copy {}: {e}", src.display()))?;
         if skip_git && entry.file_name() == ".git" {
             continue;
         }
         let path = entry.path();
         let file_type = entry
             .file_type()
-            .map_err(|e| format!("import {}: {e}", path.display()))?;
+            .map_err(|e| format!("copy {}: {e}", path.display()))?;
         let target = dst.join(entry.file_name());
         if file_type.is_dir() {
             copy_tree(&path, &target, skip_git)?;
         } else if file_type.is_file() {
             std::fs::copy(&path, &target)
-                .map_err(|e| format!("import {}: {e}", path.display()))?;
+                .map_err(|e| format!("copy {}: {e}", path.display()))?;
         }
     }
     Ok(())
