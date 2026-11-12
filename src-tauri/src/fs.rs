@@ -494,13 +494,15 @@ fn unique_path(dir: &Path, name: &str) -> PathBuf {
     unreachable!("an unused import name always exists")
 }
 
-/// Recursive copy for imported folders; `.git` and symlinks are skipped.
-fn copy_tree(src: &Path, dst: &Path) -> Result<(), String> {
+/// Recursive copy for imported folders and moved clones; symlinks are skipped.
+/// `skip_git` keeps a user's nested `.git` out of the notes repo, while a moved
+/// clone must carry its own.
+pub(crate) fn copy_tree(src: &Path, dst: &Path, skip_git: bool) -> Result<(), String> {
     std::fs::create_dir_all(dst).map_err(|e| format!("import {}: {e}", src.display()))?;
     let entries = std::fs::read_dir(src).map_err(|e| format!("import {}: {e}", src.display()))?;
     for entry in entries {
         let entry = entry.map_err(|e| format!("import {}: {e}", src.display()))?;
-        if entry.file_name() == ".git" {
+        if skip_git && entry.file_name() == ".git" {
             continue;
         }
         let path = entry.path();
@@ -509,7 +511,7 @@ fn copy_tree(src: &Path, dst: &Path) -> Result<(), String> {
             .map_err(|e| format!("import {}: {e}", path.display()))?;
         let target = dst.join(entry.file_name());
         if file_type.is_dir() {
-            copy_tree(&path, &target)?;
+            copy_tree(&path, &target, skip_git)?;
         } else if file_type.is_file() {
             std::fs::copy(&path, &target)
                 .map_err(|e| format!("import {}: {e}", path.display()))?;
@@ -547,7 +549,7 @@ fn import_into(src: &Path, dest_dir: &Path) -> Result<PathBuf, String> {
         .to_string();
     let target = unique_path(&dest, &name);
     if meta.is_dir() {
-        copy_tree(&src, &target)?;
+        copy_tree(&src, &target, true)?;
     } else if meta.is_file() {
         std::fs::copy(&src, &target).map_err(|e| format!("import {}: {e}", src.display()))?;
     } else {
@@ -1080,5 +1082,31 @@ mod tests {
         walk.push_head().unwrap();
         assert_eq!(walk.count(), rounds * 2);
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn copy_tree_copies_nested_files_and_honours_skip_git() {
+        let root = std::env::temp_dir().join(format!("gitpad-copy-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let src = root.join("src");
+        std::fs::create_dir_all(src.join("sub")).unwrap();
+        std::fs::create_dir_all(src.join(".git")).unwrap();
+        std::fs::write(src.join("a.md"), "a").unwrap();
+        std::fs::write(src.join("sub/b.md"), "b").unwrap();
+        std::fs::write(src.join(".git/config"), "g").unwrap();
+
+        // Import: a nested repository must not follow the notes into the clone.
+        let imported = root.join("imported");
+        copy_tree(&src, &imported, true).unwrap();
+        assert!(imported.join("a.md").exists());
+        assert!(imported.join("sub/b.md").exists());
+        assert!(!imported.join(".git").exists());
+
+        // Move: a clone carries its own history across filesystems.
+        let moved = root.join("moved");
+        copy_tree(&src, &moved, false).unwrap();
+        assert!(moved.join(".git/config").exists());
+
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

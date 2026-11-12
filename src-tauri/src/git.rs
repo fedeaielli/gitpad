@@ -961,24 +961,6 @@ fn clone_target(parent: &Path, name: &str) -> Result<PathBuf, GitError> {
     Ok(parent.join(name))
 }
 
-/// Recursive copy for moving a clone across filesystems; symlinks are skipped.
-fn copy_tree(src: &Path, dst: &Path) -> Result<(), GitError> {
-    let io = |what: &Path, e: std::io::Error| GitError::IoError(format!("{}: {e}", what.display()));
-    std::fs::create_dir_all(dst).map_err(|e| io(dst, e))?;
-    for entry in std::fs::read_dir(src).map_err(|e| io(src, e))? {
-        let entry = entry.map_err(|e| io(src, e))?;
-        let path = entry.path();
-        let target = dst.join(entry.file_name());
-        let kind = entry.file_type().map_err(|e| io(&path, e))?;
-        if kind.is_dir() {
-            copy_tree(&path, &target)?;
-        } else if kind.is_file() {
-            std::fs::copy(&path, &target).map_err(|e| io(&path, e))?;
-        }
-    }
-    Ok(())
-}
-
 /// Rename when possible; otherwise copy to a sibling folder, verify it and swap.
 /// The source stays until the destination is verified, so a failure leaves no
 /// half-moved clone behind.
@@ -1020,7 +1002,8 @@ fn stage_copy(from: &Path, to: &Path) -> Result<(), GitError> {
         .ok_or_else(|| GitError::Other(format!("no name in {}", to.display())))?;
     let tmp = parent.join(format!(".{name}.move-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&tmp);
-    let staged = copy_tree(from, &tmp)
+    let staged = crate::fs::copy_tree(from, &tmp, false)
+        .map_err(GitError::from)
         .and_then(|_| verify_copy(from, &tmp))
         .and_then(|_| {
             std::fs::rename(&tmp, to)
@@ -1663,7 +1646,7 @@ mod tests {
         drop(repo);
 
         let to = root.join("copy");
-        copy_tree(&from, &to).unwrap();
+        crate::fs::copy_tree(&from, &to, false).unwrap();
         verify_copy(&from, &to).unwrap();
 
         std::fs::remove_file(to.join("b.md")).unwrap();
@@ -1717,20 +1700,6 @@ mod tests {
         assert!(clone_target(&parent.join("missing"), "notes").is_err());
         assert_eq!(clone_target(&parent, "notes").unwrap(), parent.join("notes"));
         let _ = std::fs::remove_dir_all(&parent);
-    }
-
-    #[test]
-    fn copy_tree_copies_files_and_nested_folders() {
-        let src = tmp("copy-src");
-        let dst = tmp("copy-dst");
-        std::fs::write(src.join("a.md"), "a").unwrap();
-        std::fs::create_dir_all(src.join("sub")).unwrap();
-        std::fs::write(src.join("sub/b.md"), "b").unwrap();
-        copy_tree(&src, &dst).unwrap();
-        assert!(dst.join("a.md").exists());
-        assert!(dst.join("sub/b.md").exists());
-        let _ = std::fs::remove_dir_all(&src);
-        let _ = std::fs::remove_dir_all(&dst);
     }
 
     #[test]
