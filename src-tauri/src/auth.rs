@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use tauri_plugin_log::log;
 
-pub const SERVICE: &str = "com.gitpad.app";
-pub const TOKEN_KEY: &str = "github_token";
+const SERVICE: &str = "com.gitpad.app";
+const TOKEN_KEY: &str = "github_token";
 
 /// The token when the keyring cannot hold it: a session-only copy, so a machine
 /// whose Secret Service is missing or locked can still sign in.
@@ -123,30 +123,22 @@ fn keyring_read(key: &str) -> Result<Option<String>, String> {
 /// Writes one secret, reporting whether the keyring took it. Private on purpose:
 /// the webview can neither read a secret nor pick the key it lands on, so only
 /// `auth_set_pat` and the device flow touch the keyring.
-fn store(key: &str, value: &str) -> bool {
+fn store(value: &str) -> bool {
     let fallback = fallback_path();
-    store_with(
-        key,
-        value,
-        || keyring_write(key, value),
-        fallback.as_deref(),
-    )
+    store_with(value, || keyring_write(TOKEN_KEY, value), fallback.as_deref())
 }
 
 fn store_with(
-    key: &str,
     value: &str,
     write: impl FnOnce() -> Result<(), String>,
     fallback: Option<&Path>,
 ) -> bool {
     match write() {
         Ok(()) => {
-            if key == TOKEN_KEY {
-                set_session_token(None);
-                // The keyring now owns the token: drop a stale fallback copy.
-                if let Some(path) = fallback {
-                    clear_secret(path);
-                }
+            set_session_token(None);
+            // The keyring now owns the token: drop a stale fallback copy.
+            if let Some(path) = fallback {
+                clear_secret(path);
             }
             true
         }
@@ -154,14 +146,12 @@ fn store_with(
             // A missing or locked Secret Service is not fatal: keep the token in
             // a protected file, or in memory if even that fails.
             log::warn!(target: "app", "auth: keyring unavailable: {e}");
-            if key == TOKEN_KEY {
-                set_session_token(Some(value));
-                if let Some(path) = fallback {
-                    match write_secret(path, value) {
-                        Ok(()) => log::info!(target: "app", "auth: token kept in a protected file"),
-                        Err(e) => {
-                            log::warn!(target: "app", "auth: {e}; token lasts this session only")
-                        }
+            set_session_token(Some(value));
+            if let Some(path) = fallback {
+                match write_secret(path, value) {
+                    Ok(()) => log::info!(target: "app", "auth: token kept in a protected file"),
+                    Err(e) => {
+                        log::warn!(target: "app", "auth: {e}; token lasts this session only")
                     }
                 }
             }
@@ -170,35 +160,27 @@ fn store_with(
     }
 }
 
-fn read(key: &str) -> Option<String> {
+fn read() -> Option<String> {
     let fallback = fallback_path();
-    read_with(key, || keyring_read(key), fallback.as_deref())
+    read_with(|| keyring_read(TOKEN_KEY), fallback.as_deref())
 }
 
 fn read_with(
-    key: &str,
     read: impl FnOnce() -> Result<Option<String>, String>,
     fallback: Option<&Path>,
 ) -> Option<String> {
     match read() {
         Ok(Some(value)) => {
             // The keyring wins; a file left by a keyring-less session is stale.
-            if key == TOKEN_KEY {
-                if let Some(path) = fallback {
-                    clear_secret(path);
-                }
+            if let Some(path) = fallback {
+                clear_secret(path);
             }
             Some(value)
         }
-        Ok(None) if key == TOKEN_KEY => session_token().or_else(|| fallback.and_then(read_secret)),
-        Ok(None) => None,
+        Ok(None) => session_token().or_else(|| fallback.and_then(read_secret)),
         Err(e) => {
             log::warn!(target: "app", "auth: keyring unavailable: {e}");
-            if key == TOKEN_KEY {
-                session_token().or_else(|| fallback.and_then(read_secret))
-            } else {
-                None
-            }
+            session_token().or_else(|| fallback.and_then(read_secret))
         }
     }
 }
@@ -225,14 +207,14 @@ pub fn keyring_ok() -> bool {
 /// Token used by the git/github modules. The webview only ever sees whether it
 /// exists (`auth_has_token`); the value stays in Rust.
 pub fn token() -> Result<String, String> {
-    read(TOKEN_KEY).ok_or_else(|| "not authenticated".into())
+    read().ok_or_else(|| "not authenticated".into())
 }
 
 /// Stores a token obtained outside the webview (the device flow). Returns
 /// whether the keyring kept it; `false` means it went to the protected file,
 /// or only this session when even that fails.
 pub async fn store_token(token: String) -> Result<bool, String> {
-    let persisted = tokio::task::spawn_blocking(move || store(TOKEN_KEY, &token))
+    let persisted = tokio::task::spawn_blocking(move || store(&token))
         .await
         .map_err(|e| format!("keyring task: {e}"))?;
     if persisted {
@@ -255,7 +237,7 @@ pub async fn auth_set_pat(token: String) -> Result<bool, String> {
 /// Whether a token is available: keyring, protected file, or this session's copy.
 #[tauri::command]
 pub async fn auth_has_token() -> Result<bool, String> {
-    tokio::task::spawn_blocking(|| Ok::<bool, String>(read(TOKEN_KEY).is_some()))
+    tokio::task::spawn_blocking(|| Ok::<bool, String>(read().is_some()))
         .await
         .map_err(|e| format!("keyring task: {e}"))?
 }
@@ -312,13 +294,13 @@ mod tests {
     fn keyring_roundtrip() {
         let key = "gitpad_test_key";
         // Headless runners have no Secret Service: nothing to test there.
-        if !store(key, "value") {
+        if keyring_write(key, "value").is_err() {
             eprintln!("keyring backend unavailable, skipping");
             return;
         }
-        assert_eq!(read(key), Some("value".into()));
+        assert_eq!(keyring_read(key).unwrap(), Some("value".into()));
         entry(key).unwrap().delete_credential().unwrap();
-        assert_eq!(read(key), None);
+        assert_eq!(keyring_read(key).unwrap(), None);
     }
 
     #[test]
@@ -341,23 +323,21 @@ mod tests {
         set_session_token(None);
         // A broken keyring must not make the login fail.
         assert!(!store_with(
-            TOKEN_KEY,
             "secret",
             || Err("no service".into()),
             None
         ));
         assert_eq!(session_token(), Some("secret".into()));
         assert_eq!(
-            read_with(TOKEN_KEY, || Err("no service".into()), None),
+            read_with(|| Err("no service".into()), None),
             Some("secret".into())
         );
         // The copy belongs to the token only.
-        assert_eq!(read_with("other", || Err("no service".into()), None), None);
         // A keyring that works again wins over the stale copy.
-        assert!(store_with(TOKEN_KEY, "fresh", || Ok(()), None));
+        assert!(store_with("fresh", || Ok(()), None));
         assert_eq!(session_token(), None);
         assert_eq!(
-            read_with(TOKEN_KEY, || Ok(Some("fresh".into())), None),
+            read_with(|| Ok(Some("fresh".into())), None),
             Some("fresh".into())
         );
         set_session_token(None);
@@ -371,7 +351,6 @@ mod tests {
         let path = dir.join(TOKEN_FILE);
 
         assert!(!store_with(
-            TOKEN_KEY,
             "secret",
             || Err("no service".into()),
             Some(&path)
@@ -381,11 +360,11 @@ mod tests {
         // A restart loses the session copy: the file is what remains.
         set_session_token(None);
         assert_eq!(
-            read_with(TOKEN_KEY, || Err("no service".into()), Some(&path)),
+            read_with(|| Err("no service".into()), Some(&path)),
             Some("secret".into())
         );
         assert_eq!(
-            read_with(TOKEN_KEY, || Ok(None), Some(&path)),
+            read_with(|| Ok(None), Some(&path)),
             Some("secret".into())
         );
 
@@ -402,7 +381,7 @@ mod tests {
         let path = dir.join(TOKEN_FILE);
         write_secret(&path, "old").unwrap();
 
-        assert!(store_with(TOKEN_KEY, "fresh", || Ok(()), Some(&path)));
+        assert!(store_with("fresh", || Ok(()), Some(&path)));
         assert!(!path.exists());
         assert_eq!(session_token(), None);
 
