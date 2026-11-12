@@ -30,7 +30,12 @@ const BY_EXTENSION: Record<string, string> = {
   rs: 'rust',
   sh: 'shell',
   bash: 'shell',
+  bashrc: 'shell',
+  bash_profile: 'shell',
+  bash_aliases: 'shell',
+  profile: 'shell',
   zsh: 'shell',
+  zshrc: 'shell',
   fish: 'shell',
   sql: 'sql',
   svelte: 'svelte',
@@ -83,7 +88,7 @@ export function iconName(name: string, dir: boolean): string {
   const named = BY_NAME[name]
   if (named) return `file_type_${named}`
   const dot = name.lastIndexOf('.')
-  if (dot <= 0) return 'default_file'
+  if (dot === -1) return 'default_file'
   const type = BY_EXTENSION[name.slice(dot + 1).toLowerCase()]
   return type ? `file_type_${type}` : 'default_file'
 }

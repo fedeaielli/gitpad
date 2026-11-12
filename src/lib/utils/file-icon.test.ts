@@ -9,6 +9,7 @@ describe('iconName', () => {
     expect(iconName('app.tsx', false)).toBe('file_type_reactts')
     expect(iconName('config.yml', false)).toBe('file_type_yaml')
     expect(iconName('photo.JPG', false)).toBe('file_type_image')
+    expect(iconName('.bashrc', false)).toBe('file_type_shell')
   })
 
   it('keeps the special file names', () => {
