@@ -3,6 +3,7 @@
   import { tabs, closeTab } from '../stores/tabs.svelte'
   import { getEditor } from '../editor/bridge'
   import { saveAndSync } from '../utils/save-and-sync'
+  import { keyOf } from '../utils/shortcuts'
 
   interface Item {
     label: string
@@ -38,15 +39,15 @@
       label: 'File',
       groups: [
         [
-          { label: 'New File', keys: 'Ctrl+N', run: () => openPalette(() => (ui.palettePrompt = 'file')) },
+          { label: 'New File', keys: keyOf('newFile'), run: () => openPalette(() => (ui.palettePrompt = 'file')) },
           { label: 'New Folder', run: () => openPalette(() => (ui.paletteQuery = '>new folder')) },
-          { label: 'Import…', keys: 'Ctrl+O', run: () => openPalette(() => (ui.paletteQuery = '>import')) },
+          { label: 'Import…', keys: keyOf('importFile'), run: () => openPalette(() => (ui.paletteQuery = '>import')) },
         ],
         [
-          { label: 'Save and Sync', keys: 'Ctrl+S', run: () => void saveAndSync(), disabled: !hasTab },
+          { label: 'Save and Sync', keys: keyOf('saveSync'), run: () => void saveAndSync(), disabled: !hasTab },
           {
             label: 'Close Tab',
-            keys: 'Ctrl+W',
+            keys: keyOf('closeTab'),
             run: () => closeTab(tabs.activeTabId),
             disabled: !hasTab,
           },
@@ -57,34 +58,34 @@
       label: 'Edit',
       groups: [
         [
-          { label: 'Undo', keys: 'Ctrl+Z', run: () => trigger('undo'), disabled: !hasTab },
-          { label: 'Redo', keys: 'Ctrl+Y', run: () => trigger('redo'), disabled: !hasTab },
+          { label: 'Undo', keys: keyOf('undo'), run: () => trigger('undo'), disabled: !hasTab },
+          { label: 'Redo', keys: keyOf('redo'), run: () => trigger('redo'), disabled: !hasTab },
         ],
         [
           {
             label: 'Cut',
-            keys: 'Ctrl+X',
+            keys: keyOf('cut'),
             run: () => trigger('editor.action.clipboardCutAction'),
             disabled: !hasTab,
           },
           {
             label: 'Copy',
-            keys: 'Ctrl+C',
+            keys: keyOf('copy'),
             run: () => trigger('editor.action.clipboardCopyAction'),
             disabled: !hasTab,
           },
           {
             label: 'Paste',
-            keys: 'Ctrl+V',
+            keys: keyOf('paste'),
             run: () => trigger('editor.action.clipboardPasteAction'),
             disabled: !hasTab,
           },
         ],
         [
-          { label: 'Find', keys: 'Ctrl+F', run: () => trigger('actions.find'), disabled: !hasTab },
+          { label: 'Find', keys: keyOf('find'), run: () => trigger('actions.find'), disabled: !hasTab },
           {
             label: 'Replace',
-            keys: 'Ctrl+R',
+            keys: keyOf('replace'),
             run: () => trigger('editor.action.startFindReplaceAction'),
             disabled: !hasTab,
           },
@@ -92,20 +93,20 @@
         [
           {
             label: 'Find in Files',
-            keys: 'Ctrl+Shift+F',
+            keys: keyOf('findInFiles'),
             run: () => openPalette(() => (ui.paletteSearch = true)),
           },
         ],
         [
           {
             label: 'Toggle Line Comment',
-            keys: 'Ctrl+/',
+            keys: keyOf('lineComment'),
             run: () => trigger('editor.action.commentLine'),
             disabled: !hasTab,
           },
           {
             label: 'Toggle Block Comment',
-            keys: 'Shift+Alt+A',
+            keys: keyOf('blockComment'),
             run: () => trigger('editor.action.blockComment'),
             disabled: !hasTab,
           },

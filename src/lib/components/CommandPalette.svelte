@@ -13,6 +13,7 @@
   import { pushToast } from '../stores/toasts.svelte'
   import { revealLine } from '../editor/bridge'
   import { formatActiveDocument } from '../editor/format'
+  import { keyOf } from '../utils/shortcuts'
 
   interface SearchResult {
     file: string
@@ -68,18 +69,18 @@
   })
 
   const commands = $derived([
-    { id: 'save-sync', label: 'Save and sync', hint: 'Ctrl+S' },
-    { id: 'format', label: 'Format document', hint: 'Ctrl+Shift+I' },
+    { id: 'save-sync', label: 'Save and sync', hint: keyOf('saveSync') },
+    { id: 'format', label: 'Format document', hint: keyOf('format') },
     { id: 'sync', label: 'Sync' },
-    { id: 'preview', label: 'Toggle markdown preview', hint: 'Ctrl+Shift+P' },
+    { id: 'preview', label: 'Toggle markdown preview', hint: keyOf('preview') },
     { id: 'theme', label: `Theme: cycle (${ui.editorTheme})` },
-    { id: 'new-file', label: 'New file', hint: 'Ctrl+N' },
+    { id: 'new-file', label: 'New file', hint: keyOf('newFile') },
     { id: 'new-folder', label: 'New folder' },
-    { id: 'import-file', label: 'Import file…', hint: 'Ctrl+O' },
+    { id: 'import-file', label: 'Import file…', hint: keyOf('importFile') },
     { id: 'import-folder', label: 'Import folder…' },
     { id: 'search', label: 'Search in files' },
-    { id: 'history', label: 'File history', hint: 'Ctrl+H' },
-    { id: 'shortcuts', label: 'Keyboard shortcuts', hint: 'Ctrl+K' },
+    { id: 'history', label: 'File history', hint: keyOf('history') },
+    { id: 'shortcuts', label: 'Keyboard shortcuts', hint: keyOf('shortcuts') },
     { id: 'settings', label: 'Open settings' },
   ])
 

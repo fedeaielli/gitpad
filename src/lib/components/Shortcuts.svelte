@@ -1,25 +1,7 @@
 <script lang="ts">
   import { ui } from '../stores/ui.svelte'
   import { focusTrap } from '../utils/focus'
-
-  const SHORTCUTS: Array<{ label: string; keys: string[] }> = [
-    { label: 'Command palette', keys: ['Ctrl', 'P'] },
-    { label: 'New file', keys: ['Ctrl', 'N'] },
-    { label: 'Import file', keys: ['Ctrl', 'O'] },
-    { label: 'Save and sync', keys: ['Ctrl', 'S'] },
-    { label: 'Format document', keys: ['Ctrl', 'Shift', 'I'] },
-    { label: 'Toggle markdown preview', keys: ['Ctrl', 'Shift', 'P'] },
-    { label: 'Find', keys: ['Ctrl', 'F'] },
-    { label: 'Find in files', keys: ['Ctrl', 'Shift', 'F'] },
-    { label: 'Find and replace', keys: ['Ctrl', 'R'] },
-    { label: 'Go to line', keys: ['Ctrl', 'G'] },
-    { label: 'Toggle line comment', keys: ['Ctrl', '/'] },
-    { label: 'Toggle block comment', keys: ['Shift', 'Alt', 'A'] },
-    { label: 'Close tab', keys: ['Ctrl', 'W'] },
-    { label: 'File history', keys: ['Ctrl', 'H'] },
-    { label: 'Keyboard shortcuts', keys: ['Ctrl', 'K'] },
-    { label: 'Close dialog', keys: ['Esc'] },
-  ]
+  import { helpRows } from '../utils/shortcuts'
 
   function close() {
     ui.shortcutsOpen = false
@@ -40,11 +22,11 @@
       <button class="close" aria-label="Close keyboard shortcuts" onclick={close}>×</button>
     </header>
     <ul class="list">
-      {#each SHORTCUTS as shortcut (shortcut.label)}
+      {#each helpRows as shortcut (shortcut.label)}
         <li>
           <span>{shortcut.label}</span>
           <span class="keys">
-            {#each shortcut.keys as key, i (key)}
+            {#each shortcut.keys.split('+') as key, i (key)}
               {#if i > 0}<span class="plus">+</span>{/if}
               <kbd>{key}</kbd>
             {/each}
