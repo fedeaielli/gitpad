@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.3.0 — 2026-11-12
+
+Open almost anything: images, PDFs and office documents get a read-only tab,
+JSON and YAML format in place, and a pending GitHub login can be cancelled.
+
+### Added
+- Read-only viewers for images, PDF, DOCX and ODT. PDF pages render as you
+  scroll, memory stays bounded, and a page that fails no longer drops the
+  document; office documents become a clean HTML preview.
+- Format JSON and YAML with Prettier (`Ctrl+Shift+I`), comments included.
+  Nothing is reformatted on save.
+- Cancel a pending GitHub device-flow login, and respect the interval GitHub
+  asks for between polls.
+
+### Fixed
+- Links open reliably on desktops without `xdg-open`; when no opener works the
+  link is copied instead of leaving the login screen stuck.
+- Autosave retries every tab that failed, a push waits for another sync and
+  retries instead of being lost, and the startup pull goes through the same
+  guard.
+- Moving the notes repository no longer reports a failure after the rename
+  succeeded.
+- A personal access token is stored before the account is shown as signed in.
+- Binary previews are capped at 20 MB; search skips binary files and waits
+  longer while typing.
+
 ## 1.2.0 — 2026-11-11
 
 The editor notices changes made outside it, the tree creates things where you
