@@ -4,6 +4,7 @@
   import type { Tab } from '../stores/tabs.svelte'
   import { errorMessage } from '../stores/git.svelte'
   import { imageMime } from '../utils/file-kind'
+  import { renderScale } from '../utils/pdf-render'
   import { odfToHtml } from '../utils/odf'
 
   let { tab }: { tab: Tab } = $props()
@@ -126,26 +127,34 @@
           const wrap = wraps[index - 1]
           const page = await doc.getPage(index)
           const base = page.getViewport({ scale: 1 })
-          const width = Math.max(320, host.clientWidth - 32)
-          const scale = (width / base.width) * (window.devicePixelRatio || 1)
-          const viewport = page.getViewport({ scale })
+          const viewport = page.getViewport({
+            scale: renderScale(host.clientWidth, base.width, window.devicePixelRatio),
+          })
           const canvas = document.createElement('canvas')
           canvas.width = Math.floor(viewport.width)
           canvas.height = Math.floor(viewport.height)
           wrap.replaceChildren(canvas)
           try {
-            await page.render({ canvas, canvasContext: canvas.getContext('2d')!, viewport }).promise
+            await page.render({ canvas, viewport }).promise
           } catch (e) {
             // A cancelled render after a tab switch is not an error.
             if (!cancelled) error = errorMessage(e)
           }
         }
 
+        // Keep only the pages near the viewport in memory: a canvas is tens of
+        // megabytes at high DPI, and a long document would exhaust the webview.
+        const release = (index: number) => {
+          if (!rendered.delete(index)) return
+          wraps[index - 1].replaceChildren()
+        }
+
         observer = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {
-              if (!entry.isIntersecting) continue
-              void render(Number((entry.target as HTMLElement).dataset.page))
+              const index = Number((entry.target as HTMLElement).dataset.page)
+              if (entry.isIntersecting) void render(index)
+              else release(index)
             }
           },
           { root: host, rootMargin: '300px' },
