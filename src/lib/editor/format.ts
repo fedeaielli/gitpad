@@ -15,7 +15,7 @@ export async function formatText(text: string, language: string): Promise<string
   try {
     return await prettier.format(text, { parser: 'json', plugins })
   } catch {
-    // VS Code's JSON files may carry comments: let Prettier parse them as JSONC.
+    // A file with no value, only comments, is valid for the jsonc parser.
     return prettier.format(text, { parser: 'jsonc', plugins })
   }
 }
