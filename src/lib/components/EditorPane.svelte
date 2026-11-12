@@ -330,7 +330,15 @@
   function armPush() {
     clearTimeout(pushTimer)
     if (!ui.autoSync || gitStatus.conflicts.length > 0) return
-    pushTimer = setTimeout(() => void syncNow(null), ui.pushIdleMs)
+    pushTimer = setTimeout(() => void pushWhenIdle(), ui.pushIdleMs)
+  }
+
+  async function pushWhenIdle() {
+    if (!ui.autoSync || gitStatus.conflicts.length > 0) return
+    if (await syncNow(null)) return
+    // Another sync owns the gate: retry when it is done instead of dropping
+    // the local commit.
+    if (gitStatus.syncing) pushTimer = setTimeout(() => void pushWhenIdle(), 1000)
   }
 
   function onEdit(e: monaco.editor.IModelContentChangedEvent) {
