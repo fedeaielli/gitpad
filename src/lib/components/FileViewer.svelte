@@ -157,6 +157,8 @@
           wraps[index - 1].replaceChildren()
         }
 
+        // .viewer (the host's parent) is the pane that scrolls, so it is the
+        // root: the 300 px margin pre-renders before a page enters the pane.
         observer = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {
@@ -165,7 +167,7 @@
               else release(index)
             }
           },
-          { root: host, rootMargin: '300px' },
+          { root: host.parentElement, rootMargin: '300px' },
         )
         for (const wrap of wraps) observer.observe(wrap)
 
