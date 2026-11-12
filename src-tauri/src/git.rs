@@ -990,9 +990,17 @@ fn move_clone(from: &Path, to: &Path) -> Result<(), GitError> {
     if to.exists() {
         return Err(format!("a folder already exists at {}", to.display()).into());
     }
-    // Same filesystem: one syscall, nothing to verify.
+    // Same filesystem: one syscall. The rename already happened, so a clone
+    // that does not open is a warning, not a failed move.
     if std::fs::rename(from, to).is_ok() {
-        return open_repo(to).map(|_| ());
+        if let Err(e) = open_repo(to) {
+            log::warn!(
+                target: "git",
+                "move: {} does not open after the move: {e}",
+                to.display()
+            );
+        }
+        return Ok(());
     }
     // Other filesystems: stage a verified copy next to the destination first.
     stage_copy(from, to)?;
@@ -1235,9 +1243,6 @@ pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, 
     if to == from {
         let path = from.to_string_lossy().into_owned();
         return Ok(MovedRepo { from: path.clone(), to: path });
-    }
-    if to.exists() {
-        return Err(format!("a folder already exists at {}", to.display()).into());
     }
     if to.exists() {
         return Err(format!("a folder already exists at {}", to.display()).into());
