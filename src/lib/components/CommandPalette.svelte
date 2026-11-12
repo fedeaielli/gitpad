@@ -259,7 +259,7 @@
     }
   }
 
-  const runSearch = debounce(() => void doSearch(), 250)
+  const runSearch = debounce(() => void doSearch(), 400)
 
   async function doSearch() {
     const query = text.trim()

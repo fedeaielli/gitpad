@@ -2,7 +2,7 @@ use crate::git;
 use ignore::WalkBuilder;
 use serde::Serialize;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 use tauri::AppHandle;
 
@@ -33,9 +33,22 @@ pub fn search_in(root: &Path, query: &str) -> Result<Vec<SearchResult>, String> 
         if metadata.len() > MAX_FILE_BYTES {
             continue;
         }
-        let Ok(handle) = File::open(entry.path()) else {
+        let Ok(mut handle) = File::open(entry.path()) else {
             continue;
         };
+        // A NUL in the first block means binary: no text query can match it,
+        // and scanning it line by line would only fail on invalid UTF-8.
+        let mut probe = [0u8; 8192];
+        let read = match handle.read(&mut probe) {
+            Ok(n) => n,
+            Err(_) => continue,
+        };
+        if probe[..read].contains(&0) {
+            continue;
+        }
+        if handle.seek(SeekFrom::Start(0)).is_err() {
+            continue;
+        }
         let file = entry
             .path()
             .strip_prefix(root)
@@ -85,6 +98,7 @@ mod tests {
         git2::Repository::init(&root).unwrap();
         std::fs::write(root.join("notes/a.md"), "hello\nsay hello again\n").unwrap();
         std::fs::write(root.join("b.txt"), "nothing\n").unwrap();
+        std::fs::write(root.join("binary.dat"), b"hello\0world\n").unwrap();
         std::fs::write(root.join("build/ignored.md"), "hello\n").unwrap();
         std::fs::write(root.join(".gitignore"), "build/\n").unwrap();
 
