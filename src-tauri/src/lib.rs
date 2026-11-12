@@ -405,6 +405,7 @@ pub fn run() {
             auth::auth_keyring_ok,
             auth::auth_clear,
             fs::fs_read_file,
+            fs::fs_read_binary,
             fs::fs_write_file,
             fs::fs_create_dir,
             fs::fs_delete,

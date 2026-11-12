@@ -304,6 +304,35 @@ fn read_text(abs: &Path, label: &str) -> Result<String, git::GitError> {
     std::fs::read_to_string(abs).map_err(|e| read_error(label, e))
 }
 
+const MAX_BINARY_BYTES: u64 = 50 * 1024 * 1024;
+
+/// Read a binary file for a read-only viewer (image, PDF, office document).
+/// Returns raw bytes so the webview receives an ArrayBuffer, not a JSON array.
+#[tauri::command]
+pub async fn fs_read_binary(
+    app: AppHandle,
+    path: String,
+) -> Result<tauri::ipc::Response, git::GitError> {
+    let (root, rel) = resolve(&app, &path)?;
+    let label = path;
+    let gate = repo_gate(&app);
+    let bytes = tokio::task::spawn_blocking(move || {
+        let _gate = gate.read().map_err(|e| e.to_string())?;
+        let abs = root.join(rel);
+        let metadata = std::fs::metadata(&abs).map_err(|e| read_error(&label, e))?;
+        if metadata.len() > MAX_BINARY_BYTES {
+            let mb = metadata.len() as f64 / (1024.0 * 1024.0);
+            return Err(git::GitError::Other(format!(
+                "{label}: file too large to open: {mb:.1} MB, limit 50 MB"
+            )));
+        }
+        std::fs::read(&abs).map_err(|e| read_error(&label, e))
+    })
+    .await
+    .map_err(|e| format!("read task: {e}"))??;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
 #[tauri::command]
 pub async fn fs_read_file(app: AppHandle, path: String) -> Result<String, git::GitError> {
     let (root, rel) = resolve(&app, &path)?;

@@ -2,8 +2,7 @@
   import { invoke } from '@tauri-apps/api/core'
   import { tick, onMount } from 'svelte'
   import { ui, cyclePreview, THEMES, type FileNode } from '../stores/ui.svelte'
-  import { tabs, openTab } from '../stores/tabs.svelte'
-  import { languageFor } from '../utils/langmap'
+  import { tabs } from '../stores/tabs.svelte'
   import { debounce } from '../utils/debounce'
   import { focusTrap } from '../utils/focus'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
@@ -13,6 +12,7 @@
   import { openFileInTab } from '../utils/open-file'
   import { pushToast } from '../stores/toasts.svelte'
   import { revealLine } from '../editor/bridge'
+  import { formatActiveDocument } from '../editor/format'
 
   interface SearchResult {
     file: string
@@ -69,6 +69,7 @@
 
   const commands = $derived([
     { id: 'save-sync', label: 'Save and sync', hint: 'Ctrl+S' },
+    { id: 'format', label: 'Format document', hint: 'Ctrl+Shift+I' },
     { id: 'sync', label: 'Sync' },
     { id: 'preview', label: 'Toggle markdown preview', hint: 'Ctrl+Shift+P' },
     { id: 'theme', label: `Theme: cycle (${ui.editorTheme})` },
@@ -140,12 +141,7 @@
 
   async function openPath(path: string, line?: number, column?: number) {
     try {
-      if (!tabs.tabs.some((t) => t.id === path)) {
-        const content = await invoke<string>('fs_read_file', { path })
-        openTab({ id: path, path, content, modified: false, language: languageFor(path) })
-      } else {
-        tabs.activeTabId = path
-      }
+      await openFileInTab(path)
       close()
       if (line !== undefined) {
         await tick()
@@ -184,6 +180,11 @@
       return
     }
     if (id === 'sync') return void sync()
+    if (id === 'format') {
+      close()
+      void formatActiveDocument()
+      return
+    }
     if (id === 'preview') {
       cyclePreview()
       return close()

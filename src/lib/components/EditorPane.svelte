@@ -39,6 +39,8 @@
   import { initVimMode } from 'monaco-vim'
   import { EmacsExtension } from 'monaco-emacs'
   import MarkdownPreview from './MarkdownPreview.svelte'
+  import FileViewer from './FileViewer.svelte'
+  import { formatDocument } from '../editor/format'
 
   self.MonacoEnvironment = {
     getWorker(_workerId, label) {
@@ -209,7 +211,8 @@
     return tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null
   }
 
-  const isMarkdown = $derived(activeTab()?.language === 'markdown')
+  const active = $derived(activeTab())
+  const isMarkdown = $derived(active?.language === 'markdown')
   // Preview is a markdown-only view: other tabs always render the editor alone.
   const previewMode = $derived<'off' | 'split' | 'full'>(isMarkdown ? ui.previewMode : 'off')
   const previewVisible = $derived(previewMode !== 'off')
@@ -370,7 +373,7 @@
       void savePending()
     }
     currentPath = path
-    if (!tab) {
+    if (!tab || tab.view) {
       editor.setModel(null)
       resetUndoState(0)
       return
@@ -481,6 +484,11 @@
   async function reloadTab(path: string) {
     const tab = tabs.tabs.find((candidate) => candidate.path === path)
     if (!tab) return
+    // A viewer is read-only: ask it to re-read instead of parsing bytes as UTF-8.
+    if (tab.view) {
+      tab.reloadKey = (tab.reloadKey ?? 0) + 1
+      return
+    }
     const before = tab.content
     let content: string
     try {
@@ -557,6 +565,13 @@
     const slashSub = registerSlashCommands(monaco, editor)
     const tableSub = registerTableEditing(monaco, editor)
     const listSub = registerListEditing(monaco, editor)
+    const formatSub = editor.addAction({
+      id: 'gitpad.formatDocument',
+      label: 'Format document',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyI],
+      contextMenuGroupId: '1_modification',
+      run: (target) => void formatDocument(target),
+    })
     const contentSub = editor.onDidChangeModelContent(onEdit)
     const cursorSub = editor.onDidChangeCursorPosition((e) => {
       ui.cursor = { line: e.position.lineNumber, column: e.position.column }
@@ -581,6 +596,7 @@
       slashSub()
       tableSub()
       listSub()
+      formatSub.dispose()
       contentSub.dispose()
       cursorSub.dispose()
       persist.cancel()
@@ -595,12 +611,15 @@
 
 <div class="pane">
   <div class="content">
-    <div class="editor-wrap" class:hidden={previewMode === 'full'}>
+    <div class="editor-wrap" class:hidden={previewMode === 'full' || active?.view}>
       <div class="editor" bind:this={host}></div>
       {#if ui.keybindings === 'vim'}
         <div class="vim" bind:this={vimStatus}></div>
       {/if}
     </div>
+    {#if active && active.view}
+      <FileViewer tab={active} />
+    {/if}
     {#if previewVisible}
       <div class="preview"><MarkdownPreview /></div>
     {/if}

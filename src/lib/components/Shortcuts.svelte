@@ -7,6 +7,7 @@
     { label: 'New file', keys: ['Ctrl', 'N'] },
     { label: 'Import file', keys: ['Ctrl', 'O'] },
     { label: 'Save and sync', keys: ['Ctrl', 'S'] },
+    { label: 'Format document', keys: ['Ctrl', 'Shift', 'I'] },
     { label: 'Toggle markdown preview', keys: ['Ctrl', 'Shift', 'P'] },
     { label: 'Find', keys: ['Ctrl', 'F'] },
     { label: 'Find in files', keys: ['Ctrl', 'Shift', 'F'] },

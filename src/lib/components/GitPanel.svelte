@@ -13,8 +13,8 @@
   } from '../stores/git.svelte'
   import { ui } from '../stores/ui.svelte'
   import { tip } from '../utils/tooltip'
-  import { tabs, openTab, activateTab, discardUnder } from '../stores/tabs.svelte'
-  import { languageFor } from '../utils/langmap'
+  import { discardUnder } from '../stores/tabs.svelte'
+  import { openFileInTab } from '../utils/open-file'
   import FileIcon from './FileIcon.svelte'
 
   let commitMessage = $state('')
@@ -31,20 +31,8 @@
 
   async function openChange(change: FileChange) {
     if (change.status === 'D') return
-    const existing = tabs.tabs.find((t) => t.path === change.path)
-    if (existing) {
-      activateTab(existing.id)
-      return
-    }
     try {
-      const content = await invoke<string>('fs_read_file', { path: change.path })
-      openTab({
-        id: change.path,
-        path: change.path,
-        content,
-        modified: false,
-        language: languageFor(change.path),
-      })
+      await openFileInTab(change.path)
     } catch (e) {
       gitStatus.error = errorMessage(e)
     }

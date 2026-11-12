@@ -1,4 +1,5 @@
 import { languageFor } from '../utils/langmap'
+import type { ViewerKind } from '../utils/file-kind'
 
 export interface Tab {
   id: string
@@ -6,6 +7,10 @@ export interface Tab {
   content: string
   modified: boolean
   language: string
+  /// Non-text tabs render a read-only viewer instead of Monaco.
+  view?: ViewerKind
+  /// Bumped by the watcher so the viewer re-reads a file changed on disk.
+  reloadKey?: number
   /// Last content known to be on disk; guards against writing an empty buffer.
   savedContent?: string
   /// A pull rewrote this file while the tab had unsaved edits: never autosave.
