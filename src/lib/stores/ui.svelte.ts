@@ -6,20 +6,6 @@ export type Keybinding = 'vscode' | 'vim' | 'emacs'
 
 export const KEYBINDINGS: Keybinding[] = ['vscode', 'vim', 'emacs']
 
-/// Matches the default map in src-tauri/src/config.rs.
-export const DEFAULT_EXTENSIONS: Record<string, string> = {
-  txt: 'plaintext',
-  md: 'markdown',
-  json: 'json',
-  yaml: 'yaml',
-  toml: 'toml',
-  sh: 'shell',
-  py: 'python',
-  rs: 'rust',
-  js: 'javascript',
-  ts: 'typescript',
-}
-
 export interface FileNode {
   name: string
   path: string
@@ -71,7 +57,7 @@ export const ui = $state({
   saveDebounceMs: 2000,
   pushIdleMs: 30_000,
   keybindings: 'vscode' as Keybinding,
-  extensions: { ...DEFAULT_EXTENSIONS },
+  extensions: {} as Record<string, string>,
   cursor: { line: 1, column: 1 },
   onboardingComplete: false,
 })
