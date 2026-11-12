@@ -32,12 +32,20 @@ function attr(el: Element, ns: string, localName: string): string | null {
   return null
 }
 
-function parseStyles(xml?: string): Map<string, TextStyle> {
-  const styles = new Map<string, TextStyle>()
-  if (!xml) return styles
+function parseXml(xml: string): Document | null {
+  if (!xml) return null
   const doc = new DOMParser().parseFromString(xml, 'application/xml')
-  const root = doc.documentElement
-  if (!root) return styles
+  return doc.documentElement ? doc : null
+}
+
+/// Collects text styles and ordered-list names from one ODF style sheet.
+function readStylesheet(
+  doc: Document | null,
+  styles: Map<string, TextStyle>,
+  ordered: Set<string>,
+): void {
+  const root = doc?.documentElement
+  if (!root) return
   for (const style of elements(root, STYLE_NS, 'style')) {
     const name = attr(style, STYLE_NS, 'name')
     const props = elements(style, STYLE_NS, 'text-properties')[0]
@@ -48,22 +56,10 @@ function parseStyles(xml?: string): Map<string, TextStyle> {
       underline: attr(props, STYLE_NS, 'text-underline-style') === 'solid',
     })
   }
-  return styles
-}
-
-function parseOrderedLists(xml?: string): Set<string> {
-  const ordered = new Set<string>()
-  if (!xml) return ordered
-  const doc = new DOMParser().parseFromString(xml, 'application/xml')
-  const root = doc.documentElement
-  if (!root) return ordered
   for (const style of elements(root, TEXT_NS, 'list-style')) {
     const name = attr(style, STYLE_NS, 'name')
-    if (name && elements(style, TEXT_NS, 'list-level-style-number').length) {
-      ordered.add(name)
-    }
+    if (name && elements(style, TEXT_NS, 'list-level-style-number').length) ordered.add(name)
   }
-  return ordered
 }
 
 function escape(text: string): string {
@@ -163,11 +159,15 @@ function blocks(el: Element, styles: Map<string, TextStyle>, ordered: Set<string
 /// Images, notes and headers are skipped on purpose.
 /// shortcut: basic ODT fidelity only; upgrade to a full ODF renderer if needed.
 export function odfToHtml(contentXml: string, stylesXml?: string): string {
-  const styles = parseStyles(stylesXml)
-  const ordered = parseOrderedLists(stylesXml)
-  const doc = new DOMParser().parseFromString(contentXml, 'application/xml')
-  const root = doc.documentElement
-  if (!root) return ''
-  const body = elements(root, OFFICE_NS, 'text')[0]
+  const content = parseXml(contentXml)
+  if (!content) return ''
+  // Direct formatting and list numbering are automatic styles, and LibreOffice
+  // writes those in content.xml: read both sheets, content.xml last so its
+  // automatic names win over a same-named style in styles.xml.
+  const styles = new Map<string, TextStyle>()
+  const ordered = new Set<string>()
+  readStylesheet(parseXml(stylesXml ?? ''), styles, ordered)
+  readStylesheet(content, styles, ordered)
+  const body = elements(content.documentElement, OFFICE_NS, 'text')[0]
   return body ? blocks(body, styles, ordered) : ''
 }
