@@ -59,12 +59,14 @@ export function applyUiFont(font: string) {
   document.body.style.fontFamily = font === DEFAULT_FONT ? '' : font
 }
 
-/// Panel surface the accent is drawn on, mirroring --surface-1 in app.css.
+/// Panel surface the accent is drawn on: the theme's own --surface-1, so a CSS
+/// restyle cannot leave the contrast math on an old colour. The fallback covers
+/// the first frame and test environments where the stylesheet is not loaded.
 export function surfaceForTheme() {
-  const theme = document.documentElement.dataset.theme
-  if (theme === 'vs') return '#f2eee4'
-  if (theme === 'hc-black') return '#0a0a0a'
-  return '#23211e'
+  const surface = getComputedStyle(document.documentElement)
+    .getPropertyValue('--surface-1')
+    .trim()
+  return surface || '#23211e'
 }
 
 /// An empty accent drops the overrides and falls back to the theme's own.
