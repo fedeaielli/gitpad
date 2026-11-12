@@ -10,7 +10,7 @@ use notify_debouncer_full::notify::event::EventKind;
 use notify_debouncer_full::notify::RecursiveMode;
 use notify_debouncer_full::notify::RecommendedWatcher;
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, RecommendedCache};
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::path::{Component, Path, PathBuf};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
@@ -98,7 +98,7 @@ fn on_batch(app: &AppHandle, root: &Path, filters: &Filters, result: DebounceEve
             return;
         }
     };
-    let mut seen: HashSet<String> = HashSet::new();
+    let mut seen: HashMap<String, usize> = HashMap::new();
     let mut changes: Vec<FileChange> = Vec::new();
     for debounced in events {
         for path in &debounced.paths {
@@ -107,10 +107,11 @@ fn on_batch(app: &AppHandle, root: &Path, filters: &Filters, result: DebounceEve
             };
             // Keep the first position, take the latest status: a create followed
             // by a write in the same batch is one modified file.
-            if seen.insert(change.path.clone()) {
+            if let Some(&index) = seen.get(&change.path) {
+                changes[index].status = change.status;
+            } else {
+                seen.insert(change.path.clone(), changes.len());
                 changes.push(change);
-            } else if let Some(slot) = changes.iter_mut().find(|c| c.path == change.path) {
-                slot.status = change.status;
             }
         }
     }
