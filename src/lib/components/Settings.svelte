@@ -14,7 +14,7 @@
   import { auth, forgetUser, loadUser, signInWithPat } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
   import LogsPane from './LogsPane.svelte'
-  import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
+  import { tabs, closeTab } from '../stores/tabs.svelte'
   import { flushPendingSave } from '../editor/bridge'
 
   type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'logs' | 'account' | 'about'
@@ -145,8 +145,6 @@
     moving = true
     try {
       const moved = await invoke<{ from: string; to: string }>('git_move_repo', { parent: picked })
-      // Open tabs follow the clone, else their saves would land in the old folder.
-      retarget(moved.from, moved.to)
       ui.repoPath = moved.to
       ui.treeVersion += 1
       pushToast('Repository moved', 'success')

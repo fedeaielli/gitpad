@@ -18,6 +18,23 @@ pub struct FileEntry {
     pub modified: Option<u64>,
 }
 
+/// Names Windows rejects or silently rewrites: reserved devices, a trailing dot
+/// or space, or a character NTFS cannot store. Applied per path component.
+fn invalid_windows_name(name: &str) -> bool {
+    let stem = name.split('.').next().unwrap_or_default().to_ascii_uppercase();
+    let numbered = matches!(
+        stem.strip_prefix("COM").or_else(|| stem.strip_prefix("LPT")),
+        Some("1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9")
+    );
+    matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+        || numbered
+        || name.ends_with('.')
+        || name.ends_with(' ')
+        || name
+            .chars()
+            .any(|c| c.is_control() || matches!(c, '<' | '>' | ':' | '"' | '|' | '?' | '*'))
+}
+
 /// Resolves a repo-relative (or absolute-inside-repo) path and refuses anything that escapes the clone.
 fn resolve_in(root: &Path, path: &str) -> Result<PathBuf, String> {
     let candidate = Path::new(path);
@@ -31,10 +48,18 @@ fn resolve_in(root: &Path, path: &str) -> Result<PathBuf, String> {
     };
     for component in rel.components() {
         match component {
-            Component::Normal(name) if name == ".git" => {
-                return Err("refusing to touch .git".to_string())
+            Component::Normal(name) => {
+                if name == ".git" {
+                    return Err("refusing to touch .git".to_string());
+                }
+                if cfg!(windows) && invalid_windows_name(&name.to_string_lossy()) {
+                    return Err(format!(
+                        "name not allowed on Windows: {}",
+                        name.to_string_lossy()
+                    ));
+                }
             }
-            Component::Normal(_) | Component::CurDir => {}
+            Component::CurDir => {}
             _ => return Err(format!("invalid path: {path}")),
         }
     }
@@ -405,9 +430,7 @@ pub async fn fs_write_file(
     })
     .await
     .map_err(|e| format!("git task: {e}"))??;
-    // Autosave flow: refresh ahead/behind so the status bar shows "queued".
-    let app_status = app.clone();
-    let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
+    // Status refresh comes from the watcher: this write is one event, not two.
     Ok(())
 }
 
@@ -721,6 +744,28 @@ mod tests {
     fn relative_paths_use_forward_slashes() {
         let nested: std::path::PathBuf = ["notes", "sub", "a.md"].iter().collect();
         assert_eq!(rel_path(&nested), "notes/sub/a.md");
+    }
+
+    #[test]
+    fn windows_reserved_names_are_flagged() {
+        for bad in [
+            "con",
+            "CON.md",
+            "Aux",
+            "nul.txt",
+            "com1",
+            "LPT9.log",
+            "note.",
+            "note ",
+            "a<b",
+            "q?.md",
+            "a\u{7}",
+        ] {
+            assert!(invalid_windows_name(bad), "{bad}");
+        }
+        for good in ["note.md", "conifer", "com0", "com10.txt", "console.md", "a b.md"] {
+            assert!(!invalid_windows_name(good), "{good}");
+        }
     }
 
     #[cfg(windows)]
