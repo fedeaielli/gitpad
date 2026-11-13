@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.4.0 — 2026-11-13
+
+GitPad runs on Windows too.
+
+### Added
+- Windows 10 (1803 or newer) and Windows 11 on x64, as a per-user NSIS
+  installer. The token goes to Windows Credential Manager, Settings lists the
+  installed font families, and the app's own title bar and shortcuts stay.
+- The WebView2 context menu and browser keys (F5, Ctrl+P, Ctrl+F) are turned
+  off, so they cannot shadow the app's shortcuts.
+
+### Fixed
+- Repository-relative paths reach the interface with `/` on every platform. On
+  Windows the file tree, search and the filesystem watch used `\` while Git
+  status used `/`, so a tab could stop reloading and its dirty marker drift.
+
+### Changed
+- `SIGTERM` handling, and the `nix` dependency, are unix-only; on Windows the
+  window close is the whole shutdown path.
+
 ## 1.3.0 — 2026-11-12
 
 Open almost anything: images, PDFs and office documents get a read-only tab,
