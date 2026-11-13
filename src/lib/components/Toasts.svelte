@@ -2,11 +2,18 @@
   import { fly } from 'svelte/transition'
   import { flip } from 'svelte/animate'
   import { prefersReducedMotion } from 'svelte/motion'
-  import { toasts, dismissToast, type ToastKind } from '../stores/toasts.svelte'
+  import { toasts, dismissToast, type Toast, type ToastKind } from '../stores/toasts.svelte'
+  import { openExternal } from '../utils/open'
 
   function icon(kind: ToastKind) {
     if (kind === 'error' || kind === 'warning') return '!'
     return kind === 'success' ? '✓' : 'i'
+  }
+
+  function follow(toast: Toast) {
+    if (!toast.url) return
+    void openExternal(toast.url)
+    dismissToast(toast.id)
   }
 </script>
 
@@ -19,7 +26,11 @@
       animate:flip={{ duration: prefersReducedMotion.current ? 0 : 150 }}
     >
       <span class="icon" aria-hidden="true">{icon(toast.kind)}</span>
-      <span class="message">{toast.message}</span>
+      {#if toast.url}
+        <button class="message link" onclick={() => follow(toast)}>{toast.message}</button>
+      {:else}
+        <span class="message">{toast.message}</span>
+      {/if}
       <button
         class="close"
         aria-label="Dismiss notification"
@@ -92,6 +103,16 @@
     font-size: var(--fs-sm);
     line-height: 1.45;
     overflow-wrap: anywhere;
+  }
+  .message.link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--accent-fg);
+    font: inherit;
+    text-align: left;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .close {
     display: grid;

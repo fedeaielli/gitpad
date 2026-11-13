@@ -6,6 +6,8 @@ export interface Toast {
   id: number
   message: string
   kind: ToastKind
+  /// Opens when the message is clicked.
+  url?: string
 }
 
 let seq = 0
@@ -28,9 +30,10 @@ export function pushToast(
   message: string,
   kind: ToastKind = 'error',
   category: ToastCategory = 'editor',
+  url?: string,
 ) {
   const id = ++seq
-  toasts.items = [...toasts.items, { id, message, kind }].slice(-3)
+  toasts.items = [...toasts.items, { id, message, kind, url }].slice(-3)
   setTimeout(() => dismissToast(id), 5000)
   // Mirrored to the file log, so a report shows what the user was told.
   logLine(kind === 'error' ? 'error' : kind === 'warning' ? 'warn' : 'info', message, category)
