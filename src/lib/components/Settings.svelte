@@ -1,8 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
+  import { getVersion } from '@tauri-apps/api/app'
   import { ui, THEMES, KEYBINDINGS } from '../stores/ui.svelte'
   import { pushToast } from '../stores/toasts.svelte'
+  import { openExternal } from '../utils/open'
+  import { checkUpdate, type UpdateInfo } from '../utils/update'
   import { contrast } from '../utils/color'
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
   import { focusTrap } from '../utils/focus'
@@ -14,7 +17,7 @@
   import { retarget, tabs, closeTab } from '../stores/tabs.svelte'
   import { flushPendingSave } from '../editor/bridge'
 
-  type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'logs' | 'account'
+  type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'logs' | 'account' | 'about'
 
   const TABS: Array<{ id: Tab; label: string }> = [
     { id: 'appearance', label: 'Appearance' },
@@ -23,6 +26,7 @@
     { id: 'extensions', label: 'Extensions' },
     { id: 'logs', label: 'Logs' },
     { id: 'account', label: 'Account' },
+    { id: 'about', label: 'About' },
   ]
 
   const LANGUAGES = [
@@ -75,6 +79,12 @@
   let importUrl = $state('')
   let importFolder = $state('')
   let importing = $state(false)
+  let aboutVersion = $state('')
+  let changelog = $state('')
+  let update = $state<UpdateInfo | null>(null)
+  let updateState = $state<'idle' | 'checking' | 'current' | 'newer' | 'failed'>('idle')
+  const latestVersion = $derived(update?.latest ?? '')
+  const releaseUrl = $derived(update?.url ?? '')
 
   const extensions = $derived(
     Object.entries(ui.extensions).sort(([a], [b]) => a.localeCompare(b)),
@@ -94,7 +104,21 @@
     await loadUser()
     if (!auth.user) accountError = 'not connected'
     fonts = (await invoke<string[]>('fs_list_fonts').catch(() => [])) ?? []
+    aboutVersion = await getVersion().catch(() => '')
+    changelog = (await invoke<string>('app_changelog').catch(() => '')) ?? ''
   })
+
+  async function checkForUpdates() {
+    if (updateState === 'checking') return
+    updateState = 'checking'
+    try {
+      update = await checkUpdate()
+      updateState = update.newer ? 'newer' : 'current'
+    } catch {
+      // Offline, rate limited or private: the button is the only report.
+      updateState = 'failed'
+    }
+  }
 
   function clamp(value: number, min: number, max: number, apply: (n: number) => void) {
     if (!Number.isFinite(value)) return
@@ -479,6 +503,51 @@
         {/if}
       {:else if tab === 'logs'}
         <LogsPane />
+      {:else if tab === 'about'}
+        <div class="field">
+          <span>Version</span>
+          <span>{aboutVersion ? `GitPad ${aboutVersion}` : 'GitPad'}</span>
+        </div>
+        <div class="field">
+          <span>Updates</span>
+          <div class="inline">
+            <button disabled={updateState === 'checking'} onclick={checkForUpdates}>
+              {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
+            </button>
+            {#if updateState === 'current'}
+              <span class="note">You are on the latest version.</span>
+            {:else if updateState === 'newer'}
+              <button class="primary" onclick={() => void openExternal(releaseUrl)}>
+                Get GitPad {latestVersion}
+              </button>
+            {:else if updateState === 'failed'}
+              <span class="note">Could not reach GitHub. Try again later.</span>
+            {/if}
+          </div>
+        </div>
+        <div class="field">
+          <span>Author</span>
+          <div class="inline">
+            <button class="change" onclick={() => void openExternal('https://github.com/fedeaielli')}>
+              @fedeaielli
+            </button>
+            <button
+              class="change"
+              onclick={() => void openExternal('https://github.com/fedeaielli/gitpad')}
+            >
+              Source
+            </button>
+            <button
+              class="change"
+              onclick={() => void openExternal('https://github.com/fedeaielli/gitpad/releases')}
+            >
+              Releases
+            </button>
+          </div>
+        </div>
+        {#if changelog}
+          <pre class="changelog" aria-label="Changelog for this version">{changelog}</pre>
+        {/if}
       {:else}
         {#if user}
           <div class="field">
@@ -693,6 +762,18 @@
     font-size: var(--fs-xs);
   }
   .path {
+    overflow-wrap: anywhere;
+  }
+  .changelog {
+    margin: 0;
+    padding: var(--sp-3);
+    border: 1px solid var(--divider);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    color: var(--text);
+    font-family: ui-monospace, monospace;
+    font-size: var(--fs-sm);
+    white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
   .field button.change {
