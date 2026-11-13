@@ -1199,6 +1199,9 @@ fn use_local_repo(path: &Path) -> Result<(PathBuf, bool, bool), GitError> {
         .ok()
         .and_then(|repo| repo.workdir().map(Path::to_path_buf))
         .unwrap_or(path);
+    // libgit2 reports its own spelling (forward slashes, trailing separator):
+    // canonicalize so config and UI always see the same form.
+    let path = path.canonicalize().unwrap_or(path);
     // shortcut: worktrees are refused, not supported; upgrade: pass repo.path()
     // as the temporary dir in write_and_commit.
     if path.join(".git").is_file() {
@@ -2793,7 +2796,10 @@ mod tests {
         let (path, initialized, _) = use_local_repo(&sub).unwrap();
 
         assert!(!initialized);
-        assert_eq!(path, root.canonicalize().unwrap());
+        assert_eq!(
+            path.canonicalize().unwrap(),
+            root.canonicalize().unwrap()
+        );
         assert!(!sub.join(".git").exists());
         let _ = std::fs::remove_dir_all(&root);
     }
