@@ -665,6 +665,7 @@ fn pull_repo_with(
     // refs only: no worktree writes, readers must not wait for the network
     // Local-only repositories have no origin: nothing to fetch.
     if repo.find_remote("origin").is_ok() {
+        log::info!(target: "git", "sync: fetch");
         fetch(repo, token)?;
     }
     // The gate covers commit + reset/merge: a read in between would see a
@@ -819,6 +820,7 @@ fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
     let mut remote = repo.find_remote("origin").map_err(git_err)?;
     let mut opts = PushOptions::new();
     opts.remote_callbacks(callbacks(token));
+    log::info!(target: "git", "sync: push {branch}");
     remote
         .push(&[refspec.as_str()], Some(&mut opts))
         .map_err(|e| {
@@ -1384,9 +1386,15 @@ pub async fn git_push(
 ) -> Result<GitStatus, GitError> {
     let path = repo_dir(&app)?;
     let gate = app.state::<crate::AppState>().repo_gate.clone();
+    log::info!(target: "git", "sync: start");
     let (status, changes, push_error) = tokio::task::spawn_blocking(move || {
         // Keyring reads are blocking: keep them off the async runtime.
         let token = auth::token().ok();
+        log::info!(
+            target: "git",
+            "sync: token {}",
+            if token.is_some() { "present" } else { "missing" }
+        );
         if pull == Some(false) {
             push_only_blocking(&path, message, token, GateWait::Block(&gate))
                 .map(|status| (status, Vec::new(), None))

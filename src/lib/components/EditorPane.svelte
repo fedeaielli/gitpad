@@ -33,6 +33,7 @@
   import { pushToast } from '../stores/toasts.svelte'
   import { monacoTheme } from '../utils/themes'
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
+  import { auth } from '../stores/auth.svelte'
   import { debounce } from '../utils/debounce'
   import { withTimeout } from '../utils/timeout'
   import { saveDecision } from '../utils/save-guard'
@@ -330,6 +331,8 @@
   function armPush() {
     clearTimeout(pushTimer)
     if (!ui.autoSync || gitStatus.conflicts.length > 0) return
+    // A local-only repository has no account to push with: stay quiet.
+    if (auth.authState === 'unauthenticated') return
     pushTimer = setTimeout(() => void pushWhenIdle(), ui.pushIdleMs)
   }
 
