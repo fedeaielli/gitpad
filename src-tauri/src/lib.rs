@@ -41,6 +41,7 @@ pub(crate) mod test_util {
     }
 }
 
+#[cfg(unix)]
 use nix::sys::signal::{pthread_sigmask, SigSet, SigmaskHow, Signal};
 use reqwest::Client;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -113,6 +114,8 @@ async fn shutdown(app: tauri::AppHandle) {
 
 /// SIGTERM: commit what is on disk and push before dying. `push_only_blocking`
 /// commits pending changes first, so this is the whole shutdown path.
+/// Unix-only: Windows has no SIGTERM and relies on `CloseRequested`.
+#[cfg(unix)]
 fn terminate(app: tauri::AppHandle) {
     log::info!(target: "app", "terminate: flushing the last commit");
     if let Ok(path) = git::repo_dir(&app) {
@@ -139,6 +142,7 @@ fn terminate(app: tauri::AppHandle) {
 
 /// SIGTERM is blocked in every thread so a dedicated thread can wait for it:
 /// signal handlers may only touch async-signal-safe code, git2 is not.
+#[cfg(unix)]
 fn block_sigterm() -> nix::Result<SigSet> {
     let mut set = SigSet::empty();
     set.add(Signal::SIGTERM);
@@ -297,6 +301,7 @@ pub fn run() {
     // Before anything reaches for the keyring.
     auth::ensure_session_bus();
     // Must happen before Tauri spawns threads: they inherit the mask.
+    #[cfg(unix)]
     let sigterm = block_sigterm().ok();
     let result = tauri::Builder::default()
         // Two instances on the same repository would autosave, commit and push
@@ -358,6 +363,8 @@ pub fn run() {
                     }
                 }
             });
+            // Unix only: on Windows `CloseRequested` is the whole close path.
+            #[cfg(unix)]
             if let Some(set) = sigterm {
                 let term = app.handle().clone();
                 std::thread::spawn(move || {
