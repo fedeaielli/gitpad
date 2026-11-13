@@ -4,6 +4,7 @@ mod fs;
 mod git;
 mod github;
 mod search;
+mod updates;
 mod watcher;
 
 use tauri::AppHandle;
@@ -447,6 +448,8 @@ pub fn run() {
             github::github_device_flow_poll,
             github::github_device_flow_cancel,
             search::search_global,
+            updates::update_check,
+            updates::app_changelog,
             config::config_get,
             config::config_save,
             app_exit,

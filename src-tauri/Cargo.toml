@@ -29,6 +29,7 @@ git2 = { version = "0.20", default-features = false, features = ["https"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+semver = "1"                   # this build's version against the latest release
 tokio = { version = "1", features = ["full"] }
 ignore = "0.4"
 # Debounced filesystem watch; re-exports `notify`, so it is not a direct dependency.
