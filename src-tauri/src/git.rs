@@ -968,6 +968,9 @@ fn move_clone(from: &Path, to: &Path) -> Result<(), GitError> {
     if to.exists() {
         return Err(format!("a folder already exists at {}", to.display()).into());
     }
+    if to.starts_with(from) {
+        return Err("cannot move a repository inside itself".into());
+    }
     // Same filesystem: one syscall. The rename already happened, so a clone
     // that does not open is a warning, not a failed move.
     if std::fs::rename(from, to).is_ok() {
@@ -1051,11 +1054,19 @@ fn count_files(dir: &Path) -> Result<usize, GitError> {
     Ok(total)
 }
 
-/// A new clone may only land where nothing is already versioned.
-fn fresh_clone_target(parent: &Path, name: &str) -> Result<PathBuf, GitError> {
+/// A new clone may only land where nothing is already versioned, outside the
+/// active repository: a clone inside it would nest two repositories.
+fn fresh_clone_target(parent: &Path, name: &str, current: &Path) -> Result<PathBuf, GitError> {
     let target = clone_target(parent, name)?;
     if target.join(".git").exists() {
         return Err(format!("a repository is already cloned at {}", target.display()).into());
+    }
+    if !current.as_os_str().is_empty() && target.starts_with(current) {
+        return Err(format!(
+            "cannot import a repository inside the active one at {}; choose a folder outside it",
+            current.display()
+        )
+        .into());
     }
     Ok(target)
 }
@@ -1094,7 +1105,7 @@ pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Res
         .map(|path| path.to_string_lossy().into_owned())
         .unwrap_or_default();
     let name = repo_name_from_url(&url)?;
-    let target = fresh_clone_target(Path::new(parent.trim()), &name)?;
+    let target = fresh_clone_target(Path::new(parent.trim()), &name, Path::new(&from))?;
     clone_into(&app, &url, &target).await?;
     remember_repo(&app, target.clone());
     log::info!(target: "git", "repository: {} (imported)", target.display());
@@ -1119,6 +1130,17 @@ fn use_local_repo(path: &Path) -> Result<(PathBuf, bool, bool), GitError> {
             "{} is not a folder",
             path.display()
         )));
+    }
+    // A folder inside an existing repository opens that repository instead of
+    // initializing a nested one.
+    let path = Repository::discover(&path)
+        .ok()
+        .and_then(|repo| repo.workdir().map(Path::to_path_buf))
+        .unwrap_or(path);
+    // shortcut: worktrees are refused, not supported; upgrade: pass repo.path()
+    // as the temporary dir in write_and_commit.
+    if path.join(".git").is_file() {
+        return Err("this folder is a git worktree; open the main clone instead".into());
     }
     let initialized = !path.join(".git").exists();
     if initialized {
@@ -1149,6 +1171,21 @@ pub async fn git_use_local(app: AppHandle, path: String) -> Result<LocalRepo, Gi
         .unwrap_or_default();
     let gate = app.state::<crate::AppState>().repo_gate.clone();
     let chosen = PathBuf::from(path.trim());
+    // Opening the home folder or a drive root would commit everything inside.
+    if let Ok(absolute) = chosen.canonicalize() {
+        let home = app
+            .path()
+            .home_dir()
+            .ok()
+            .and_then(|home| home.canonicalize().ok());
+        if absolute.parent().is_none() || home.as_deref() == Some(absolute.as_path()) {
+            return Err(format!(
+                "{} is too broad to use as a notes repository; pick a folder inside it",
+                absolute.display()
+            )
+            .into());
+        }
+    }
     let (to, initialized, remote) = tokio::task::spawn_blocking(move || {
         let _gate = gate.write().map_err(|e| e.to_string())?;
         use_local_repo(&chosen)
@@ -1595,6 +1632,21 @@ mod tests {
     }
 
     #[test]
+    fn move_clone_refuses_a_target_inside_the_clone() {
+        let root = tmp("move-inside");
+        let from = root.join("notes");
+        let repo = Repository::init(&from).unwrap();
+        commit_file(&repo, "a.md", "1");
+        drop(repo);
+
+        let err = move_clone(&from, &from.join("nested")).unwrap_err();
+
+        assert!(err.to_string().contains("inside itself"), "unexpected: {err}");
+        assert!(from.join("a.md").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn stage_copy_swaps_in_a_verified_copy() {
         let root = tmp("stage-copy");
         let from = root.join("notes");
@@ -1659,10 +1711,16 @@ mod tests {
     fn import_refuses_a_folder_that_already_holds_a_clone() {
         let root = tmp("import-taken");
         Repository::init(root.join("notes")).unwrap();
+        let none = Path::new("");
 
-        let err = fresh_clone_target(&root, "notes").unwrap_err();
+        let err = fresh_clone_target(&root, "notes", none).unwrap_err();
         assert!(err.to_string().contains("already cloned"), "unexpected: {err}");
-        assert_eq!(fresh_clone_target(&root, "other").unwrap(), root.join("other"));
+        assert_eq!(fresh_clone_target(&root, "other", none).unwrap(), root.join("other"));
+
+        let current = root.join("active");
+        std::fs::create_dir_all(&current).unwrap();
+        let err = fresh_clone_target(&current, "inner", &current).unwrap_err();
+        assert!(err.to_string().contains("outside"), "unexpected: {err}");
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -2631,6 +2689,36 @@ mod tests {
 
         assert!(!initialized);
         assert!(!remote);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn use_local_repo_opens_the_root_of_a_subfolder() {
+        let root = tmp("local-subfolder");
+        Repository::init(&root).unwrap();
+        let sub = root.join("notes").join("daily");
+        std::fs::create_dir_all(&sub).unwrap();
+
+        let (path, initialized, _) = use_local_repo(&sub).unwrap();
+
+        assert!(!initialized);
+        assert_eq!(path, root.canonicalize().unwrap());
+        assert!(!sub.join(".git").exists());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn use_local_repo_refuses_a_worktree() {
+        let root = tmp("local-worktree");
+        let repo = Repository::init(root.join("main")).unwrap();
+        commit_file(&repo, "a.md", "1");
+        let worktree = root.join("wt");
+        repo.worktree("wt", &worktree, None).unwrap();
+        assert!(worktree.join(".git").is_file());
+
+        let err = use_local_repo(&worktree).unwrap_err();
+
+        assert!(err.to_string().contains("worktree"), "unexpected: {err}");
         let _ = std::fs::remove_dir_all(&root);
     }
 

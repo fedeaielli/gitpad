@@ -10,6 +10,7 @@
   import { openExternal } from '../utils/open'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
+  import { pushToast } from '../stores/toasts.svelte'
   import { loadUser, signInWithPat, type GithubUser } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
 
@@ -149,6 +150,12 @@
       const result = await invoke<LocalRepo>('git_use_local', { path: picked })
       ui.repoPath = result.to
       localRepo = result
+      if (result.initialized) {
+        pushToast(
+          'Created a new repository here; the next save commits every file in this folder',
+          'warning',
+        )
+      }
       applyGitStatus(await invoke<GitStatus>('git_status'))
       ui.treeVersion += 1
       step = 'done'

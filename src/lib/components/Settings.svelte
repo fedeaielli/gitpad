@@ -197,9 +197,12 @@
     if (!(await flushPendingSave())) return
     localBusy = true
     try {
-      const result = await invoke<{ from: string; to: string; remote: boolean }>('git_use_local', {
-        path: picked,
-      })
+      const result = await invoke<{ from: string; to: string; initialized: boolean; remote: boolean }>(
+        'git_use_local',
+        {
+          path: picked,
+        },
+      )
       // Tabs point into the folder being replaced, so they close like on import.
       if (result.to !== result.from) {
         for (const tab of [...tabs.tabs]) closeTab(tab.id)
@@ -209,8 +212,12 @@
       ui.treeVersion += 1
       void invoke<GitStatus>('git_status').then(applyGitStatus).catch(() => {})
       pushToast(
-        result.remote ? 'Local repository opened' : 'Local repository opened (no remote)',
-        'success',
+        result.initialized
+          ? 'Created a new repository here; the next save commits every file in this folder'
+          : result.remote
+            ? 'Local repository opened'
+            : 'Local repository opened (no remote)',
+        result.initialized ? 'warning' : 'success',
       )
     } catch (e) {
       pushToast(`open local repository: ${errorMessage(e)}`)
