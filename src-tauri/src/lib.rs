@@ -309,7 +309,10 @@ fn harden_webview(app: &tauri::AppHandle) {
 
         // The callback runs on the main thread, where the controller lives.
         unsafe {
-            let Ok(settings) = webview.controller().Settings() else {
+            let Ok(core) = webview.controller().CoreWebView2() else {
+                return;
+            };
+            let Ok(settings) = core.Settings() else {
                 return;
             };
             let _ = settings.SetAreDefaultContextMenusEnabled(false);
