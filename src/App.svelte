@@ -37,6 +37,7 @@
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
   import { clampTimelineHeight } from './lib/utils/timeline'
+  import { checkUpdate } from './lib/utils/update'
 
   let configLoaded = $state(false)
   // Monaco is heavy: load it after the shell paints.
@@ -422,6 +423,12 @@
     void listen<FileChange[]>('fs-changed', (e) => void onFsChanged(e.payload)).then((fn) => {
       unlistens.push(fn)
     })
+    // Silent when offline or rate limited: only a real newer release shows.
+    void checkUpdate()
+      .then((u) => {
+        if (u.newer) pushToast(`GitPad ${u.latest} is available`, 'info', 'app', u.url)
+      })
+      .catch(() => {})
     void listen('app-closing', async () => {
       // Ack first: proves this webview is alive, so the 5 s watchdog stands down.
       void invoke('app_closing_ack').catch(() => {})

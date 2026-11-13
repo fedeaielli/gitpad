@@ -58,6 +58,12 @@
     renameValue = node.name
   }
 
+  function renameFromMenu() {
+    const node = menu?.node
+    menu = null
+    if (node) startRename(node)
+  }
+
   async function commitRename(node: FileNode) {
     if (renaming !== node.path) return
     const value = renameValue.trim()
@@ -288,6 +294,7 @@
       <button onclick={() => importFromPicker(true)}>Import Folder…</button>
       <button onclick={reveal}>Reveal in File Manager</button>
       {#if menu.node}
+        <button onclick={renameFromMenu}>Rename</button>
         <button class="danger" onclick={() => (menu = { ...menu!, mode: 'delete' })}>Delete</button>
       {/if}
     {:else if menu.mode === 'delete'}

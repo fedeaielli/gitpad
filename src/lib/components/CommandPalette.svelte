@@ -198,6 +198,7 @@
     }
     if (id === 'import-file' || id === 'import-folder') return void importFrom(id === 'import-folder')
     if (id === 'settings') {
+      ui.settingsTab = 'appearance'
       ui.settingsOpen = true
       return close()
     }

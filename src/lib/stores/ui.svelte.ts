@@ -33,6 +33,8 @@ export const ui = $state({
   /// Set by the menu so the palette opens already searching file contents.
   paletteSearch: false,
   settingsOpen: false,
+  /// The activity bar's avatar asks for the account tab.
+  settingsTab: 'appearance' as 'appearance' | 'account',
   shortcutsOpen: false,
   fileTree: [] as FileNode[],
   /** Bumped after clone/rename so the tree reloads without prop drilling. */
