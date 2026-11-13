@@ -1,0 +1,22 @@
+pkgbase = gitpad
+	pkgdesc = Markdown notes in a Git repository
+	pkgver = 1.4.1
+	pkgrel = 1
+	url = https://github.com/fedeaielli/gitpad
+	arch = x86_64
+	license = GPL-3.0-only
+	makedepends = cargo
+	makedepends = rust
+	makedepends = nodejs
+	makedepends = npm
+	makedepends = pkgconf
+	depends = webkit2gtk-4.1
+	depends = gtk3
+	depends = libsecret
+	depends = openssl
+	depends = dbus
+	depends = xdg-utils
+	source = gitpad-1.4.1.tar.gz::https://github.com/fedeaielli/gitpad/archive/v1.4.1.tar.gz
+	sha256sums = 5f7b4313fe8ed8674bfa4d14ea540b6d53e68a28bfe597eb211cf53ec1a60ae5
+
+pkgname = gitpad
