@@ -1,3 +1,5 @@
+import { isOfflineError } from '../stores/git.svelte'
+
 export interface SyncOutcomeInput {
   saveOk: boolean
   saveError: string | null
@@ -21,6 +23,12 @@ export function syncOutcome(i: SyncOutcomeInput): {
     }
   }
   if (i.conflicts) return { kind: 'error', message: 'Resolve the conflicts first' }
+  if (!i.pushed && isOfflineError(i.error)) {
+    return {
+      kind: 'error',
+      message: 'Offline — changes are saved locally; they will sync when the connection returns.',
+    }
+  }
   if (!i.pushed) {
     return {
       kind: 'error',

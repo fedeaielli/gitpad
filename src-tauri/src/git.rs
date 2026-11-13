@@ -141,6 +141,21 @@ pub fn open_repo(path: &Path) -> Result<Repository, GitError> {
     Ok(repo)
 }
 
+/// libgit2 has no error class for transport failures: match the text it gives.
+fn is_network_error(error: &GitError) -> bool {
+    let text = error.to_string().to_ascii_lowercase();
+    [
+        "failed to connect",
+        "connection refused",
+        "could not resolve",
+        "network",
+        "timed out",
+        "timeout",
+    ]
+    .iter()
+    .any(|needle| text.contains(needle))
+}
+
 fn git_err(e: git2::Error) -> GitError {
     // A missing ref is a normal probe (unborn HEAD, empty history), not a fault.
     if e.code() != git2::ErrorCode::NotFound {
@@ -737,7 +752,20 @@ pub fn push_blocking(
     gate: std::sync::Arc<std::sync::RwLock<()>>,
 ) -> Result<(GitStatus, Vec<FileChange>, Option<GitError>), GitError> {
     let repo = open_repo(path)?;
-    let (status, changes) = pull_repo_with(&repo, token.clone(), &gate, message.as_deref())?;
+    let (status, changes) = match pull_repo_with(&repo, token.clone(), &gate, message.as_deref()) {
+        Ok(result) => result,
+        // Offline: the fetch never touched the worktree, so the local commit is
+        // still safe. Keep it and report the network error with the status.
+        Err(e) if is_network_error(&e) && repo.state() == git2::RepositoryState::Clean => {
+            let status = {
+                let _guard = gate.write().map_err(|e| e.to_string())?;
+                commit_pending(&repo, message.as_deref())?;
+                status_of(&repo)?
+            };
+            return Ok((status, Vec::new(), Some(e)));
+        }
+        Err(e) => return Err(e),
+    };
     if !status.conflicts.is_empty() {
         return Ok((status, changes, None));
     }
@@ -2866,6 +2894,32 @@ mod tests {
         let err = use_local_repo(&worktree).unwrap_err();
 
         assert!(err.to_string().contains("worktree"), "unexpected: {err}");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn an_offline_push_still_commits_locally() {
+        let root = tmp("offline-push");
+        let repo = Repository::init(&root).unwrap();
+        commit_file(&repo, "a.md", "one");
+        // Port 9 refuses at once: the task reports "failed to connect".
+        repo.remote("origin", "http://127.0.0.1:9/notes.git").unwrap();
+        std::fs::write(root.join("a.md"), "two").unwrap();
+
+        let (status, _, error) = push_blocking(
+            &root,
+            Some("gitpad: update a.md".into()),
+            None,
+            std::sync::Arc::new(std::sync::RwLock::new(())),
+        )
+        .unwrap();
+
+        assert!(error.is_some());
+        assert!(status.changes.is_empty());
+        let reopened = Repository::open(&root).unwrap();
+        let head = reopened.head().unwrap().peel_to_commit().unwrap();
+        let blob = head.tree().unwrap().get_name("a.md").unwrap().id();
+        assert_eq!(reopened.find_blob(blob).unwrap().content(), b"two");
         let _ = std::fs::remove_dir_all(&root);
     }
 

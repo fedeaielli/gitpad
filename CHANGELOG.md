@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.4.1 — 2026-11-13
+
+### Fixed
+- Without a GitHub account, Ctrl+S saves and commits; the push no longer spins
+  forever and the toast says the file was saved locally.
+- A Git repository nested in the notes folder (for example an old
+  `gitpad_notes` clone in `Documents`) no longer fails every commit and push.
+- Saving while offline keeps the local commit, and the message says the changes
+  are saved locally instead of repeating the network error.
+- The status bar shows `error` for real failures and `offline` only for network
+  ones.
+- A second sync cannot start while a timed-out run is still going.
+- Opening a subfolder of a repository reports the same path spelling on Windows.
+
+### Changed
+- Settings: `Change…` opens an existing folder (and initializes it when it is
+  empty), and a separate `Move repository` row moves the clone after a
+  confirmation that shows where it will end up.
+
 ## 1.4.0 — 2026-11-13
 
 GitPad runs on Windows too.

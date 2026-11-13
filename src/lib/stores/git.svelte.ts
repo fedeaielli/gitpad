@@ -88,11 +88,21 @@ export function isIgnorableSyncError(error: unknown) {
   return errorMessage(error).includes('not authenticated') || isNoRepoError(error)
 }
 
+/// A transport failure: the work is committed, only the sync is missing.
+export function isOfflineError(error: unknown) {
+  const text = errorMessage(error).toLowerCase()
+  return ['failed to connect', 'connection refused', 'could not resolve', 'network', 'timed out'].some(
+    (needle) => text.includes(needle),
+  )
+}
+
 const SYNC_TIMEOUT_MS = 120_000
 const SYNC_TIMEOUT_ERROR = 'sync timed out: the network may be down; local commits are safe'
 
 /// Incremented per run: a late result from an older run must not touch the state.
 let runId = 0
+/// True while a run is in flight, including one the UI already timed out.
+let running = false
 
 /// Pull, push or full sync share the same guard, spinner and error handling.
 async function run(operation: () => Promise<GitStatus>, mark = false) {
@@ -100,14 +110,16 @@ async function run(operation: () => Promise<GitStatus>, mark = false) {
     gitStatus.error = 'resolve the conflicts first'
     return false
   }
-  if (gitStatus.syncing || !gitStatus.configured) return false
+  if (running || gitStatus.syncing || !gitStatus.configured) return false
   const id = ++runId
   gitStatus.syncing = true
   gitStatus.error = null
+  // A timed-out run keeps going in Rust: block the next one until it really ends.
+  running = true
+  const pending = operation()
+  void pending.catch(() => {}).finally(() => (running = false))
   try {
-    // A timed-out run keeps going in Rust. The worktree gate serializes writes,
-    // so a second sync may start while the first one is still in flight.
-    const status = await withTimeout(operation(), SYNC_TIMEOUT_MS, 'sync')
+    const status = await withTimeout(pending, SYNC_TIMEOUT_MS, 'sync')
     if (id !== runId) return false
     if (mark) markPushed(status)
     else applyGitStatus(status)

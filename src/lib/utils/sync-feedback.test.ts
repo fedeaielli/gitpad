@@ -32,9 +32,16 @@ describe('syncOutcome', () => {
   })
 
   it('keeps the local commit visible when the push failed', () => {
-    expect(syncOutcome({ ...base, pushed: false, error: 'network down' })).toEqual({
+    expect(syncOutcome({ ...base, pushed: false, error: 'push rejected' })).toEqual({
       kind: 'error',
-      message: 'Saved, push failed: network down. Your commit is safe locally.',
+      message: 'Saved, push failed: push rejected. Your commit is safe locally.',
+    })
+  })
+
+  it('says offline instead of naming a network error', () => {
+    expect(syncOutcome({ ...base, pushed: false, error: 'git: failed to connect to github.com' })).toEqual({
+      kind: 'error',
+      message: 'Offline — changes are saved locally; they will sync when the connection returns.',
     })
   })
 

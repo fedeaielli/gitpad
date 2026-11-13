@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gitStatus } from '../stores/git.svelte'
+  import { gitStatus, isOfflineError } from '../stores/git.svelte'
   import { tabs } from '../stores/tabs.svelte'
   import { ui } from '../stores/ui.svelte'
   import { tip } from '../utils/tooltip'
@@ -13,7 +13,7 @@
 
   const active = $derived(tabs.tabs.find((t) => t.id === tabs.activeTabId) ?? null)
   const badge = $derived.by(() => {
-    if (gitStatus.error) return 'offline'
+    if (gitStatus.error) return isOfflineError(gitStatus.error) ? 'offline' : 'error'
     if (!gitStatus.configured) return 'no repo'
     if (gitStatus.syncing) return 'syncing'
     if (gitStatus.conflicts.length > 0) return 'conflict'
