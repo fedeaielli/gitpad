@@ -27,6 +27,16 @@ Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Built for Arch L
 
 ---
 
+## First start
+
+1. **Connect GitHub.** Sign in with the OAuth device flow or a personal access token (classic) with the `repo` scope, created at <https://github.com/settings/tokens>. The token is stored in the OS keyring, not in a config file.
+2. **Choose a repository.** GitPad uses a private repository named `gitpad_notes` by default (the wizard lets you change the name), creates it if it does not exist, and clones it next to your documents (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
+3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically.
+
+No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Repository folder → Change…*. GitPad opens an existing repository, or the repository above the folder you picked; a plain folder is initialized in place, and a repository without an `origin` remote commits locally and skips sync until you add one.
+
+---
+
 ## Why GitPad
 
 GitPad is not Obsidian. It's not Notion. Saving is a git commit.
@@ -134,16 +144,6 @@ The AppImage is written to `src-tauri/target/release/bundle/`. Build it on the o
 Other distributions are not supported: the dependencies above have different package names and versions there, and a build that works is your own. If you want support for yours, open an issue before writing the patch.
 
 On Windows, install the MSVC Rust toolchain and the **Desktop development with C++** workload of the Visual Studio Build Tools, then run the same `npm ci` and `npm run tauri build` commands. The installer lands in `src-tauri/target/release/bundle/nsis/`.
-
----
-
-## Quickstart
-
-1. **Connect GitHub.** Sign in with the OAuth device flow or a personal access token (classic) with the `repo` scope, created at <https://github.com/settings/tokens>. The token is stored in the OS keyring, not in a config file.
-2. **Choose a repository.** GitPad uses a private repository named `gitpad_notes` by default (the wizard lets you change the name), creates it if it does not exist, and clones it next to your documents (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
-3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically.
-
-No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Repository folder → Change…*. GitPad opens an existing repository, or the repository above the folder you picked; a plain folder is initialized in place, and a repository without an `origin` remote commits locally and skips sync until you add one.
 
 ---
 
