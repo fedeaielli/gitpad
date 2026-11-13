@@ -4,7 +4,7 @@
 
 <h1 align="center">GitPad</h1>
 
-<p align="center"><em>Markdown notes in a Git repository you own.</em></p>
+<p align="center"><em>Markdown notes in a Git repository you own — saving is a git commit.</em></p>
 
 <p align="center">
   <a href="https://github.com/fedeaielli/gitpad/releases/latest"><img src="https://img.shields.io/github/v/release/fedeaielli/gitpad?color=0078d4" alt="Version"></a>
@@ -141,7 +141,17 @@ npm run tauri build -- --no-bundle   # just the binary: src-tauri/target/release
 
 The AppImage is written to `src-tauri/target/release/bundle/`. Build it on the oldest machine you want it to run on: the bundle carries that machine's libraries, and glibc cannot be newer than the one it was compiled against. `--no-bundle` sidesteps the question, since the binary links the libraries you already installed.
 
-Other distributions are not supported: the dependencies above have different package names and versions there, and a build that works is your own. If you want support for yours, open an issue before writing the patch.
+Other distributions are not supported, but they are not blocked either: build from source with the same list of libraries (the [Tauri prerequisites](https://tauri.app/start/prerequisites/#linux) map them to other package managers). The result links your own libraries. The AppImage is the only build that carries a glibc floor, because it is built on Arch:
+
+| Distribution | How to run it |
+|---|---|
+| Arch Linux, Manjaro | `makepkg -si` in `packaging/`, or the release AppImage |
+| Debian 13, Ubuntu 24.04+ | from source: the 1.4.1 AppImage needs glibc 2.44, newer than the 2.39–2.41 they ship |
+| Fedora 41+, openSUSE Tumbleweed | from source, same reason |
+| Debian 11–12, Ubuntu 20.04–22.04, RHEL 8–9 | from source |
+| Windows 10/11 x64 | the NSIS installer above |
+
+If you want a distribution supported, open an issue before writing the patch.
 
 On Windows, install the MSVC Rust toolchain and the **Desktop development with C++** workload of the Visual Studio Build Tools, then run the same `npm ci` and `npm run tauri build` commands. The installer lands in `src-tauri/target/release/bundle/nsis/`.
 
