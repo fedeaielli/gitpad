@@ -7,7 +7,7 @@
 <p align="center"><em>Markdown notes in a Git repository you own.</em></p>
 
 <p align="center">
-  <a href="https://github.com/fedeaielli/gitpad/releases/latest"><img src="https://img.shields.io/github/v/release/fedeaielli/gitpad?color=0078d4" alt="Latest release"></a>
+  <a href="https://github.com/fedeaielli/gitpad/releases/latest"><img src="https://img.shields.io/github/v/release/fedeaielli/gitpad?color=0078d4" alt="Version"></a>
   <a href="https://github.com/fedeaielli/gitpad/actions/workflows/ci.yml"><img src="https://github.com/fedeaielli/gitpad/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License: GPL-3.0"></a>
   <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows-1793D1.svg" alt="Platform: Linux and Windows">
@@ -23,7 +23,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Built for Arch Linux and Windows.
 
-> **Status:** `v1.4.1`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** the version badge above tracks the latest release. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
