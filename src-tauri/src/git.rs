@@ -1,6 +1,6 @@
 use crate::auth;
 use git2::{
-    build::{CheckoutBuilder, RepoBuilder}, Commit, Diff, FetchOptions, IndexAddOption, Oid,
+    build::{CheckoutBuilder, RepoBuilder}, Commit, Diff, FetchOptions, Oid,
     PushOptions, Repository, ResetType, Signature, Sort, StatusOptions,
 };
 use serde::{Deserialize, Serialize};
@@ -484,7 +484,12 @@ fn status_of(repo: &Repository) -> Result<GitStatus, GitError> {
     let changes: Vec<FileChange> = statuses
         .iter()
         .filter_map(|entry| {
-            let path = entry.path()?.to_string();
+            let path = entry.path()?;
+            // A repository nested in the notes folder shows up as a directory row.
+            if path.ends_with('/') {
+                return None;
+            }
+            let path = path.to_string();
             Some(FileChange {
                 path,
                 status: change_code(entry.status()).to_string(),
@@ -557,10 +562,14 @@ fn commit_head(repo: &Repository, tree: &git2::Tree, message: &str) -> Result<()
 
 fn commit_pending(repo: &Repository, message: Option<&str>) -> Result<(), GitError> {
     let mut index = repo.index().map_err(git_err)?;
-    index
-        .add_all(["*"], IndexAddOption::DEFAULT, None)
-        .map_err(git_err)?;
-    // add_all does not stage deletions; update_all does.
+    // Not add_all("*"): it walks into a repository nested in the notes folder and
+    // fails on its directory entry ("invalid path: 'name/'").
+    for change in status_of(repo)?.changes {
+        if change.status != "D" {
+            index.add_path(Path::new(&change.path)).map_err(git_err)?;
+        }
+    }
+    // add_path does not stage deletions; update_all does.
     index.update_all(["*"], None).map_err(git_err)?;
     index.write().map_err(git_err)?;
     let tree_id = index.write_tree().map_err(git_err)?;
@@ -1916,6 +1925,26 @@ mod tests {
         let head = repo.head().unwrap().peel_to_commit().unwrap();
         assert!(head.tree().unwrap().get_name("note.md").is_none());
         assert!(head.message().unwrap_or("").starts_with("gitpad: delete note.md "));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn commit_all_skips_an_embedded_repository() {
+        let root = tmp("embedded");
+        let repo = Repository::init(&root).unwrap();
+        std::fs::write(root.join("a.md"), "hi").unwrap();
+        let inner = root.join("gitpad_notes");
+        Repository::init(&inner).unwrap();
+        std::fs::write(inner.join("x.md"), "x").unwrap();
+
+        commit_all(&root, "gitpad: test").unwrap();
+
+        let reopened = Repository::open(&root).unwrap();
+        let head = reopened.head().unwrap().peel_to_commit().unwrap();
+        let tree = head.tree().unwrap();
+        assert!(tree.get_name("a.md").is_some());
+        assert!(tree.get_name("gitpad_notes").is_none());
+        assert!(status_of(&repo).unwrap().changes.is_empty());
         let _ = std::fs::remove_dir_all(&root);
     }
 
