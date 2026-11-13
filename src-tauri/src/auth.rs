@@ -306,6 +306,8 @@ mod tests {
         assert_eq!(keyring_read(key).unwrap(), None);
     }
 
+    // DBus socket addresses are a unix concern.
+    #[cfg(unix)]
     #[test]
     fn bus_address_points_at_the_runtime_socket() {
         assert_eq!(bus_address(None), None);
