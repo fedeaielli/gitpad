@@ -25,19 +25,17 @@
     if (refocus) account?.focus()
   }
 
-  // The avatar has two doors: the right click skips the menu for the settings tab.
+  // The avatar has two doors: the left click goes to settings, the right one
+  // shows the menu.
   function openAccountSettings() {
     closeMenu()
     ui.settingsTab = 'account'
     ui.settingsOpen = true
   }
 
-  function toggleMenu() {
-    // Signed out: the account form is the only thing worth showing.
-    if (!user) {
-      openAccountSettings()
-      return
-    }
+  function showMenu() {
+    // Signed out there is nothing to sign out of; the settings tab is the door.
+    if (!user) return
     if (menuOpen) {
       closeMenu()
       return
@@ -162,10 +160,10 @@
     aria-label="Account"
     aria-haspopup={user ? 'menu' : undefined}
     aria-expanded={user ? menuOpen : undefined}
-    onclick={toggleMenu}
+    onclick={openAccountSettings}
     oncontextmenu={(e) => {
       e.preventDefault()
-      openAccountSettings()
+      showMenu()
     }}
   >
     {#if user}
