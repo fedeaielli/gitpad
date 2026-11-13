@@ -82,7 +82,7 @@ pub(crate) fn classify(
         return None;
     }
     Some(FileChange {
-        path: rel.to_string_lossy().into_owned(),
+        path: crate::fs::rel_path(rel),
         status: status.to_string(),
     })
 }

@@ -1861,6 +1861,8 @@ mod tests {
         assert_eq!(std::fs::read_to_string(a_path.join("b.txt")).unwrap(), "2");
         let _ = std::fs::remove_dir_all(&root);
     }
+    // chmod 0o000 only simulates an unreadable directory on unix.
+    #[cfg(unix)]
     #[test]
     fn open_repo_distinguishes_missing_from_io() {
         use std::os::unix::fs::PermissionsExt;

@@ -10,7 +10,7 @@
   <a href="https://github.com/fedeaielli/gitpad/releases/latest"><img src="https://img.shields.io/github/v/release/fedeaielli/gitpad?color=0078d4" alt="Latest release"></a>
   <a href="https://github.com/fedeaielli/gitpad/actions/workflows/ci.yml"><img src="https://github.com/fedeaielli/gitpad/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License: GPL-3.0"></a>
-  <img src="https://img.shields.io/badge/platform-Arch%20Linux-1793D1.svg" alt="Platform: Arch Linux">
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows-1793D1.svg" alt="Platform: Linux and Windows">
   <a href="https://tauri.app"><img src="https://img.shields.io/badge/Tauri-2-24C8DB.svg" alt="Tauri 2"></a>
   <a href="https://svelte.dev"><img src="https://img.shields.io/badge/Svelte-5-FF3E00.svg" alt="Svelte 5"></a>
 </p>
@@ -21,9 +21,9 @@
 
 GitPad is a local-first desktop editor for Markdown notes and small text files that live in a Git repository you own. It pairs the Monaco editor with a focused GitHub workflow: edit, save automatically, commit locally, and push when you stop typing.
 
-Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Built for Arch Linux.
+Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Built for Arch Linux and Windows.
 
-> **Status:** `v1.3.0`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** `v1.4.0`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
@@ -73,11 +73,17 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 - **Settings.** Theme, font size, auto-sync, debounce/idle timing, keybindings, and file-extension-to-language mappings. Everything is saved to `config.json` and restored on the next start.
 - **Session logs.** *Settings → Logs* shows the current session and the previous ones, filterable by severity, category (editor, git, app), and free text.
   Tracked: repository open/move/import/clone, every commit, pull and push outcome, conflicts, folder and file changes, sign-in and sign-out (never the token), GitHub calls by status code, startup, shutdown, and every message the UI shows as a toast or a crash. File contents and request bodies are never logged.
-- **Credentials in the OS keyring.** The GitHub token is never written to `config.json`; when the keyring is unavailable it goes to a mode-0600 file under the app data dir.
+- **Credentials in the OS keyring.** The GitHub token is never written to `config.json`; when the keyring is unavailable it goes to a protected file under the app data dir (mode 0600 on Linux, the user profile's ACL on Windows).
 
 ---
 
 ## Install
+
+### Windows
+
+Download `GitPad_<version>_x64-setup.exe` from the [releases page](https://github.com/fedeaielli/gitpad/releases) and run it. It installs for the current user, so Windows shows no administrator prompt.
+
+Windows 10 (1803 or newer) and Windows 11 on x64 are supported; WebView2 is installed on first run when it is missing. The installer is not code-signed, so SmartScreen may say "Windows protected your PC": choose **More info → Run anyway**. The GitHub token lives in Windows Credential Manager.
 
 ### Arch Linux
 
@@ -126,6 +132,8 @@ npm run tauri build -- --no-bundle   # just the binary: src-tauri/target/release
 The AppImage is written to `src-tauri/target/release/bundle/`. Build it on the oldest machine you want it to run on: the bundle carries that machine's libraries, and glibc cannot be newer than the one it was compiled against. `--no-bundle` sidesteps the question, since the binary links the libraries you already installed.
 
 Other distributions are not supported: the dependencies above have different package names and versions there, and a build that works is your own. If you want support for yours, open an issue before writing the patch.
+
+On Windows, install the MSVC Rust toolchain and the **Desktop development with C++** workload of the Visual Studio Build Tools, then run the same `npm ci` and `npm run tauri build` commands. The installer lands in `src-tauri/target/release/bundle/nsis/`.
 
 ---
 
@@ -189,14 +197,14 @@ See [SHORTCUTS.md](SHORTCUTS.md) for the full list.
 
 ## Where things are stored
 
-On Linux, under `~/.local/share/com.gitpad.app/`:
+On Linux, under `~/.local/share/com.gitpad.app/`; on Windows, under `%APPDATA%\com.gitpad.app\`:
 
 | Path | Contents |
 |---|---|
 | `config.json` | Theme, font, sync and sorting settings, extension mappings |
 | `logs/gitpad.log` | Session log, rotated at 5 MB with the last 5 files kept (~25 MB) |
-| `auth.token` | GitHub token, only when the OS keyring is unavailable (mode 0600) |
-| OS keyring | GitHub token, preferred |
+| `auth.token` | GitHub token, only when the OS keyring is unavailable (mode 0600 on Linux) |
+| OS keyring | GitHub token, preferred: Secret Service on Linux, Credential Manager on Windows |
 
 The notes repository lives where the wizard put it: `~/Documents/gitpad_notes` by default, or any folder you pick. `repos/gitpad_notes/` above is only used by clones made before 1.0.4.
 
@@ -209,15 +217,15 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **One repository at a time.** *Settings → Sync* switches to another local folder, but there is no "close repository" state and picking a folder inside the current one creates a nested repository.
 - **One window.** Launching GitPad again raises the window already open instead of starting a second copy, which would autosave, commit and push twice.
 - **Only `origin` is recognized.** A repository whose remote has another name is treated as local-only.
-- **External edits reload open tabs.** GitPad watches the repository with inotify. A file changed by another editor, the `git` CLI, or a script reloads its tab when the tab has no unsaved edits; a tab with unsaved edits is marked stale and its autosave pauses, so nothing is overwritten. Deleting a file elsewhere closes its tab with a "deleted externally" toast.
-- **The watcher skips `.git` and `.gitignore`d paths.** GitPad's own saves and commits never trigger a reload, and build output stays quiet. If the watch cannot start (inotify limit, a folder moved under it), GitPad falls back to refreshing the tree and the Git status when the window regains focus.
+- **External edits reload open tabs.** GitPad watches the repository with a filesystem watch. A file changed by another editor, the `git` CLI, or a script reloads its tab when the tab has no unsaved edits; a tab with unsaved edits is marked stale and its autosave pauses, so nothing is overwritten. Deleting a file elsewhere closes its tab with a "deleted externally" toast.
+- **The watcher skips `.git` and `.gitignore`d paths.** GitPad's own saves and commits never trigger a reload, and build output stays quiet. If the watch cannot start (watch limit, a folder moved under it), GitPad falls back to refreshing the tree and the Git status when the window regains focus.
 - **Remote images are blocked in preview.** The content security policy allows local/data images and GitHub avatars, not arbitrary remote images.
 - **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes.
-- **Crash safety.** `SIGTERM` commits and pushes files already written before exit. `SIGKILL` or a crash cannot be caught; the last edits remain local until the next start.
+- **Crash safety.** Closing the window, or `SIGTERM` on Linux, commits and pushes files already written before exit. A crash, `SIGKILL`, or a Windows logoff cannot be caught; the last edits remain local until the next start.
 - **Logs stop at 5 files.** Rotation keeps five 5 MB files, so the oldest sessions are dropped once the folder reaches roughly 25 MB.
-- **Without a keyring, the token lives in a protected file.** If the OS keyring is missing or locked, GitPad keeps the token in `auth.token` (mode 0600) under the app data dir, warns at startup, and still signs in after a restart. The file is removed on logout, or at the next sign-in when the keyring accepts the token.
+- **Without a keyring, the token lives in a protected file.** If the OS keyring is missing or locked on Linux, GitPad keeps the token in `auth.token` (mode 0600) under the app data dir, warns at startup, and still signs in after a restart. The file is removed on logout, or at the next sign-in when the keyring accepts the token.
 - **The AppImage is as new as its build host.** It is built on Arch and tested on Arch; elsewhere it may fail with a missing glibc or WebKit library. Build from source for your own machine.
-- **Arch Linux only.** Windows and macOS are not supported.
+- **Linux and Windows x64.** macOS is not supported, and neither is Windows on ARM.
 - **Not a full Git client.** There is no branch UI, terminal, plugin system, or multi-user collaboration.
 
 ---
@@ -246,7 +254,7 @@ npm test                                  # Vitest
 npm run check                             # svelte-check + TypeScript
 cargo test --manifest-path src-tauri/Cargo.toml
 npm run build                             # front-end production build
-npm run tauri build                       # AppImage
+npm run tauri build                       # AppImage on Linux, NSIS installer on Windows
 ```
 
 Two things are not covered by the unit tests and are checked by hand before a
@@ -268,14 +276,14 @@ src-tauri/src/          Rust back end
   github.rs             GitHub API
   auth.rs               OS keyring, protected-file fallback
   search.rs             repository search
-  watcher.rs            debounced inotify watch on the repository
+  watcher.rs            debounced filesystem watch on the repository
 ```
 
 ---
 
 ## Contributing
 
-**What helps.** Bug reports with the session log attached (*Settings → Logs*, filter by severity, copy), and testing on Arch under both Wayland and X11.
+**What helps.** Bug reports with the session log attached (*Settings → Logs*, filter by severity, copy), and testing on Arch under both Wayland and X11, or on Windows 10/11.
 
 **What to avoid.** Large pull requests without an issue first. This is a personal project with one user's data in it, so design changes are discussed before they are written.
 

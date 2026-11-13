@@ -34,21 +34,24 @@ fn set_session_token(token: Option<&str>) {
 }
 
 /// 0600 from creation: the token must never be world-readable, even briefly.
+/// Windows has no mode bits: the per-user `%APPDATA%` profile ACL is the guard.
+/// shortcut: no DPAPI/ACL hardening of the token file, upgrade if a security
+/// review demands encryption at rest.
 fn write_secret(path: &Path, value: &str) -> Result<(), String> {
-    use std::os::unix::fs::OpenOptionsExt;
-
     let dir = path
         .parent()
         .ok_or_else(|| "credential path has no parent".to_string())?;
     std::fs::create_dir_all(dir).map_err(|e| format!("credential dir {}: {e}", dir.display()))?;
     let tmp = path.with_extension("token.tmp");
     let result = (|| -> std::io::Result<()> {
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(&tmp)?;
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create(true).truncate(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(&tmp)?;
         file.write_all(value.as_bytes())?;
         file.sync_all()?;
         std::fs::rename(&tmp, path)
@@ -303,6 +306,8 @@ mod tests {
         assert_eq!(keyring_read(key).unwrap(), None);
     }
 
+    // DBus socket addresses are a unix concern.
+    #[cfg(unix)]
     #[test]
     fn bus_address_points_at_the_runtime_socket() {
         assert_eq!(bus_address(None), None);

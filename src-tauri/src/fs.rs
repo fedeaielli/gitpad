@@ -65,6 +65,15 @@ fn resolve_in(root: &Path, path: &str) -> Result<PathBuf, String> {
     Ok(rel)
 }
 
+/// Repo-relative paths reach the webview with `/` on every platform: git2
+/// reports them that way and the frontend compares them as plain strings.
+pub(crate) fn rel_path(path: &std::path::Path) -> String {
+    path.components()
+        .map(|component| component.as_os_str().to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
 fn resolve(app: &AppHandle, path: &str) -> Result<(PathBuf, PathBuf), String> {
     let root = git::repo_dir(app)?;
     let rel = resolve_in(&root, path)?;
@@ -81,9 +90,14 @@ pub fn fs_repo_name(app: AppHandle) -> Result<String, String> {
         .unwrap_or_default())
 }
 
-/// Installed font families from fontconfig; empty when fc-list is missing.
+/// Installed font families: fontconfig on unix, the registry on Windows.
 #[tauri::command]
 pub fn fs_list_fonts() -> Result<Vec<String>, String> {
+    installed_fonts()
+}
+
+#[cfg(unix)]
+fn installed_fonts() -> Result<Vec<String>, String> {
     let output = std::process::Command::new("fc-list")
         .arg(":")
         .output()
@@ -91,7 +105,36 @@ pub fn fs_list_fonts() -> Result<Vec<String>, String> {
     Ok(parse_families(&String::from_utf8_lossy(&output.stdout)))
 }
 
+#[cfg(windows)]
+fn installed_fonts() -> Result<Vec<String>, String> {
+    use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ};
+    use winreg::RegKey;
+
+    let key = RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey_with_flags(r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts", KEY_READ)
+        .map_err(|e| format!("fonts registry: {e}"))?;
+    let mut families = std::collections::BTreeSet::new();
+    for (name, _) in key.enum_values().flatten() {
+        let family = family_from_registry_name(&name);
+        if !family.is_empty() {
+            families.insert(family);
+        }
+    }
+    Ok(families.into_iter().collect())
+}
+
+/// `Arial (TrueType)` -> `Arial`: Windows appends the file type to each value.
+#[cfg(windows)]
+fn family_from_registry_name(name: &str) -> String {
+    let family = match name.rsplit_once(" (") {
+        Some((family, suffix)) if suffix.ends_with(')') => family,
+        _ => name,
+    };
+    family.trim().to_string()
+}
+
 /// One family per line; a line can carry several aliases separated by commas.
+#[cfg(unix)]
 fn parse_families(stdout: &str) -> Vec<String> {
     let mut families = std::collections::BTreeSet::new();
     for line in stdout.lines() {
@@ -159,11 +202,10 @@ fn build_tree(
             continue;
         }
         let abs = entry.path();
-        let rel = abs
-            .strip_prefix(root)
-            .map_err(|_| "path outside repository".to_string())?
-            .to_string_lossy()
-            .to_string();
+        let rel = rel_path(
+            abs.strip_prefix(root)
+                .map_err(|_| "path outside repository".to_string())?,
+        );
         let file_type = entry
             .file_type()
             .map_err(|e| format!("read dir {}: {e}", dir.display()))?;
@@ -580,7 +622,7 @@ pub async fn fs_import(
     .map_err(|e| e.to_string())??;
     let app_status = app.clone();
     let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
-    Ok(rel.to_string_lossy().to_string())
+    Ok(rel_path(&rel))
 }
 
 fn import_locked(
@@ -643,6 +685,25 @@ mod tests {
     use super::*;
     use crate::test_util::assert_waits_for_gate;
 
+    /// Built from components so the assertion also runs on Windows.
+    #[test]
+    fn relative_paths_use_forward_slashes() {
+        let nested: std::path::PathBuf = ["notes", "sub", "a.md"].iter().collect();
+        assert_eq!(rel_path(&nested), "notes/sub/a.md");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn strips_the_registry_style_suffix() {
+        assert_eq!(family_from_registry_name("Arial (TrueType)"), "Arial");
+        assert_eq!(
+            family_from_registry_name("Cascadia Code (OpenType)"),
+            "Cascadia Code"
+        );
+        assert_eq!(family_from_registry_name("Some Font"), "Some Font");
+    }
+
+    #[cfg(unix)]
     #[test]
     fn parse_families_skips_the_path_and_style() {
         let output = "/usr/share/fonts/x/Adwaita.ttf: Adwaita Sans:style=Regular\n\

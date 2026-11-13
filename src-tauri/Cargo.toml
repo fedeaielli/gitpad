@@ -1,6 +1,6 @@
 [package]
 name = "gitpad"
-version = "1.3.0"
+version = "1.4.0"
 description = "Markdown notes in a Git repository you own"
 authors = ["Fede <fedeaielli@users.noreply.github.com>"]
 license = "GPL-3.0-only"
@@ -24,7 +24,6 @@ tauri-plugin-single-instance = "2" # one window per repository
 tauri-plugin-opener = "2"       # open verification_uri in the browser
 tauri-plugin-dialog = "2"      # native picker for importing files/folders
 tauri-plugin-log = "2"         # file log, so a bug report can carry one
-keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 # default-features = false drops libssh2 (SSH is not used); `https` keeps HTTPS push.
 git2 = { version = "0.20", default-features = false, features = ["https"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
@@ -34,7 +33,16 @@ tokio = { version = "1", features = ["full"] }
 ignore = "0.4"
 # Debounced filesystem watch; re-exports `notify`, so it is not a direct dependency.
 notify-debouncer-full = "0.7"
+
+[target.'cfg(unix)'.dependencies]
 nix = { version = "0.29", features = ["signal"] }
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+winreg = "0.56"                # installed font families
+webview2-com = "0.39"          # WebView2 settings Tauri does not expose
+windows-core = "0.62"          # Interface::cast for ICoreWebView2Settings3
 
 [profile.release]
 lto = "thin"

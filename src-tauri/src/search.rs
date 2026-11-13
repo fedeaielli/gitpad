@@ -49,12 +49,12 @@ pub fn search_in(root: &Path, query: &str) -> Result<Vec<SearchResult>, String> 
         if handle.seek(SeekFrom::Start(0)).is_err() {
             continue;
         }
-        let file = entry
-            .path()
-            .strip_prefix(root)
-            .map_err(|_| "path outside repository".to_string())?
-            .to_string_lossy()
-            .to_string();
+        let file = crate::fs::rel_path(
+            entry
+                .path()
+                .strip_prefix(root)
+                .map_err(|_| "path outside repository".to_string())?,
+        );
         for (index, line) in BufReader::new(handle).lines().enumerate() {
             // Non-UTF-8 files are skipped silently.
             let Ok(line) = line else {

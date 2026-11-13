@@ -6,11 +6,11 @@
 
 web
 
-<!-- Tauri 2 desktop shell (Linux), Monaco editor inside a webview; web is the design language. -->
+<!-- Tauri 2 desktop shell (Linux and Windows), Monaco editor inside a webview; web is the design language. -->
 
 ## Users
 
-Primary: a single technical author who writes Markdown notes, edits config files, and does light coding on Linux (Arch-first, Wayland/X11). Works keyboard-first, offline, and already uses Git and GitHub. Distributed to other Linux users via AUR/AppImage, so the interface must be legible to a stranger with the same habits, not only to its author.
+Primary: a single technical author who writes Markdown notes, edits config files, and does light coding on Linux (Arch-first, Wayland/X11) or Windows 10/11. Works keyboard-first, offline, and already uses Git and GitHub. Distributed to other Linux users via AUR/AppImage and to Windows users via an NSIS installer, so the interface must be legible to a stranger with the same habits, not only to its author.
 
 ## Product Purpose
 
@@ -22,7 +22,7 @@ Saving is a git commit. No proprietary note database, no sync service, no accoun
 
 ## Operating Context
 
-Linux desktop, often in long writing or config-editing sessions; keyboard shortcuts and a command palette carry most navigation. The repository is the document store, so Git state (clean, ahead, behind, conflict) is part of the editing surface. Work continues offline; sync happens on save, idle, blur, and close.
+Linux or Windows desktop, often in long writing or config-editing sessions; keyboard shortcuts and a command palette carry most navigation. The repository is the document store, so Git state (clean, ahead, behind, conflict) is part of the editing surface. Work continues offline; sync happens on save, idle, blur, and close.
 
 ## Capabilities and Constraints
 
