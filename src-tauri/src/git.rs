@@ -269,12 +269,18 @@ fn repo_name_from_url(url: &str) -> Result<String, GitError> {
     Ok(name.to_string())
 }
 
+fn credential(token: Option<&str>) -> Result<git2::Cred, git2::Error> {
+    match token {
+        Some(t) => git2::Cred::userpass_plaintext("x-access-token", t),
+        // Without a token there is nothing to try: fail at once instead of
+        // retrying anonymous credentials until the sync times out.
+        None => Err(git2::Error::from_str("not authenticated: sign in to GitHub")),
+    }
+}
+
 fn callbacks(token: Option<String>) -> git2::RemoteCallbacks<'static> {
     let mut cbs = git2::RemoteCallbacks::new();
-    cbs.credentials(move |_, _, _| match &token {
-        Some(t) => git2::Cred::userpass_plaintext("x-access-token", t),
-        None => git2::Cred::default(),
-    });
+    cbs.credentials(move |_, _, _| credential(token.as_deref()));
     cbs
 }
 
@@ -1796,6 +1802,13 @@ mod tests {
     fn iso8601_matches_known_dates() {
         assert_eq!(iso8601(0), "1970-01-01T00:00:00Z");
         assert_eq!(iso8601(1_700_000_000), "2023-11-14T22:13:20Z");
+    }
+
+    #[test]
+    fn without_a_token_the_credential_fails_at_once() {
+        let err = credential(None).err().expect("no token must fail");
+        assert!(err.message().contains("not authenticated"), "{err}");
+        assert!(credential(Some("t")).is_ok());
     }
 
     #[test]
