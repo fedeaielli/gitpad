@@ -10,7 +10,7 @@ web
 
 ## Users
 
-Primary: a single technical author who writes Markdown notes, edits config files, and does light coding on Linux (Arch-first, Wayland/X11) or Windows 10/11. Works keyboard-first, offline, and already uses Git and GitHub. Distributed to other Linux users via AUR/AppImage and to Windows users via an NSIS installer, so the interface must be legible to a stranger with the same habits, not only to its author.
+Primary: a single technical author who writes Markdown notes, edits config files, and does light coding on Linux (Arch-first, Wayland/X11) or Windows 10/11. Works keyboard-first, offline, and already uses Git and GitHub. Distributed to other Linux users via a PKGBUILD/AppImage and to Windows users via an NSIS installer, so the interface must be legible to a stranger with the same habits, not only to its author.
 
 ## Product Purpose
 

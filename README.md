@@ -23,7 +23,7 @@ GitPad is a local-first desktop editor for Markdown notes and small text files t
 
 Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Built for Arch Linux and Windows.
 
-> **Status:** `v1.4.0`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
+> **Status:** `v1.4.1`. GitPad writes to a real Git repository, so keep backups and use a dedicated notes repository.
 
 ---
 
@@ -87,11 +87,11 @@ Windows 10 (1803 or newer) and Windows 11 on x64 are supported; WebView2 is inst
 
 ### Arch Linux
 
-A `PKGBUILD` is included in the repository root. It is **not published on the AUR yet**.
+A `PKGBUILD` lives in `packaging/`. It is **not published on the AUR yet**.
 
 ```sh
 git clone https://github.com/fedeaielli/gitpad.git
-cd gitpad
+cd gitpad/packaging
 makepkg -si
 ```
 
@@ -140,10 +140,10 @@ On Windows, install the MSVC Rust toolchain and the **Desktop development with C
 ## Quickstart
 
 1. **Connect GitHub.** Sign in with the OAuth device flow or a personal access token (classic) with the `repo` scope, created at <https://github.com/settings/tokens>. The token is stored in the OS keyring, not in a config file.
-2. **Choose a repository.** GitPad uses a private repository named `gitpad_notes` (fixed), creates it if it does not exist, and clones it next to your documents (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
+2. **Choose a repository.** GitPad uses a private repository named `gitpad_notes` by default (the wizard lets you change the name), creates it if it does not exist, and clones it next to your documents (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
 3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically.
 
-No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Open local folder*. GitPad opens an existing repository or initializes one in place; a repository without an `origin` remote commits locally and skips sync until you add one.
+No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Repository folder → Change…*. GitPad opens an existing repository, or the repository above the folder you picked; a plain folder is initialized in place, and a repository without an `origin` remote commits locally and skips sync until you add one.
 
 ---
 
@@ -156,6 +156,7 @@ With auto-sync enabled (the default):
 2. After the push idle timeout, on window blur, or on close, GitPad pushes the local commits.
 3. At startup GitPad pulls the configured repository. If the working tree has conflicts, it opens the conflict dialog instead of overwriting anything.
 4. The Git panel also exposes manual **Sync**, **Pull**, **Push**, and **Commit** actions.
+5. Offline, the save is still a local commit. The push reports *Offline — changes are saved locally* and the queued commits go out on the next successful sync. A window without an account signed in skips the push entirely and says the file was saved locally.
 
 GitPad never force-pushes and never rebases. Pulls fast-forward when possible, otherwise they create a merge commit. A repository without an `origin` remote skips fetch and push: commits stay on this machine.
 
@@ -214,7 +215,8 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 
 ## Limits worth knowing
 
-- **One repository at a time.** *Settings → Sync* switches to another local folder, but there is no "close repository" state and picking a folder inside the current one creates a nested repository.
+- **One repository at a time.** *Settings → Sync → Repository folder → Change…* switches to another folder, but there is no "close repository" state. Picking a subfolder opens the repository above it, and importing into the active repository is refused, so GitPad never nests one clone inside another.
+- **A repository nested in the notes folder is ignored.** Files of a clone that lives inside the notes repository (for example `~/Documents/gitpad_notes` inside `~/Documents`) are not committed and not synced; move it out or make it a submodule if you want it versioned.
 - **One window.** Launching GitPad again raises the window already open instead of starting a second copy, which would autosave, commit and push twice.
 - **Only `origin` is recognized.** A repository whose remote has another name is treated as local-only.
 - **External edits reload open tabs.** GitPad watches the repository with a filesystem watch. A file changed by another editor, the `git` CLI, or a script reloads its tab when the tab has no unsaved edits; a tab with unsaved edits is marked stale and its autosave pauses, so nothing is overwritten. Deleting a file elsewhere closes its tab with a "deleted externally" toast.
@@ -277,6 +279,7 @@ src-tauri/src/          Rust back end
   auth.rs               OS keyring, protected-file fallback
   search.rs             repository search
   watcher.rs            debounced filesystem watch on the repository
+packaging/              PKGBUILD and .SRCINFO for Arch
 ```
 
 ---

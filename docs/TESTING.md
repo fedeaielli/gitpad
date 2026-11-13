@@ -67,8 +67,11 @@ artifact, before tagging a release.
     unsaved edits) and the tree refreshes.
 12. Pull a change made elsewhere: the open tab reloads, and a click in the Git
     panel does not open a duplicate tab.
-13. Move the repository to another drive from Settings → Sync; the app keeps
-    working.
+13. Move the repository to another drive from Settings → Sync → *Move
+    repository*; the dialog shows the final path, and the app keeps working.
 14. Use a repository whose path has spaces and non-ASCII characters.
-15. Close the window with a pending edit: the change is committed and pushed
+15. Create `CON.txt`, `a<b.md` and `note.`: each is refused with a clear error.
+16. Open a folder that holds a nested repository (a clone inside Documents):
+    saves still commit, and the nested folder is not listed as a change.
+17. Close the window with a pending edit: the change is committed and pushed
     before the process exits.
