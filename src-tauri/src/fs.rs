@@ -65,6 +65,15 @@ fn resolve_in(root: &Path, path: &str) -> Result<PathBuf, String> {
     Ok(rel)
 }
 
+/// Repo-relative paths reach the webview with `/` on every platform: git2
+/// reports them that way and the frontend compares them as plain strings.
+pub(crate) fn rel_path(path: &std::path::Path) -> String {
+    path.components()
+        .map(|component| component.as_os_str().to_string_lossy())
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
 fn resolve(app: &AppHandle, path: &str) -> Result<(PathBuf, PathBuf), String> {
     let root = git::repo_dir(app)?;
     let rel = resolve_in(&root, path)?;
@@ -159,11 +168,10 @@ fn build_tree(
             continue;
         }
         let abs = entry.path();
-        let rel = abs
-            .strip_prefix(root)
-            .map_err(|_| "path outside repository".to_string())?
-            .to_string_lossy()
-            .to_string();
+        let rel = rel_path(
+            abs.strip_prefix(root)
+                .map_err(|_| "path outside repository".to_string())?,
+        );
         let file_type = entry
             .file_type()
             .map_err(|e| format!("read dir {}: {e}", dir.display()))?;
@@ -580,7 +588,7 @@ pub async fn fs_import(
     .map_err(|e| e.to_string())??;
     let app_status = app.clone();
     let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
-    Ok(rel.to_string_lossy().to_string())
+    Ok(rel_path(&rel))
 }
 
 fn import_locked(
@@ -642,6 +650,13 @@ pub async fn fs_list_dir(
 mod tests {
     use super::*;
     use crate::test_util::assert_waits_for_gate;
+
+    /// Built from components so the assertion also runs on Windows.
+    #[test]
+    fn relative_paths_use_forward_slashes() {
+        let nested: std::path::PathBuf = ["notes", "sub", "a.md"].iter().collect();
+        assert_eq!(rel_path(&nested), "notes/sub/a.md");
+    }
 
     #[test]
     fn parse_families_skips_the_path_and_style() {
