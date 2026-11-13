@@ -40,6 +40,7 @@ keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 
 [target.'cfg(windows)'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }
+winreg = "0.56"                # installed font families
 
 [profile.release]
 lto = "thin"
