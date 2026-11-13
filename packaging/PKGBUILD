@@ -7,6 +7,9 @@ pkgdesc="Markdown notes in a Git repository"
 arch=('x86_64')
 url="https://github.com/fedeaielli/gitpad"
 license=('GPL-3.0-only')
+# makepkg's lto adds -flto to CFLAGS, which breaks ring's prebuilt asm objects
+# at link time; the crate already enables thin LTO in Cargo.toml.
+options=('!lto')
 depends=('webkit2gtk-4.1' 'gtk3' 'libsecret' 'openssl' 'dbus' 'xdg-utils')
 makedepends=('cargo' 'rust' 'nodejs' 'npm' 'pkgconf')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/fedeaielli/gitpad/archive/v$pkgver.tar.gz")

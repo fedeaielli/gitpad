@@ -16,6 +16,7 @@ pkgbase = gitpad
 	depends = openssl
 	depends = dbus
 	depends = xdg-utils
+	options = !lto
 	source = gitpad-1.4.1.tar.gz::https://github.com/fedeaielli/gitpad/archive/v1.4.1.tar.gz
 	sha256sums = 5f7b4313fe8ed8674bfa4d14ea540b6d53e68a28bfe597eb211cf53ec1a60ae5
 
