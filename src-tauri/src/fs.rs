@@ -484,10 +484,34 @@ fn rename_in(root: &Path, from: &str, to: &str) -> Result<(), String> {
     if from_rel.as_os_str().is_empty() {
         return Err("refusing to rename the repository root".into());
     }
-    if root.join(&to_rel).symlink_metadata().is_ok() {
+    let src = root.join(from_rel);
+    let dst = root.join(&to_rel);
+    // Windows is case-insensitive: `note.md` -> `Note.md` finds the source
+    // itself, while any other existing entry is a real collision.
+    let same = same_entry(&src, &dst);
+    if dst.symlink_metadata().is_ok() && !same {
         return Err(format!("target already exists: {to}"));
     }
-    std::fs::rename(root.join(from_rel), root.join(to_rel)).map_err(|e| format!("rename {from}: {e}"))
+    if same {
+        // A case-only rename cannot be done in place: hop through a temporary
+        // sibling, so the entry ends up with the requested spelling.
+        let name = dst
+            .file_name()
+            .ok_or_else(|| format!("rename {from}: no file name"))?;
+        let tmp = dst.with_file_name(format!("{}.gitpad-rename", name.to_string_lossy()));
+        std::fs::rename(&src, &tmp).map_err(|e| format!("rename {from}: {e}"))?;
+        return std::fs::rename(&tmp, &dst).map_err(|e| format!("rename {from}: {e}"));
+    }
+    std::fs::rename(&src, &dst).map_err(|e| format!("rename {from}: {e}"))
+}
+
+/// True when both paths resolve to the same entry: on Windows a rename that
+/// only changes the case lands here.
+fn same_entry(a: &Path, b: &Path) -> bool {
+    match (a.canonicalize(), b.canonicalize()) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    }
 }
 
 #[tauri::command]
@@ -591,9 +615,16 @@ fn import_into(src: &Path, dest_dir: &Path) -> Result<PathBuf, String> {
         .to_string();
     let target = unique_path(&dest, &name);
     if meta.is_dir() {
-        copy_tree(&src, &target, true)?;
+        if let Err(e) = copy_tree(&src, &target, true) {
+            // A half-copied folder would look like a successful import.
+            let _ = std::fs::remove_dir_all(&target);
+            return Err(e);
+        }
     } else if meta.is_file() {
-        std::fs::copy(&src, &target).map_err(|e| format!("import {}: {e}", src.display()))?;
+        if let Err(e) = std::fs::copy(&src, &target) {
+            let _ = std::fs::remove_file(&target);
+            return Err(format!("import {}: {e}", src.display()));
+        }
     } else {
         return Err(format!("unsupported file type: {}", src.display()));
     }
@@ -900,6 +931,43 @@ mod tests {
         assert!(import_into(&root.join("target/notes"), &root.join("target/notes/sub")).is_err());
 
         let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn import_leaves_no_half_copied_folder() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let base = std::env::temp_dir().join(format!("gitpad-import-half-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let src = base.join("src/notes");
+        let root = base.join("repo");
+        std::fs::create_dir_all(src.join("locked")).unwrap();
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(src.join("keep.md"), "k").unwrap();
+        std::fs::write(src.join("locked/secret.md"), "s").unwrap();
+        let locked = src.join("locked");
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
+
+        import_into(&src, &root).unwrap_err();
+
+        assert!(!root.join("notes").exists(), "a partial copy was left behind");
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn same_entry_matches_one_path_spelled_twice() {
+        let root = std::env::temp_dir().join(format!("gitpad-entry-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(root.join("note.md"), "x").unwrap();
+        std::fs::write(root.join("other.md"), "y").unwrap();
+
+        assert!(same_entry(&root.join("note.md"), &root.join("./note.md")));
+        assert!(!same_entry(&root.join("note.md"), &root.join("other.md")));
+        assert!(!same_entry(&root.join("note.md"), &root.join("missing.md")));
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     #[test]

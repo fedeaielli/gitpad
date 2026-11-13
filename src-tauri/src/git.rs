@@ -125,11 +125,20 @@ fn open_err(e: git2::Error) -> GitError {
 }
 
 pub fn open_repo(path: &Path) -> Result<Repository, GitError> {
-    match std::fs::metadata(path.join(".git")) {
-        Ok(_) => Repository::open(path).map_err(open_err),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(GitError::not_found()),
-        Err(e) => Err(GitError::IoError(format!("{}: {e}", path.display()))),
+    let repo = match std::fs::metadata(path.join(".git")) {
+        Ok(_) => Repository::open(path).map_err(open_err)?,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Err(GitError::not_found()),
+        Err(e) => return Err(GitError::IoError(format!("{}: {e}", path.display()))),
+    };
+    // Windows rejects paths over MAX_PATH unless the repository asks for them.
+    // shortcut: best effort, a read-only config keeps the default.
+    match repo.config() {
+        Ok(mut config) if config.get_bool("core.longpaths").is_err() => {
+            let _ = config.set_bool("core.longpaths", true);
+        }
+        _ => {}
     }
+    Ok(repo)
 }
 
 fn git_err(e: git2::Error) -> GitError {
@@ -188,11 +197,17 @@ pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
     if let Some(path) = cached.as_ref().filter(|p| p.join(".git").exists()) {
         return Ok(path.clone());
     }
-    // A location picked by the user wins over scanning the default folder.
-    if let Some(path) = crate::config::configured_repo_path(app).filter(|p| p.join(".git").exists())
-    {
-        *cached = Some(path.clone());
-        return Ok(path);
+    // A location picked by the user wins over scanning the default folder, and a
+    // missing one is an error: falling back would save into an old clone.
+    if let Some(path) = crate::config::configured_repo_path(app).map(plain) {
+        if path.join(".git").exists() {
+            *cached = Some(path.clone());
+            return Ok(path);
+        }
+        return Err(GitError::Other(format!(
+            "the repository folder {} is gone; open another folder in Settings",
+            path.display()
+        )));
     }
     let root = repos_root(app)?;
     let mut dirs: Vec<PathBuf> = std::fs::read_dir(&root)
@@ -205,6 +220,19 @@ pub fn repo_dir(app: &AppHandle) -> Result<PathBuf, GitError> {
     let found = dirs.into_iter().next().ok_or_else(GitError::not_found)?;
     *cached = Some(found.clone());
     Ok(found)
+}
+
+/// Windows `canonicalize` returns `\\?\C:\...`: strip it so a folder picked
+/// again compares equal to the one already in the config and the UI.
+fn plain(path: PathBuf) -> PathBuf {
+    let raw = path.to_string_lossy();
+    if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+        PathBuf::from(format!(r"\\{rest}"))
+    } else if let Some(rest) = raw.strip_prefix(r"\\?\") {
+        PathBuf::from(rest)
+    } else {
+        path
+    }
 }
 
 /// Warm the clone path cache off the main thread; a missing repo is fine.
@@ -224,6 +252,10 @@ fn remember_repo(app: &AppHandle, path: PathBuf) {
     // A watch that fails to start is not fatal, the tree still refreshes on focus.
     if let Err(e) = crate::watcher::ensure(app, &path) {
         log::warn!(target: "app", "watcher: {e}");
+    }
+    // Also persisted, so the next start opens this repository and not an old one.
+    if let Err(e) = crate::config::store_repo_path(app, &path) {
+        log::warn!(target: "git", "could not save the new location: {e}");
     }
 }
 
@@ -1071,6 +1103,39 @@ fn fresh_clone_target(parent: &Path, name: &str, current: &Path) -> Result<PathB
     Ok(target)
 }
 
+/// Two URLs point at the same repository when they differ only by a trailing
+/// `.git` or slash.
+fn same_url(a: &str, b: &str) -> bool {
+    fn norm(url: &str) -> &str {
+        url.trim()
+            .trim_end_matches('/')
+            .trim_end_matches(".git")
+            .trim_end_matches('/')
+    }
+    norm(a) == norm(b)
+}
+
+/// A clone already at `target` is reused only when it points at the same URL:
+/// adopting a different repository would show the user someone else's notes.
+fn adopt_existing(target: &Path, url: &str) -> Result<Option<PathBuf>, GitError> {
+    if !target.join(".git").exists() {
+        return Ok(None);
+    }
+    let origin = open_repo(target)?
+        .find_remote("origin")
+        .ok()
+        .and_then(|remote| remote.url().map(str::to_owned))
+        .unwrap_or_default();
+    if !same_url(&origin, url) {
+        return Err(format!(
+            "a different repository is already cloned at {}; remove it first",
+            target.display()
+        )
+        .into());
+    }
+    Ok(Some(target.to_path_buf()))
+}
+
 #[tauri::command]
 pub async fn git_clone(
     app: AppHandle,
@@ -1082,9 +1147,9 @@ pub async fn git_clone(
         Some(parent) => clone_target(Path::new(parent), &name)?,
         None => default_clone_dir(&app)?.join(name),
     };
-    if target.join(".git").exists() {
-        remember_repo(&app, target.clone());
-        return Ok(target.to_string_lossy().into_owned());
+    if let Some(existing) = adopt_existing(&target, &url)? {
+        remember_repo(&app, existing.clone());
+        return Ok(existing.to_string_lossy().into_owned());
     }
     if let Ok(existing) = repo_dir(&app) {
         return Err(GitError::Other(format!(
@@ -1109,9 +1174,6 @@ pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Res
     clone_into(&app, &url, &target).await?;
     remember_repo(&app, target.clone());
     log::info!(target: "git", "repository: {} (imported)", target.display());
-    if let Err(e) = crate::config::store_repo_path(&app, &target) {
-        log::warn!(target: "git", "import: could not save the new location: {e}");
-    }
     Ok(MovedRepo {
         from,
         to: target.to_string_lossy().into_owned(),
@@ -1148,7 +1210,7 @@ fn use_local_repo(path: &Path) -> Result<(PathBuf, bool, bool), GitError> {
     }
     let repo = open_repo(&path)?;
     let remote = repo.find_remote("origin").is_ok();
-    Ok((path, initialized, remote))
+    Ok((plain(path), initialized, remote))
 }
 
 /// A folder the user picked, and what it turned out to be.
@@ -1200,9 +1262,6 @@ pub async fn git_use_local(app: AppHandle, path: String) -> Result<LocalRepo, Gi
         to.display(),
         if remote { "with origin" } else { "local only" }
     );
-    if let Err(e) = crate::config::store_repo_path(&app, &to) {
-        log::warn!(target: "git", "use_local: could not save the new location: {e}");
-    }
     Ok(LocalRepo {
         from,
         to: to.to_string_lossy().into_owned(),
@@ -1274,9 +1333,6 @@ pub async fn git_move_repo(app: AppHandle, parent: String) -> Result<MovedRepo, 
     .map_err(|e| format!("git task: {e}"))??;
     remember_repo(&app, to.clone());
     log::info!(target: "git", "repository: {} (moved from {})", to.display(), from.display());
-    if let Err(e) = crate::config::store_repo_path(&app, &to) {
-        log::warn!(target: "git", "move: could not save the new location: {e}");
-    }
     Ok(MovedRepo {
         from: from.to_string_lossy().into_owned(),
         to: to.to_string_lossy().into_owned(),
@@ -1748,6 +1804,41 @@ mod tests {
             home
         );
         assert_eq!(pick_clone_dir(None, None, fallback.clone()), fallback);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn plain_strips_the_windows_verbatim_prefix() {
+        assert_eq!(
+            plain(PathBuf::from(r"\\?\C:\notes")),
+            PathBuf::from(r"C:\notes")
+        );
+        assert_eq!(
+            plain(PathBuf::from(r"\\?\UNC\server\share")),
+            PathBuf::from(r"\\server\share")
+        );
+        assert_eq!(plain(PathBuf::from("/tmp/notes")), PathBuf::from("/tmp/notes"));
+    }
+
+    #[test]
+    fn adopt_existing_only_reuses_the_same_remote() {
+        let root = tmp("adopt");
+        let one = root.join("one.git");
+        let two = root.join("two.git");
+        Repository::init_bare(&one).unwrap();
+        Repository::init_bare(&two).unwrap();
+        let target = root.join("clone");
+        Repository::clone(one.to_str().unwrap(), &target).unwrap();
+        let one_url = one.to_str().unwrap();
+
+        assert_eq!(adopt_existing(&target, one_url).unwrap(), Some(target.clone()));
+        assert_eq!(
+            adopt_existing(&target, &format!("{one_url}.git")).unwrap(),
+            Some(target.clone())
+        );
+        let err = adopt_existing(&target, two.to_str().unwrap()).unwrap_err();
+        assert!(err.to_string().contains("different repository"), "unexpected: {err}");
+        assert!(adopt_existing(&root.join("missing"), one_url).unwrap().is_none());
         let _ = std::fs::remove_dir_all(&root);
     }
 
