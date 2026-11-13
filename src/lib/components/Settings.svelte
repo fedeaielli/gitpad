@@ -59,7 +59,8 @@
     '#d7ba7d', // amber
   ]
 
-  let tab = $state<Tab>('appearance')
+  // The dialog is mounted per opening, so the requested tab is read here.
+  let tab = $state<Tab>(ui.settingsTab)
   // The swatches sit on the panel surface, which differs per theme: re-read it when the theme changes.
   const accentWarning = $derived.by(() => {
     if (!ui.accent) return false

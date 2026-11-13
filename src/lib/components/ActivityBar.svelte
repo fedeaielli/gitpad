@@ -25,10 +25,17 @@
     if (refocus) account?.focus()
   }
 
+  // The avatar has two doors: the right click skips the menu for the settings tab.
+  function openAccountSettings() {
+    closeMenu()
+    ui.settingsTab = 'account'
+    ui.settingsOpen = true
+  }
+
   function toggleMenu() {
     // Signed out: the account form is the only thing worth showing.
     if (!user) {
-      ui.settingsOpen = true
+      openAccountSettings()
       return
     }
     if (menuOpen) {
@@ -156,6 +163,10 @@
     aria-haspopup={user ? 'menu' : undefined}
     aria-expanded={user ? menuOpen : undefined}
     onclick={toggleMenu}
+    oncontextmenu={(e) => {
+      e.preventDefault()
+      openAccountSettings()
+    }}
   >
     {#if user}
       <img src={user.avatarUrl} alt={user.login} />
@@ -188,7 +199,10 @@
     class="item settings"
     use:tip={'Settings'}
     aria-label="Settings"
-    onclick={() => (ui.settingsOpen = true)}
+    onclick={() => {
+      ui.settingsTab = 'appearance'
+      ui.settingsOpen = true
+    }}
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path
