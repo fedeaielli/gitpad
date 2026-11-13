@@ -16,6 +16,7 @@
   import LogsPane from './LogsPane.svelte'
   import { tabs, closeTab } from '../stores/tabs.svelte'
   import { flushPendingSave } from '../editor/bridge'
+  import { confirmDialog } from '../stores/confirm.svelte'
 
   type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'logs' | 'account' | 'about'
 
@@ -140,8 +141,18 @@
   }
 
   async function moveRepo() {
-    const picked = await open({ directory: true, multiple: false, title: 'Repository folder' })
+    const picked = await open({ directory: true, multiple: false, title: 'Move repository into' })
     if (typeof picked !== 'string' || !picked) return
+    const sep = ui.repoPath.includes('\\') ? '\\' : '/'
+    const name = ui.repoPath.split(/[\\/]/).filter(Boolean).pop() ?? ''
+    const final = picked.replace(/[\\/]+$/, '') + sep + name
+    const ok = await confirmDialog({
+      kind: 'warning',
+      title: 'Move repository',
+      message: `Move ${ui.repoPath} into ${picked}? It will end up at ${final}.`,
+      confirmLabel: 'Move',
+    })
+    if (!ok) return
     moving = true
     try {
       const moved = await invoke<{ from: string; to: string }>('git_move_repo', { parent: picked })
@@ -377,17 +388,28 @@
           <span>Repository folder</span>
           <div class="inline">
             <span class="hint path">{ui.repoPath || 'Default app folder'}</span>
-            <button type="button" class="change" disabled={moving} onclick={moveRepo}>
-              {moving ? 'Moving…' : 'Change…'}
+            <button
+              type="button"
+              class="change"
+              title="Use an existing folder; it is initialized when needed"
+              disabled={localBusy}
+              onclick={useLocalRepo}
+            >
+              {localBusy ? 'Opening…' : 'Change…'}
             </button>
           </div>
         </div>
         <div class="field">
-          <span>Open local folder</span>
+          <span>Move repository</span>
           <div class="inline">
-            <span class="hint">Use an existing folder; it is initialized when needed</span>
-            <button type="button" class="change" disabled={localBusy} onclick={useLocalRepo}>
-              {localBusy ? 'Opening…' : 'Use local…'}
+            <span class="hint">Moves the folder on disk to another location</span>
+            <button
+              type="button"
+              class="change"
+              disabled={moving || !ui.repoPath}
+              onclick={moveRepo}
+            >
+              {moving ? 'Moving…' : 'Move…'}
             </button>
           </div>
         </div>
