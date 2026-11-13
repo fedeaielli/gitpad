@@ -142,11 +142,15 @@ pub fn open_repo(path: &Path) -> Result<Repository, GitError> {
 }
 
 /// libgit2 has no error class for transport failures: match the text it gives.
+/// "failed to send request" is libgit2's own wording (English on every OS); the
+/// rest covers the platform messages seen on Linux and Windows.
 fn is_network_error(error: &GitError) -> bool {
     let text = error.to_string().to_ascii_lowercase();
     [
         "failed to connect",
+        "failed to send request",
         "connection refused",
+        "could not be established",
         "could not resolve",
         "network",
         "timed out",
@@ -2895,6 +2899,18 @@ mod tests {
 
         assert!(err.to_string().contains("worktree"), "unexpected: {err}");
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn network_errors_are_recognised_in_both_wordings() {
+        for text in [
+            "git: failed to connect to github.com port 443: Connection refused",
+            // What Windows reports through libgit2.
+            "git: failed to send request: A connection could not be established\r\n",
+        ] {
+            assert!(is_network_error(&GitError::Other(text.into())), "{text}");
+        }
+        assert!(!is_network_error(&GitError::Other("push rejected".into())));
     }
 
     #[test]

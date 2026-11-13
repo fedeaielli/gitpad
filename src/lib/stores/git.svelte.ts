@@ -91,9 +91,15 @@ export function isIgnorableSyncError(error: unknown) {
 /// A transport failure: the work is committed, only the sync is missing.
 export function isOfflineError(error: unknown) {
   const text = errorMessage(error).toLowerCase()
-  return ['failed to connect', 'connection refused', 'could not resolve', 'network', 'timed out'].some(
-    (needle) => text.includes(needle),
-  )
+  return [
+    'failed to connect',
+    'failed to send request',
+    'connection refused',
+    'could not be established',
+    'could not resolve',
+    'network',
+    'timed out',
+  ].some((needle) => text.includes(needle))
 }
 
 const SYNC_TIMEOUT_MS = 120_000
