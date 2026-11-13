@@ -1,5 +1,6 @@
 import { saveAllNow } from '../editor/bridge'
 import { gitStatus, syncNow } from '../stores/git.svelte'
+import { auth } from '../stores/auth.svelte'
 import { pushToast } from '../stores/toasts.svelte'
 import { syncOutcome } from './sync-feedback'
 
@@ -29,6 +30,11 @@ export async function saveAndSync() {
         error: null,
       })
       pushToast(out.message, out.kind)
+      return
+    }
+    // Without an account the commit is the whole sync: no push, no error.
+    if (auth.authState === 'unauthenticated') {
+      pushToast('Saved locally — sign in to GitHub to push', 'info')
       return
     }
     // Never `git_push` directly: the store guards conflicts, double syncs and timeouts.
