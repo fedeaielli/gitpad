@@ -41,6 +41,8 @@ keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 [target.'cfg(windows)'.dependencies]
 keyring = { version = "3", features = ["windows-native"] }
 winreg = "0.56"                # installed font families
+webview2-com = "0.39"          # WebView2 settings Tauri does not expose
+windows-core = "0.62"          # Interface::cast for ICoreWebView2Settings3
 
 [profile.release]
 lto = "thin"

@@ -296,6 +296,33 @@ async fn open_external(url: String) -> Result<(), String> {
     .map_err(|e| format!("open task: {e}"))?
 }
 
+/// WebView2 enables Edge's context menu and browser keys (F5 reload, Ctrl+P
+/// print, Ctrl+F find) by default and Tauri has no config switch for them.
+#[cfg(windows)]
+fn harden_webview(app: &tauri::AppHandle) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let result = window.with_webview(|webview| {
+        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+        use windows_core::Interface;
+
+        // The callback runs on the main thread, where the controller lives.
+        unsafe {
+            let Ok(settings) = webview.controller().Settings() else {
+                return;
+            };
+            let _ = settings.SetAreDefaultContextMenusEnabled(false);
+            if let Ok(settings3) = settings.cast::<ICoreWebView2Settings3>() {
+                let _ = settings3.SetAreBrowserAcceleratorKeysEnabled(false);
+            }
+        }
+    });
+    if let Err(e) = result {
+        log::warn!(target: "app", "webview settings: {e}");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Before anything reaches for the keyring.
@@ -373,6 +400,8 @@ pub fn run() {
                     }
                 });
             }
+            #[cfg(windows)]
+            harden_webview(&app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
