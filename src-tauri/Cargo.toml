@@ -24,7 +24,6 @@ tauri-plugin-single-instance = "2" # one window per repository
 tauri-plugin-opener = "2"       # open verification_uri in the browser
 tauri-plugin-dialog = "2"      # native picker for importing files/folders
 tauri-plugin-log = "2"         # file log, so a bug report can carry one
-keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 # default-features = false drops libssh2 (SSH is not used); `https` keeps HTTPS push.
 git2 = { version = "0.20", default-features = false, features = ["https"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
@@ -37,6 +36,10 @@ notify-debouncer-full = "0.7"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29", features = ["signal"] }
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
 
 [profile.release]
 lto = "thin"
