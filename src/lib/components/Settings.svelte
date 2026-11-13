@@ -85,6 +85,8 @@
   let updateState = $state<'idle' | 'checking' | 'current' | 'newer' | 'failed'>('idle')
   const latestVersion = $derived(update?.latest ?? '')
   const releaseUrl = $derived(update?.url ?? '')
+  // The changelog is prose here, not a code block: drop the Markdown heading markers.
+  const changelogText = $derived(changelog.replace(/^#{2,3} (.+)$/gm, '$1'))
 
   const extensions = $derived(
     Object.entries(ui.extensions).sort(([a], [b]) => a.localeCompare(b)),
@@ -511,20 +513,21 @@
         <div class="field">
           <span>Updates</span>
           <div class="inline">
-            <button disabled={updateState === 'checking'} onclick={checkForUpdates}>
+            <button class="change" disabled={updateState === 'checking'} onclick={checkForUpdates}>
               {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
             </button>
-            {#if updateState === 'current'}
-              <span class="note">You are on the latest version.</span>
-            {:else if updateState === 'newer'}
+            {#if updateState === 'newer'}
               <button class="primary" onclick={() => void openExternal(releaseUrl)}>
                 Get GitPad {latestVersion}
               </button>
-            {:else if updateState === 'failed'}
-              <span class="note">Could not reach GitHub. Try again later.</span>
             {/if}
           </div>
         </div>
+        {#if updateState === 'current'}
+          <p class="note" role="status">You are on the latest version.</p>
+        {:else if updateState === 'failed'}
+          <p class="note" role="status">Could not reach GitHub. Try again later.</p>
+        {/if}
         <div class="field">
           <span>Author</span>
           <div class="inline">
@@ -771,8 +774,8 @@
     border-radius: var(--r-md);
     background: var(--surface-1);
     color: var(--text);
-    font-family: ui-monospace, monospace;
     font-size: var(--fs-sm);
+    line-height: 1.55;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
