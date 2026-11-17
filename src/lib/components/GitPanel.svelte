@@ -23,6 +23,10 @@
 
   const blocked = $derived(gitStatus.syncing || gitStatus.conflicts.length > 0)
   const conflicted = $derived(new Set(gitStatus.conflicts.map((c) => c.path)))
+  // A huge import can produce tens of thousands of rows: past this the webview
+  // freezes, and the header count still shows the real total.
+  const MAX_ROWS = 200
+  const shownChanges = $derived(gitStatus.changes.slice(0, MAX_ROWS))
 
   async function commit() {
     if (!commitMessage.trim()) return
@@ -159,7 +163,7 @@
       <p class="none">No changes</p>
     {:else}
       <ul class="changes">
-        {#each gitStatus.changes as change (change.path)}
+        {#each shownChanges as change (change.path)}
           <li>
             <button
               class="change"
@@ -190,6 +194,9 @@
           </li>
         {/each}
       </ul>
+      {#if gitStatus.changes.length > shownChanges.length}
+        <p class="none">… and {gitStatus.changes.length - shownChanges.length} more</p>
+      {/if}
     {/if}
 
     <p class="meta">
