@@ -79,7 +79,9 @@
           aria-label="Dismiss notification"
           onclick={() => dismissToast(toast.id)}
         >
-          ×
+          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+            <path d="M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.3" />
+          </svg>
         </button>
       </div>
     {/each}
@@ -175,8 +177,6 @@
     height: 16px;
     padding: 0;
     color: var(--muted);
-    font-size: var(--fs-lg);
-    line-height: 1;
     opacity: 0.55;
     transition: opacity var(--t-fast);
   }
