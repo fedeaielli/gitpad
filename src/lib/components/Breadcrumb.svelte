@@ -41,10 +41,10 @@
     display: flex;
     flex: 0 0 auto;
     align-items: center;
-    gap: 4px;
+    gap: var(--sp-05);
     min-width: 0;
     overflow: hidden;
-    padding: 3px 10px;
+    padding: 3px var(--sp-25);
     background: var(--editor-surface);
     color: var(--muted);
     font-size: var(--fs-sm);
@@ -54,7 +54,7 @@
   .part {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--sp-05);
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

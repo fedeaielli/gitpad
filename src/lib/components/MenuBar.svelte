@@ -206,8 +206,8 @@
   .bar {
     display: flex;
     align-items: center;
-    gap: 2px;
-    margin-left: 10px;
+    gap: var(--sp-0);
+    margin-left: var(--sp-25);
   }
   /* Narrow windows: the centred search needs the room more than the menus do. */
   @media (max-width: 560px) {

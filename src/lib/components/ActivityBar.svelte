@@ -216,8 +216,8 @@
     flex: 0 0 var(--w-activitybar);
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 4px;
+    gap: var(--sp-0);
+    padding: var(--sp-05);
     /* Rounded by the wrapper that also holds the sidebar. */
     border-radius: 0;
     box-sizing: border-box;

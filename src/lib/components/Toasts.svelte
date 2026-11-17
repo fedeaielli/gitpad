@@ -59,7 +59,7 @@
     display: grid;
     grid-template-columns: 20px 1fr 22px;
     align-items: start;
-    gap: 10px;
+    gap: var(--sp-25);
     padding: 11px 12px 11px 14px;
     border: 1px solid var(--border);
     border-radius: var(--r-md);

@@ -413,9 +413,9 @@
     /* Inset by 4px a side: the hover/selected fill stops short of the panel
        edge, and margin + padding still add up to the old 8px label offset. */
     width: calc(100% - 8px);
-    margin: 0 4px;
+    margin: 0 var(--sp-05);
     min-height: 24px;
-    padding: 0 4px;
+    padding: 0 var(--sp-05);
     text-align: left;
     border-radius: var(--r-sm);
   }
@@ -449,7 +449,7 @@
   }
   .rename input {
     width: 100%;
-    padding: 1px 4px;
+    padding: 1px var(--sp-05);
   }
   .chevron {
     display: inline-flex;
@@ -484,7 +484,7 @@
     white-space: nowrap;
   }
   .hint {
-    margin: 4px 8px;
+    margin: var(--sp-05) 8px;
     color: var(--muted);
     font-size: var(--fs-xs);
   }
@@ -492,7 +492,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 6px 10px;
+    padding: 6px var(--sp-25);
   }
   .bone {
     height: 10px;
@@ -514,7 +514,7 @@
     position: fixed;
     z-index: 10;
     min-width: 160px;
-    padding: 4px;
+    padding: var(--sp-05);
     animation: gp-pop-in var(--t-fast) var(--ease-out);
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -536,7 +536,7 @@
     color: var(--err);
   }
   .menu p {
-    margin: 4px 8px;
+    margin: var(--sp-05) 8px;
     white-space: nowrap;
   }
 </style>

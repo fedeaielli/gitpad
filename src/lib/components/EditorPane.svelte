@@ -679,7 +679,7 @@
     right: 8px;
     bottom: 6px;
     z-index: 5;
-    padding: 0 4px;
+    padding: 0 var(--sp-05);
     border-radius: var(--r-sm);
     background: var(--surface-1);
     color: var(--muted);
@@ -696,7 +696,7 @@
     right: 8px;
     bottom: 8px;
     margin: 0;
-    padding: 4px 8px;
+    padding: var(--sp-05) 8px;
     border: 1px solid var(--err);
     border-radius: var(--r-sm);
     background: var(--surface-1);

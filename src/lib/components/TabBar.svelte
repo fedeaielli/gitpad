@@ -118,7 +118,7 @@
     /* No bottom border: the line under the strip is its own ::after, and the
        open tab paints over its slice. No bottom padding either, so the tabs
        hang flush onto the editor. */
-    padding: 4px var(--r-md) 0;
+    padding: var(--sp-05) var(--r-md) 0;
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     background: var(--tabstrip-bg);
   }
@@ -224,7 +224,7 @@
     flex: 1;
     gap: 6px;
     min-width: 0;
-    padding: 0 4px 0 10px;
+    padding: 0 var(--sp-05) 0 var(--sp-25);
     height: 100%;
   }
   .name {

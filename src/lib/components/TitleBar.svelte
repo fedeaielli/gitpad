@@ -105,8 +105,8 @@
     display: flex;
     flex: 0 0 var(--h-titlebar);
     align-items: center;
-    gap: 10px;
-    padding-left: 10px;
+    gap: var(--sp-25);
+    padding-left: var(--sp-25);
     background: var(--surface-base);
     user-select: none;
   }
@@ -146,7 +146,7 @@
   .nav {
     display: flex;
     flex: 0 0 auto;
-    gap: 2px;
+    gap: var(--sp-0);
   }
   .step {
     display: grid;

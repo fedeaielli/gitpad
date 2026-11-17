@@ -54,8 +54,12 @@
   --h-statusbar: 26px;
   --w-activitybar: 48px;
 
+  /* Half steps: tight chrome (rows, chips, icon buttons) needs 2, 4 and 10. */
+  --sp-0: 2px;
+  --sp-05: 4px;
   --sp-1: 6px;
   --sp-2: 8px;
+  --sp-25: 10px;
   --sp-3: 12px;
   --sp-4: 16px;
   --sp-6: 24px;

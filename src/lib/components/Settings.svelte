@@ -718,7 +718,7 @@
   }
   .tabs {
     display: flex;
-    gap: 2px;
+    gap: var(--sp-0);
     padding: var(--sp-1) var(--sp-2) 0;
     border-bottom: 1px solid var(--divider);
     background: var(--surface-1);
@@ -806,7 +806,7 @@
   .inline {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-25);
   }
   .inline input[type='number'] {
     width: 80px;
@@ -877,7 +877,7 @@
     width: 24px;
     height: 24px;
     /* Centred inside the 28 px row the other controls set. */
-    margin: 2px 0;
+    margin: var(--sp-0) 0;
     padding: 0;
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
@@ -923,7 +923,7 @@
   .extensions {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-0);
     margin: 0 0 14px;
     padding: 0;
     list-style: none;
@@ -932,8 +932,8 @@
   .extensions li {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 4px 8px;
+    gap: var(--sp-25);
+    padding: var(--sp-05) 8px;
     border-radius: var(--r-sm);
     background: var(--surface-0);
   }
@@ -966,7 +966,7 @@
   }
   .add button {
     flex: 0 0 auto;
-    padding: 4px 14px;
+    padding: var(--sp-05) 14px;
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
@@ -985,7 +985,7 @@
     border-radius: 50%;
   }
   .danger {
-    padding: 4px 12px;
+    padding: var(--sp-05) 12px;
     border: 1px solid var(--err);
     border-radius: var(--r-sm);
     color: var(--err);

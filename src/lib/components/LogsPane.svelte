@@ -250,7 +250,7 @@
   }
   .chips {
     display: flex;
-    gap: 4px;
+    gap: var(--sp-05);
   }
   .chip {
     padding: 3px 8px;
@@ -304,7 +304,7 @@
     top: 0;
     display: flex;
     gap: 8px;
-    padding: 4px 8px;
+    padding: var(--sp-05) 8px;
     border-bottom: 1px solid var(--border);
     background: var(--surface-2);
     color: var(--muted);

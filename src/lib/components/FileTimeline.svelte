@@ -525,7 +525,7 @@
   .commits {
     flex: 0 0 auto;
     margin: 0;
-    padding: 4px 0;
+    padding: var(--sp-05) 0;
     overflow: auto;
     border-radius: var(--r-lg);
     background: var(--surface-1);
@@ -562,7 +562,7 @@
     display: flex;
     align-items: center;
     gap: var(--sp-1);
-    padding-right: 4px;
+    padding-right: var(--sp-05);
   }
   .commit {
     position: relative;
@@ -582,12 +582,12 @@
   .entry {
     flex-direction: column;
     align-items: stretch;
-    gap: 2px;
+    gap: var(--sp-0);
   }
   .id {
     display: flex;
     align-items: baseline;
-    gap: 4px;
+    gap: var(--sp-05);
     width: fit-content;
     max-width: 100%;
     min-width: 0;
@@ -644,7 +644,7 @@
     flex: 0 0 auto;
     /* Desktop target, not touch: 32px is the smallest that still reads as one. */
     min-height: 32px;
-    padding: 0 10px;
+    padding: 0 var(--sp-25);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: transparent;

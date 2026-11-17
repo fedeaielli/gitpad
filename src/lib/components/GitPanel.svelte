@@ -231,7 +231,7 @@
   .acts {
     display: flex;
     flex: 0 0 auto;
-    gap: 2px;
+    gap: var(--sp-0);
   }
   .acts button {
     display: flex;
@@ -340,7 +340,7 @@
   .changes li {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: var(--sp-0);
     border-radius: var(--r-sm);
   }
   .changes li:hover {

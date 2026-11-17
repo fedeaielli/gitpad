@@ -361,7 +361,7 @@
   .card {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--sp-25);
     width: 420px;
     max-width: calc(100vw - 32px);
     padding: 20px;
@@ -461,7 +461,7 @@
     align-items: center;
     gap: 8px;
     margin: 0;
-    padding: 10px 12px;
+    padding: var(--sp-25) 12px;
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-1);
@@ -482,8 +482,8 @@
   .field {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 3px 3px 10px;
+    gap: var(--sp-05);
+    padding: 3px 3px 3px var(--sp-25);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-1);
@@ -511,7 +511,7 @@
     display: inline-flex;
     align-items: center;
     align-self: flex-start;
-    gap: 4px;
+    gap: var(--sp-05);
     text-decoration: none;
   }
   .link:hover {
@@ -551,7 +551,7 @@
   }
   .keys {
     display: flex;
-    gap: 4px;
+    gap: var(--sp-05);
   }
   kbd {
     padding: 3px 8px;
@@ -596,7 +596,7 @@
     gap: 8px;
     min-width: 0;
     margin: 0;
-    padding: 8px 10px;
+    padding: 8px var(--sp-25);
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     background: var(--surface-1);
@@ -654,7 +654,7 @@
   .divider {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-25);
     color: var(--muted);
     font-size: var(--fs-xs);
     text-transform: uppercase;
@@ -712,7 +712,7 @@
   }
   .skip {
     align-self: center;
-    padding: 2px 4px;
+    padding: var(--sp-0) var(--sp-05);
     border: 0;
     background: none;
     color: var(--muted);

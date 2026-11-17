@@ -266,7 +266,7 @@
 <style>
   .error {
     margin: 0;
-    padding: 4px 8px;
+    padding: var(--sp-05) 8px;
     color: var(--err);
     font-size: var(--fs-xs);
     overflow-wrap: anywhere;
@@ -281,7 +281,7 @@
   }
   .filter {
     margin: 0;
-    padding: 4px 8px;
+    padding: var(--sp-05) 8px;
     border-bottom: 1px solid var(--border);
     color: var(--muted);
     font-size: var(--fs-2xs);
@@ -299,7 +299,7 @@
     padding: 0;
   }
   .commits {
-    padding: 2px 0 8px;
+    padding: var(--sp-0) 0 8px;
   }
   .commit {
     margin: 5px 8px;
@@ -319,7 +319,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 7px 8px 4px;
+    padding: 7px 8px var(--sp-05);
     background: var(--surface-1);
     color: var(--muted);
     font-size: var(--fs-2xs);
@@ -333,7 +333,7 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-0);
     min-width: 0;
     padding: 6px 8px;
     border-color: transparent;
@@ -392,7 +392,7 @@
   .id {
     display: flex;
     align-items: baseline;
-    gap: 4px;
+    gap: var(--sp-05);
     min-width: 0;
   }
   .msg {
@@ -421,7 +421,7 @@
     white-space: nowrap;
   }
   .actions {
-    padding: 0 8px 4px;
+    padding: 0 8px var(--sp-05);
   }
   .actions button {
     min-height: 32px;
@@ -441,7 +441,7 @@
     opacity: 0.5;
   }
   .files {
-    padding-bottom: 4px;
+    padding-bottom: var(--sp-05);
   }
   .files li {
     display: flex;
@@ -476,7 +476,7 @@
   .files button {
     /* Desktop target, not touch: 32px is the smallest that still reads as one. */
     min-height: 32px;
-    padding: 0 10px;
+    padding: 0 var(--sp-25);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: transparent;

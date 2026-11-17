@@ -79,7 +79,7 @@
   .head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-25);
   }
   .icon {
     display: grid;
@@ -111,7 +111,7 @@
     font-weight: 600;
   }
   p {
-    margin: 10px 0 16px;
+    margin: var(--sp-25) 0 16px;
     color: var(--text);
     font-size: var(--fs-sm);
     line-height: 1.5;
@@ -123,7 +123,7 @@
     gap: 8px;
   }
   .actions button {
-    padding: 4px 12px;
+    padding: var(--sp-05) 12px;
     border: 1px solid var(--border-strong);
     background: transparent;
     color: var(--text);

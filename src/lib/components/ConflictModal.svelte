@@ -235,13 +235,13 @@
     display: flex;
     flex: 0 0 240px;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-0);
     overflow: auto;
     padding: 6px;
     border-right: 1px solid var(--border);
   }
   .file {
-    padding: 4px 8px;
+    padding: var(--sp-05) 8px;
     border-radius: var(--r-sm);
     overflow: hidden;
     text-align: left;
@@ -281,7 +281,7 @@
   }
   .actions button,
   .done button {
-    padding: 4px 10px;
+    padding: var(--sp-05) var(--sp-25);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-2);

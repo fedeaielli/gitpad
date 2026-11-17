@@ -190,7 +190,7 @@
     /* Same height as the tab bar so the two headers line up. */
     box-sizing: border-box;
     min-height: var(--h-tabbar);
-    padding: 0 10px;
+    padding: 0 var(--sp-25);
     color: var(--muted);
     font-size: var(--fs-xs);
     letter-spacing: 0.06em;
@@ -198,7 +198,7 @@
   }
   .actions {
     display: flex;
-    gap: 4px;
+    gap: var(--sp-05);
     margin-left: auto;
   }
   .actions button {

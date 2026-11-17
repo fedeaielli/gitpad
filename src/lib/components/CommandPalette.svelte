@@ -424,7 +424,7 @@
   }
   input {
     margin: 8px;
-    padding: 8px 10px;
+    padding: 8px var(--sp-25);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-2);
@@ -433,7 +433,7 @@
   }
   .searching {
     min-height: 18px;
-    margin: 0 16px 4px;
+    margin: 0 16px var(--sp-05);
     color: var(--muted);
     font-size: var(--fs-xs);
   }
@@ -444,7 +444,7 @@
   .item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-25);
     width: 100%;
     padding: 6px 8px;
     border-radius: var(--r-md);

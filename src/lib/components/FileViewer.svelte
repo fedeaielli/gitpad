@@ -297,7 +297,7 @@
   }
   .doc :global(th),
   .doc :global(td) {
-    padding: 4px 8px;
+    padding: var(--sp-05) 8px;
     border: 1px solid var(--border);
     text-align: left;
     vertical-align: top;
