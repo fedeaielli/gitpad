@@ -225,17 +225,27 @@
   }
 
   async function remove() {
-    if (!menu?.node) return
-    const path = menu.node.path
-    const label = menu.node.name
+    const node = menu?.node
+    if (!node || ui.deleting) return
+    const { path, name } = node
+    // Close the menu first: a big folder takes seconds, and a dialog that stays
+    // put reads as a dead click.
+    menu = null
+    ui.deleting = path
     try {
       await invoke('fs_delete', { path })
       discardUnder(path)
-      menu = null
       await loadTree()
     } catch (e) {
-      pushToast(`Could not delete ${label}: ${errorMessage(e)}`)
+      pushToast(`Could not delete ${name}: ${errorMessage(e)}`)
+    } finally {
+      ui.deleting = null
     }
+  }
+
+  /// The deleted row plus everything under it, so a folder dims as a whole.
+  function affected(path: string): boolean {
+    return ui.deleting !== null && (path === ui.deleting || path.startsWith(`${ui.deleting}/`))
   }
 </script>
 
@@ -268,6 +278,7 @@
           <button
             class="row"
             class:drop={dropTarget === node.path}
+            class:deleting={affected(node.path)}
             draggable="true"
             ondragstart={(e) => startDrag(e, node)}
             ondragend={endDrag}
@@ -304,6 +315,7 @@
           <button
             class="row"
             class:active={tabs.activeTabId === node.path}
+            class:deleting={affected(node.path)}
             draggable="true"
             ondragstart={(e) => startDrag(e, node)}
             ondragend={endDrag}
@@ -413,6 +425,11 @@
   .tree.root-drop {
     outline: 1px solid var(--accent);
     outline-offset: -1px;
+  }
+  /* The row is on its way out: dim it and stop clicks until the tree reloads. */
+  .row.deleting {
+    opacity: 0.45;
+    pointer-events: none;
   }
   .row.active {
     /* A raised surface marks the open file. No rail: the fill alone carries
