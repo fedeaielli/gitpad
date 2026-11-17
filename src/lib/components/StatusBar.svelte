@@ -37,8 +37,11 @@
 <footer class="statusbar">
   <span class="path">{active?.path ?? 'No file'}</span>
   <span class="spacer"></span>
-  {#if gitStatus.syncing}
-    <span class="spinner" aria-label="Syncing"></span>
+  {#if gitStatus.syncing || ui.importing}
+    <span class="spinner" aria-label={ui.importing ? 'Importing' : 'Syncing'}></span>
+  {/if}
+  {#if ui.importPct !== null}
+    <span class="pct">{ui.importPct}%</span>
   {/if}
   {#if badge === 'conflict'}
     <button class="badge conflict" use:tip={'Open merge conflicts'} onclick={() => (ui.conflictsHidden = false)}>
@@ -99,6 +102,10 @@
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+  }
+  .pct {
+    min-width: 3ch;
+    font-variant-numeric: tabular-nums;
   }
   @keyframes spin {
     to {
