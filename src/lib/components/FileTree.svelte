@@ -8,6 +8,7 @@
   import { pickAndImport } from '../utils/import'
   import FileIcon from './FileIcon.svelte'
   import { sortNodes, visibleNodes } from '../utils/file-sort'
+  import { canMoveInto, moveTarget } from '../utils/move'
   import { errorMessage, isNoRepoError } from '../stores/git.svelte'
   import { pushToast } from '../stores/toasts.svelte'
 
@@ -21,6 +22,9 @@
   let menu = $state<{ x: number; y: number; node: FileNode | null; mode: MenuMode } | null>(null)
   let renaming = $state<string | null>(null)
   let renameValue = $state('')
+  let dragPath = $state<string | null>(null)
+  /// Folder under the cursor: `''` is the repo root, `null` means no target.
+  let dropTarget = $state<string | null>(null)
 
   /// Creation runs through the palette, so the tree has one flow and not two.
   /// An optional base folder is written into the prompt as a path prefix.
@@ -95,6 +99,46 @@
     ui.expanded = ui.expanded.includes(path)
       ? ui.expanded.filter((p) => p !== path)
       : [...ui.expanded, path]
+  }
+
+  function startDrag(event: DragEvent, node: FileNode) {
+    // WebKitGTK only starts a drag when the transfer carries data.
+    event.dataTransfer?.setData('text/plain', node.path)
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+    dragPath = node.path
+  }
+
+  function endDrag() {
+    dragPath = null
+    dropTarget = null
+  }
+
+  function overFolder(event: DragEvent, folder: string) {
+    if (!dragPath || !canMoveInto(dragPath, folder)) return
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+    dropTarget = folder
+  }
+
+  /// Moving over a child row must not clear the folder's highlight.
+  function leaveFolder(event: DragEvent, folder: string) {
+    const to = event.relatedTarget as Node | null
+    if (to && (event.currentTarget as Node).contains(to)) return
+    if (dropTarget === folder) dropTarget = null
+  }
+
+  async function dropOn(event: DragEvent, folder: string) {
+    event.preventDefault()
+    event.stopPropagation()
+    const from = dragPath
+    endDrag()
+    if (!from || !canMoveInto(from, folder)) return
+    try {
+      await relocate(from, moveTarget(from, folder))
+    } catch (e) {
+      pushToast(`Move failed: ${errorMessage(e)}`)
+    }
   }
 
   function parentOf(path: string): string {
@@ -221,6 +265,13 @@
         {:else if node.type === 'dir'}
           <button
             class="row"
+            class:drop={dropTarget === node.path}
+            draggable="true"
+            ondragstart={(e) => startDrag(e, node)}
+            ondragend={endDrag}
+            ondragover={(e) => overFolder(e, node.path)}
+            ondragleave={(e) => leaveFolder(e, node.path)}
+            ondrop={(e) => void dropOn(e, node.path)}
             oncontextmenu={(e) => {
               e.stopPropagation()
               openMenu(e, node)
@@ -251,6 +302,9 @@
           <button
             class="row"
             class:active={tabs.activeTabId === node.path}
+            draggable="true"
+            ondragstart={(e) => startDrag(e, node)}
+            ondragend={endDrag}
             oncontextmenu={(e) => {
               e.stopPropagation()
               openMenu(e, node)
@@ -273,7 +327,16 @@
   </ul>
 {/snippet}
 
-<div class="tree" role="group" aria-label="Files" oncontextmenu={(e) => openMenu(e, null)}>
+<div
+  class="tree"
+  class:root-drop={dropTarget === ''}
+  role="group"
+  aria-label="Files"
+  oncontextmenu={(e) => openMenu(e, null)}
+  ondragover={(e) => overFolder(e, '')}
+  ondragleave={(e) => leaveFolder(e, '')}
+  ondrop={(e) => void dropOn(e, '')}
+>
   {#if loading}
     <div class="skeleton" aria-label="Loading files">
       {#each { length: 5 } as _, i (i)}
@@ -342,6 +405,12 @@
   }
   .row:hover {
     background: var(--surface-2);
+  }
+  /* Drop feedback: an inset ring, so no row shifts when it appears. */
+  .row.drop,
+  .tree.root-drop {
+    outline: 1px solid var(--accent);
+    outline-offset: -1px;
   }
   .row.active {
     /* A raised surface marks the open file. No rail: the fill alone carries
