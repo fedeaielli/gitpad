@@ -21,6 +21,7 @@
   import { confirmDialog, confirmState } from './lib/stores/confirm.svelte'
   import { tip } from './lib/utils/tooltip'
   import { saveAndSync } from './lib/utils/save-and-sync'
+  import { coalesceChanges } from './lib/utils/fs-changes'
   import { ui, cyclePreview, THEMES, KEYBINDINGS, type Keybinding } from './lib/stores/ui.svelte'
   import { tabs, closeTab } from './lib/stores/tabs.svelte'
   import { setCustomLanguages } from './lib/utils/langmap'
@@ -235,7 +236,7 @@
 
   /// Files changed on disk outside GitPad (another editor, the git CLI, a script).
   /// Clean tabs reload; dirty ones are marked stale, exactly like a pull.
-  async function onFsChanged(changes: FileChange[]) {
+  async function refreshAfterFsChange(changes: FileChange[]) {
     if (!booted || ui.quitting) return
     await reloadOpenTabs(changes)
     ui.treeVersion += 1
@@ -246,6 +247,9 @@
       else pushToast(errorMessage(e), 'error', 'git')
     }
   }
+
+  // A big import/delete arrives as hundreds of batches: one refresh, not one each.
+  const fsChanges = coalesceChanges(refreshAfterFsChange)
 
   /// In Vim/Emacs the editor keeps Ctrl+N and Ctrl+O while it has focus.
   function editorOwnsKey(): boolean {
@@ -420,7 +424,7 @@
     void listen<FileChange[]>('pull-changed', (e) => void reloadOpenTabs(e.payload)).then((fn) => {
       unlistens.push(fn)
     })
-    void listen<FileChange[]>('fs-changed', (e) => void onFsChanged(e.payload)).then((fn) => {
+    void listen<FileChange[]>('fs-changed', (e) => fsChanges.add(e.payload)).then((fn) => {
       unlistens.push(fn)
     })
     // Silent when offline or rate limited: only a real newer release shows.
