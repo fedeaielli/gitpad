@@ -457,10 +457,6 @@
     background: var(--accent);
     color: var(--on-accent);
   }
-  .item:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: -2px;
-  }
   .label {
     display: flex;
     flex: 1;

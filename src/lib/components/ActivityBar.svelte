@@ -240,10 +240,6 @@
   .item:hover {
     color: var(--text);
   }
-  .item:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: -2px;
-  }
   /* The view stays selected when the panel is closed; only the bar fades. */
   .item.active {
     background: var(--surface-2);

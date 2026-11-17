@@ -232,10 +232,6 @@
     background: var(--surface-2);
     color: var(--text);
   }
-  .trigger:focus-visible {
-    outline: 1px solid var(--accent);
-    outline-offset: -1px;
-  }
   .scrim {
     position: fixed;
     inset: 0;

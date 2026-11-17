@@ -490,7 +490,7 @@
   }
   .field:focus-within {
     outline: var(--focus-ring);
-    outline-offset: -1px;
+    outline-offset: -2px;
     border-color: var(--border-strong);
   }
   .field input:focus-visible,
