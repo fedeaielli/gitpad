@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fly } from 'svelte/transition'
+  import { fade, fly } from 'svelte/transition'
   import { flip } from 'svelte/animate'
   import { prefersReducedMotion } from 'svelte/motion'
   import {
@@ -44,49 +44,62 @@
   </svg>
 {/snippet}
 
-<div class="toasts" role="region" aria-label="Notifications">
-  {#each toasts.items as toast (toast.id)}
-    <div
-      class="toast {toast.kind}"
-      role={toast.kind === 'error' ? 'alert' : 'status'}
-      in:fly={{ y: 8, duration: prefersReducedMotion.current ? 0 : 140 }}
-      out:fly={{ y: 4, duration: prefersReducedMotion.current ? 0 : 100 }}
-      animate:flip={{ duration: prefersReducedMotion.current ? 0 : 150 }}
-      onmouseenter={() => pauseToast(toast.id)}
-      onmouseleave={() => resumeToast(toast.id)}
-      onfocusin={() => pauseToast(toast.id)}
-      onfocusout={() => resumeToast(toast.id)}
-    >
-      {@render kindIcon(toast.kind)}
-      <div class="body">
-        <span class="message">{toast.message}</span>
-        {#if toast.url}
-          <button class="action" onclick={() => follow(toast)}>
-            {toast.action ?? 'Open link'}
-          </button>
-        {/if}
-      </div>
-      <button
-        class="close"
-        aria-label="Dismiss notification"
-        onclick={() => dismissToast(toast.id)}
+{#if toasts.items.length > 0}
+  <!-- One tray, not one card per toast: stacked cards read as floating menus. -->
+  <div
+    class="tray"
+    role="region"
+    aria-label="Notifications"
+    in:fade={{ duration: prefersReducedMotion.current ? 0 : 120 }}
+    out:fade={{ duration: prefersReducedMotion.current ? 0 : 100 }}
+  >
+    {#each toasts.items as toast (toast.id)}
+      <div
+        class="toast {toast.kind}"
+        role={toast.kind === 'error' ? 'alert' : 'status'}
+        in:fly={{ y: 8, duration: prefersReducedMotion.current ? 0 : 140 }}
+        out:fly={{ y: 4, duration: prefersReducedMotion.current ? 0 : 100 }}
+        animate:flip={{ duration: prefersReducedMotion.current ? 0 : 150 }}
+        onmouseenter={() => pauseToast(toast.id)}
+        onmouseleave={() => resumeToast(toast.id)}
+        onfocusin={() => pauseToast(toast.id)}
+        onfocusout={() => resumeToast(toast.id)}
       >
-        ×
-      </button>
-    </div>
-  {/each}
-</div>
+        {@render kindIcon(toast.kind)}
+        <div class="body">
+          <span class="message">{toast.message}</span>
+          {#if toast.url}
+            <button class="action" onclick={() => follow(toast)}>
+              {toast.action ?? 'Open link'}
+            </button>
+          {/if}
+        </div>
+        <button
+          class="close"
+          aria-label="Dismiss notification"
+          onclick={() => dismissToast(toast.id)}
+        >
+          ×
+        </button>
+      </div>
+    {/each}
+  </div>
+{/if}
 
 <style>
-  .toasts {
+  .tray {
     position: fixed;
     right: var(--sp-3);
     bottom: calc(var(--h-statusbar) + var(--sp-4));
     z-index: 70;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-2);
     width: min(380px, calc(100vw - 24px));
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-2);
+    box-shadow: var(--shadow-2);
     pointer-events: none;
   }
   .toast {
@@ -95,15 +108,18 @@
     grid-template-columns: 16px 1fr 20px;
     align-items: start;
     gap: var(--sp-2);
-    padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
-    border: 1px solid var(--border);
-    border-radius: var(--r-sm);
-    background: var(--surface-2);
-    /* Severity as a left edge, not a floating badge: inset keeps the corners round. */
-    box-shadow:
-      inset 3px 0 0 var(--kind),
-      var(--shadow-1);
+    padding: var(--sp-25) var(--sp-3);
+    /* Severity as a left edge, not a badge: the tray keeps the outer shape. */
+    box-shadow: inset 2px 0 0 var(--kind);
     pointer-events: auto;
+  }
+  .toast + .toast {
+    border-top: 1px solid var(--divider);
+  }
+  .toast:hover {
+    /* Tints with the text colour, so it lifts in every theme (hc-black's
+       surface-3 is darker than its surface-2). */
+    background: color-mix(in srgb, var(--text) 6%, transparent);
   }
   .toast.error {
     --kind: var(--err);
@@ -151,15 +167,21 @@
     place-items: center;
     width: 20px;
     height: 20px;
-    /* Centred on the 16px first line, not on the card. */
+    /* Centred on the 16px first line, not on the row. */
     margin-top: -2px;
     padding: 0;
     color: var(--muted);
     font-size: var(--fs-lg);
     line-height: 1;
+    opacity: 0.55;
+    transition: opacity var(--t-fast);
+  }
+  .toast:hover .close,
+  .toast:focus-within .close {
+    opacity: 1;
   }
   .close:hover {
-    background: var(--surface-3);
+    background: color-mix(in srgb, var(--text) 12%, transparent);
     color: var(--text);
   }
 </style>
