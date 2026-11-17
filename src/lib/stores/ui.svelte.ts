@@ -45,6 +45,8 @@ export const ui = $state({
   importPct: null as number | null,
   /** True while a slow import is committing, after the copy finished. */
   importCommitting: false,
+  /** Path being deleted; null when nothing is in flight. */
+  deleting: null as string | null,
   /** Folder that holds the clone; empty means the app data dir. */
   repoPath: '',
   showHidden: false,
