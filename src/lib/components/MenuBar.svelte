@@ -246,7 +246,9 @@
     z-index: 51;
     min-width: 240px;
     padding: var(--sp-1);
-    animation: gp-pop-in var(--t-fast) var(--ease-out);
+    /* Grows out of the menu button it was clicked on, not from its centre. */
+    transform-origin: top left;
+    animation: gp-menu-in var(--t-fast) var(--ease-out);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-3);

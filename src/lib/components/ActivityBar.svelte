@@ -301,12 +301,14 @@
     flex-direction: column;
     min-width: 190px;
     padding: var(--sp-1);
-    animation: gp-pop-in var(--t-fast) var(--ease-out);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-3);
     box-shadow: var(--shadow-1);
     font-size: var(--fs-sm);
+    /* Same trick as the menu bar: it grows out of the avatar above it. */
+    transform-origin: bottom left;
+    animation: gp-menu-in var(--t-fast) var(--ease-out);
   }
   .menu-item {
     padding: var(--sp-1) var(--sp-2);
