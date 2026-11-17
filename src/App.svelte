@@ -427,6 +427,14 @@
     void listen<FileChange[]>('fs-changed', (e) => fsChanges.add(e.payload)).then((fn) => {
       unlistens.push(fn)
     })
+    void listen<{ done: number; total: number }>('import-progress', (e) => {
+      // A late event after the invoke resolved must not revive the counter.
+      if (!ui.importing || e.payload.total === 0) return
+      const { done, total } = e.payload
+      ui.importPct = Math.min(99, Math.round((done / total) * 100))
+    }).then((fn) => {
+      unlistens.push(fn)
+    })
     // Silent when offline or rate limited: only a real newer release shows.
     void checkUpdate()
       .then((u) => {

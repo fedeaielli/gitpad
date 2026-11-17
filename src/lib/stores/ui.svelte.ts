@@ -39,6 +39,10 @@ export const ui = $state({
   fileTree: [] as FileNode[],
   /** Bumped after clone/rename so the tree reloads without prop drilling. */
   treeVersion: 0,
+  /** True while an import copies files into the repo; drives the status spinner. */
+  importing: false,
+  /** Import percentage, null until the backend reports a slow copy. */
+  importPct: null as number | null,
   /** Folder that holds the clone; empty means the app data dir. */
   repoPath: '',
   showHidden: false,
