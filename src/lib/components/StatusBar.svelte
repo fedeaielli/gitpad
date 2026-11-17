@@ -37,17 +37,21 @@
 <footer class="statusbar">
   <span class="path">{active?.path ?? 'No file'}</span>
   <span class="spacer"></span>
-  {#if gitStatus.syncing || ui.importing}
+  {#if gitStatus.syncing || ui.importing || ui.deleting}
     <span
       class="spinner"
-      aria-label={ui.importCommitting
-        ? 'Committing import'
-        : ui.importing
-          ? 'Importing'
-          : 'Syncing'}
+      aria-label={ui.deleting
+        ? `Deleting ${ui.deleting}`
+        : ui.importCommitting
+          ? 'Committing import'
+          : ui.importing
+            ? 'Importing'
+            : 'Syncing'}
     ></span>
   {/if}
-  {#if ui.importCommitting}
+  {#if ui.deleting}
+    <span>deleting…</span>
+  {:else if ui.importCommitting}
     <span class="pct">committing…</span>
   {:else if ui.importPct !== null}
     <span class="pct">{ui.importPct}%</span>
