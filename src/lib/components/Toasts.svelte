@@ -79,7 +79,7 @@
           aria-label="Dismiss notification"
           onclick={() => dismissToast(toast.id)}
         >
-          <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
             <path d="M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.3" />
           </svg>
         </button>
@@ -112,7 +112,7 @@
     align-items: start;
     gap: var(--sp-2);
     /* Right gap reserves the close button's column, which is out of flow. */
-    padding: var(--sp-25) calc(var(--sp-3) + 20px) var(--sp-25) var(--sp-3);
+    padding: var(--sp-25) calc(var(--sp-3) + 24px) var(--sp-25) var(--sp-3);
     /* Severity as a left edge, not a badge: the tray keeps the outer shape. */
     box-shadow: inset 2px 0 0 var(--kind);
     pointer-events: auto;
@@ -167,14 +167,15 @@
     text-decoration: underline;
   }
   .close {
-    /* Absolute on the row's top edge: no container rule can re-centre it. */
+    /* Centred on the row's full height, clear of the text flow. */
     position: absolute;
-    top: var(--sp-25);
+    top: 50%;
     right: var(--sp-3);
+    translate: 0 -50%;
     display: grid;
     place-items: center;
-    width: 20px;
-    height: 16px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     color: var(--muted);
     opacity: 0.55;
@@ -183,6 +184,11 @@
   .toast:hover .close,
   .toast:focus-within .close {
     opacity: 1;
+  }
+  .close svg {
+    display: block;
+    width: 14px;
+    height: 14px;
   }
   .close:hover {
     background: color-mix(in srgb, var(--text) 12%, transparent);
