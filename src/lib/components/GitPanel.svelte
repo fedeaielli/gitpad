@@ -310,7 +310,7 @@
     cursor: pointer;
   }
   .commit:hover:not(:disabled) {
-    filter: brightness(1.1);
+    background: color-mix(in srgb, var(--accent) 88%, #fff);
   }
   .commit:disabled {
     cursor: default;
@@ -342,6 +342,9 @@
     align-items: center;
     gap: var(--sp-0);
     border-radius: var(--r-sm);
+    transition:
+      background var(--t-fast),
+      color var(--t-fast);
   }
   .changes li:hover {
     background: var(--surface-2);

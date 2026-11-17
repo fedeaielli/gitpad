@@ -169,6 +169,9 @@
     border: 1px solid transparent;
     border-radius: var(--r-md);
     color: var(--muted);
+    transition:
+      background var(--t-fast),
+      color var(--t-fast);
   }
   /* Hover is a lifted grey, never the surface the open tab shows. */
   .tab:not(.active):hover {

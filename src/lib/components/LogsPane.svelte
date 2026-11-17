@@ -321,6 +321,7 @@
     grid-template-columns: 62px 46px 52px 1fr;
     gap: 8px;
     padding: 1px 8px;
+    transition: background var(--t-fast);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
