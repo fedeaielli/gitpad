@@ -839,15 +839,36 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
-  .field button.change {
-    padding: var(--sp-1) var(--sp-2);
+  /* The house button: the 28 px row the inputs set, on the surface above the
+     panel so it reads as a control, not as text. */
+  .change,
+  .primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 28px;
+    padding: 0 var(--sp-3);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
-    background: var(--surface-0);
+    background: var(--surface-2);
     color: var(--text);
+    font-size: var(--fs-sm);
+    white-space: nowrap;
   }
-  .field button.change:hover:not(:disabled) {
-    border-color: var(--border-strong);
+  /* Same meaning as in the onboarding and conflict dialogs: the choice the
+     dialog recommends, coloured, not a second filled shape. */
+  .primary {
+    color: var(--ok);
+  }
+  .change:hover:not(:disabled),
+  .primary:hover:not(:disabled) {
+    background: var(--surface-3);
+  }
+  .change:disabled,
+  .primary:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
   .import {
     display: flex;
@@ -964,16 +985,6 @@
     flex: 0 0 160px;
     min-width: 0;
   }
-  .add button {
-    flex: 0 0 auto;
-    padding: var(--sp-05) 14px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-0);
-  }
-  .add button:hover {
-    border-color: var(--border-strong);
-  }
   .account {
     display: flex;
     align-items: center;
@@ -985,10 +996,18 @@
     border-radius: 50%;
   }
   .danger {
-    padding: var(--sp-05) var(--sp-3);
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 28px;
+    padding: 0 var(--sp-3);
     border: 1px solid var(--err);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-md);
     color: var(--err);
+    font-size: var(--fs-sm);
     justify-self: start;
+  }
+  .danger:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--err) 14%, transparent);
   }
 </style>
