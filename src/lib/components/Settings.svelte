@@ -332,72 +332,79 @@
 
     <div class="body">
       {#if tab === 'appearance'}
-        <label class="field">
-          <span>Theme</span>
-          <select bind:value={ui.editorTheme}>
-            {#each THEMES as theme (theme)}
-              <option value={theme}>{theme}</option>
-            {/each}
-          </select>
-        </label>
-        <div class="field">
-          <span>Accent color</span>
-          <div class="accent-picker">
-            {#each ACCENT_PRESETS as color (color)}
-              <button
-                type="button"
-                class="swatch"
-                class:active={ui.accent === color}
-                style="--swatch-color: {color}"
-                aria-label="Accent {color}"
-                aria-pressed={ui.accent === color}
-                onclick={() => (ui.accent = color)}
-              ></button>
-            {/each}
-            <input
-              type="text"
-              class="hex-input"
-              value={ui.accent}
-              placeholder="#0078d4"
-              aria-label="Accent hex value"
-              onchange={(e) => {
-                const v = e.currentTarget.value.trim()
-                if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) ui.accent = v
-              }}
-            />
-            {#if ui.accent}
-              <button type="button" class="reset-accent" onclick={() => (ui.accent = '')}>
-                Reset
-              </button>
-            {/if}
-            {#if accentWarning}
-              <span class="accent-warn">Low contrast with panel background</span>
-            {/if}
+        <section class="section">
+          <h3>Appearance</h3>
+          <label class="field">
+            <span>Theme</span>
+            <select bind:value={ui.editorTheme}>
+              {#each THEMES as theme (theme)}
+                <option value={theme}>{theme}</option>
+              {/each}
+            </select>
+          </label>
+          <div class="field">
+            <span>Accent color</span>
+            <div class="accent-picker">
+              {#each ACCENT_PRESETS as color (color)}
+                <button
+                  type="button"
+                  class="swatch"
+                  class:active={ui.accent === color}
+                  style="--swatch-color: {color}"
+                  aria-label="Accent {color}"
+                  aria-pressed={ui.accent === color}
+                  onclick={() => (ui.accent = color)}
+                ></button>
+              {/each}
+              <input
+                type="text"
+                class="hex-input"
+                value={ui.accent}
+                placeholder="#0078d4"
+                aria-label="Accent hex value"
+                onchange={(e) => {
+                  const v = e.currentTarget.value.trim()
+                  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) ui.accent = v
+                }}
+              />
+              {#if ui.accent}
+                <button type="button" class="reset-accent" onclick={() => (ui.accent = '')}>
+                  Reset
+                </button>
+              {/if}
+              {#if accentWarning}
+                <span class="accent-warn">Low contrast with panel background</span>
+              {/if}
+            </div>
           </div>
-        </div>
-        <label class="field">
-          <span>Font size</span>
-          <div class="inline">
-            <input
-              type="number"
-              min="8"
-              max="32"
-              value={ui.fontSize}
-              onchange={(e) =>
-                clamp(e.currentTarget.valueAsNumber, 8, 32, (n) => (ui.fontSize = n))}
-            />
-            <span class="hint">8–32 px</span>
-          </div>
-        </label>
-        <label class="field">
-          <span>Font family</span>
-          <select class="wide" bind:value={ui.fontFamily}>
-            <option value={DEFAULT_FONT}>Default (monospace)</option>
-            {#each fontOptions as font (font)}
-              <option value={font}>{font}</option>
-            {/each}
-          </select>
-        </label>
+        </section>
+
+        <section class="section">
+          <h3>Editor</h3>
+          <label class="field">
+            <span>Font size</span>
+            <div class="inline">
+              <input
+                type="number"
+                min="8"
+                max="32"
+                value={ui.fontSize}
+                onchange={(e) =>
+                  clamp(e.currentTarget.valueAsNumber, 8, 32, (n) => (ui.fontSize = n))}
+              />
+              <span class="hint">8–32 px</span>
+            </div>
+          </label>
+          <label class="field">
+            <span>Font family</span>
+            <select class="wide" bind:value={ui.fontFamily}>
+              <option value={DEFAULT_FONT}>Default (monospace)</option>
+              {#each fontOptions as font (font)}
+                <option value={font}>{font}</option>
+              {/each}
+            </select>
+          </label>
+        </section>
       {:else if tab === 'sync'}
         <section class="section">
           <h3>Automatic sync</h3>
@@ -511,147 +518,158 @@
           </div>
         </section>
       {:else if tab === 'editor'}
-        <label class="field">
-          <span>Keybindings</span>
-          <select bind:value={ui.keybindings}>
-            {#each KEYBINDINGS as mode (mode)}
-              <option value={mode}>{mode}</option>
-            {/each}
-          </select>
-        </label>
-        <p class="note">
-          {ui.keybindings === 'vscode'
-            ? 'Standard Monaco shortcuts.'
-            : `${ui.keybindings} keybindings are applied to the editor; Ctrl+P still opens the palette.`}
-        </p>
+        <section class="section">
+          <label class="field">
+            <span>Keybindings</span>
+            <select bind:value={ui.keybindings}>
+              {#each KEYBINDINGS as mode (mode)}
+                <option value={mode}>{mode}</option>
+              {/each}
+            </select>
+          </label>
+          <p class="note">
+            {ui.keybindings === 'vscode'
+              ? 'Standard Monaco shortcuts.'
+              : `${ui.keybindings} keybindings are applied to the editor; Ctrl+P still opens the palette.`}
+          </p>
+        </section>
       {:else if tab === 'extensions'}
-        <ul class="extensions">
-          {#each extensions as [ext, lang] (ext)}
-            <li>
-              <span class="ext">.{ext}</span>
-              <span class="lang">{lang}</span>
-              <button aria-label="Remove .{ext}" onclick={() => removeExtension(ext)}>×</button>
-            </li>
-          {/each}
-        </ul>
-        <div class="add">
-          <input
-            placeholder="ext"
-            aria-label="File extension"
-            bind:value={newExt}
-            onkeydown={(e) => {
-              if (e.key === 'Enter') addExtension()
-            }}
-          />
-          <select bind:value={newLang} aria-label="Language for the extension">
-            {#each LANGUAGES as lang (lang)}
-              <option value={lang}>{lang}</option>
+        <section class="section">
+          <h3>File types</h3>
+          <ul class="extensions">
+            {#each extensions as [ext, lang] (ext)}
+              <li>
+                <span class="ext">.{ext}</span>
+                <span class="lang">{lang}</span>
+                <button aria-label="Remove .{ext}" onclick={() => removeExtension(ext)}>×</button>
+              </li>
             {/each}
-          </select>
-          <button class="primary" onclick={addExtension}>Add</button>
-        </div>
-        {#if extMessage}
-          <p class="note" role="status">{extMessage}</p>
-        {/if}
+          </ul>
+          <div class="add">
+            <input
+              placeholder="ext"
+              aria-label="File extension"
+              bind:value={newExt}
+              onkeydown={(e) => {
+                if (e.key === 'Enter') addExtension()
+              }}
+            />
+            <select bind:value={newLang} aria-label="Language for the extension">
+              {#each LANGUAGES as lang (lang)}
+                <option value={lang}>{lang}</option>
+              {/each}
+            </select>
+            <button class="primary" onclick={addExtension}>Add</button>
+          </div>
+          {#if extMessage}
+            <p class="note" role="status">{extMessage}</p>
+          {/if}
+        </section>
       {:else if tab === 'logs'}
-        <LogsPane />
+        <section class="section wide">
+          <LogsPane />
+        </section>
       {:else if tab === 'about'}
-        <div class="field">
-          <span>Version</span>
-          <span>{aboutVersion ? `GitPad ${aboutVersion}` : 'GitPad'}</span>
-        </div>
-        <div class="field">
-          <span>Updates</span>
-          <div class="inline">
-            <button class="change" disabled={updateState === 'checking'} onclick={checkForUpdates}>
-              {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
-            </button>
-            {#if updateState === 'newer'}
-              <button class="primary" onclick={() => void openExternal(releaseUrl)}>
-                Get GitPad {latestVersion}
-              </button>
-            {/if}
-          </div>
-        </div>
-        {#if updateState === 'current'}
-          <p class="note" role="status">You are on the latest version.</p>
-        {:else if updateState === 'failed'}
-          <p class="note" role="status">Could not reach GitHub. Try again later.</p>
-        {/if}
-        <div class="field">
-          <span>Author</span>
-          <div class="inline">
-            <button class="change" onclick={() => void openExternal('https://github.com/fedeaielli')}>
-              @fedeaielli
-            </button>
-            <button
-              class="change"
-              onclick={() => void openExternal('https://github.com/fedeaielli/gitpad')}
-            >
-              Source
-            </button>
-            <button
-              class="change"
-              onclick={() => void openExternal('https://github.com/fedeaielli/gitpad/releases')}
-            >
-              Releases
-            </button>
-          </div>
-        </div>
-        {#if changelog}
-          <pre class="changelog" aria-label="Changelog for this version">{changelog}</pre>
-        {/if}
-      {:else}
-        {#if user}
+        <section class="section">
           <div class="field">
-            <span>Signed in</span>
-            <div class="account">
-              <img src={user.avatarUrl} alt="" />
-              <span>{user.login}</span>
+            <span>Version</span>
+            <span>{aboutVersion ? `GitPad ${aboutVersion}` : 'GitPad'}</span>
+          </div>
+          <div class="field">
+            <span>Updates</span>
+            <div class="inline">
+              <button class="change" disabled={updateState === 'checking'} onclick={checkForUpdates}>
+                {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
+              </button>
+              {#if updateState === 'newer'}
+                <button class="primary" onclick={() => void openExternal(releaseUrl)}>
+                  Get GitPad {latestVersion}
+                </button>
+              {/if}
             </div>
           </div>
-          {#if gitStatus.configured && !gitStatus.hasRemote}
+          {#if updateState === 'current'}
+            <p class="note" role="status">You are on the latest version.</p>
+          {:else if updateState === 'failed'}
+            <p class="note" role="status">Could not reach GitHub. Try again later.</p>
+          {/if}
+          <div class="field">
+            <span>Author</span>
+            <div class="inline">
+              <button class="change" onclick={() => void openExternal('https://github.com/fedeaielli')}>
+                @fedeaielli
+              </button>
+              <button
+                class="change"
+                onclick={() => void openExternal('https://github.com/fedeaielli/gitpad')}
+              >
+                Source
+              </button>
+              <button
+                class="change"
+                onclick={() => void openExternal('https://github.com/fedeaielli/gitpad/releases')}
+              >
+                Releases
+              </button>
+            </div>
+          </div>
+          {#if changelog}
+            <pre class="changelog" aria-label="Changelog for this version">{changelog}</pre>
+          {/if}
+        </section>
+      {:else}
+        <section class="section">
+          {#if user}
             <div class="field">
-              <span>GitHub repository</span>
+              <span>Signed in</span>
+              <div class="account">
+                <img src={user.avatarUrl} alt="" />
+                <span>{user.login}</span>
+              </div>
+            </div>
+            {#if gitStatus.configured && !gitStatus.hasRemote}
+              <div class="field">
+                <span>GitHub repository</span>
+                <div class="inline">
+                  <span class="hint">Local only — commits stay on this machine</span>
+                  <button class="change" disabled={connecting} onclick={attachToGithub}>
+                    {connecting ? 'Connecting…' : 'Connect'}
+                  </button>
+                </div>
+              </div>
+            {/if}
+            <div class="field">
+              <span></span>
+              <button class="danger" onclick={logout}>Logout</button>
+            </div>
+          {:else}
+            <div class="field">
+              <span>GitHub login</span>
+              <GithubLogin onsuccess={refreshUser} />
+            </div>
+            <p class="note">Or paste a personal access token (scope: repo).</p>
+            <div class="field">
+              <span>Personal access token</span>
               <div class="inline">
-                <span class="hint">Local only — commits stay on this machine</span>
-                <button class="change" disabled={connecting} onclick={attachToGithub}>
-                  {connecting ? 'Connecting…' : 'Connect'}
+                <input
+                  type="password"
+                  placeholder="ghp_…"
+                  aria-label="Personal access token"
+                  aria-invalid={!!accountError}
+                  aria-describedby={accountError ? 'pat-account-error' : undefined}
+                  bind:value={pat}
+                  onkeydown={(e) => e.key === 'Enter' && signIn()}
+                />
+                <button class="primary" disabled={!pat.trim() || signingIn} onclick={signIn}>
+                  {signingIn ? 'Signing in…' : 'Sign in'}
                 </button>
               </div>
             </div>
+            {#if accountError}
+              <p class="note" id="pat-account-error" role="alert">{accountError}</p>
+            {/if}
           {/if}
-          <div class="field">
-            <span></span>
-            <button class="danger" onclick={logout}>Logout</button>
-          </div>
-        {:else}
-          <div class="field">
-            <span>GitHub login</span>
-            <GithubLogin onsuccess={refreshUser} />
-          </div>
-          <p class="note">Or paste a personal access token (scope: repo).</p>
-          <div class="field">
-            <span>Personal access token</span>
-            <div class="inline">
-              <input
-                type="password"
-                placeholder="ghp_…"
-                aria-label="Personal access token"
-                aria-invalid={!!accountError}
-                aria-describedby={accountError ? 'pat-account-error' : undefined}
-                bind:value={pat}
-                onkeydown={(e) => e.key === 'Enter' && signIn()}
-              />
-              <button class="primary" disabled={!pat.trim() || signingIn} onclick={signIn}>
-                {signingIn ? 'Signing in…' : 'Sign in'}
-              </button>
-            </div>
-          </div>
-          {#if accountError}
-            <p class="note" id="pat-account-error" role="alert">{accountError}</p>
-          {/if}
-        {/if}
+        </section>
       {/if}
     </div>
   </div>
@@ -762,11 +780,12 @@
     flex-direction: column;
     gap: var(--sp-4);
     overflow-y: auto;
-    padding: var(--sp-6) var(--sp-4) var(--sp-4);
+    padding: var(--sp-4) var(--sp-4) var(--sp-6);
     background: var(--surface-0);
   }
   .field {
-    display: flex;
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
     align-items: center;
     gap: var(--sp-4);
   }
@@ -780,9 +799,9 @@
     max-width: 560px;
     margin-inline: auto;
   }
-  /* Anchored high in the panel: a little air under the tabs, no centring. */
-  .section:first-child {
-    margin-top: var(--sp-4);
+  /* The log needs a wider column than a settings row. */
+  .section.wide {
+    max-width: 720px;
   }
   .section > h3 {
     margin: 0;
@@ -810,7 +829,6 @@
     accent-color: var(--accent);
   }
   .field > span:first-child {
-    min-width: 120px;
     color: var(--muted);
   }
   /* One control width: the value it sets, not the whole dialog. */
@@ -819,7 +837,7 @@
   .field input[type='number'],
   .field .inline,
   .field button.change {
-    max-width: 280px;
+    max-width: 340px;
   }
   /* One shape for every control in the dialog: same height, same radius. */
   .modal select,
@@ -843,6 +861,7 @@
   }
   .inline {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--sp-25);
   }
@@ -855,7 +874,7 @@
   }
   .wide {
     width: 100%;
-    max-width: 280px;
+    max-width: 340px;
   }
   .hint,
   .note {
@@ -1032,7 +1051,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-0);
-    margin: 0 0 14px;
+    margin: 0;
     padding: 0;
     list-style: none;
     font-size: var(--fs-sm);
@@ -1062,7 +1081,6 @@
   .add {
     display: flex;
     gap: var(--sp-2);
-    max-width: 560px;
   }
   .add input {
     flex: 1;
