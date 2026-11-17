@@ -25,6 +25,8 @@ pub struct FileEntry {
 struct ImportProgress {
     done: usize,
     total: usize,
+    /// "copy" carries a percentage; "commit" has no byte progress to report.
+    phase: &'static str,
 }
 
 /// Names Windows rejects or silently rewrites: reserved devices, a trailing dot
@@ -767,7 +769,14 @@ fn import_locked(
         // shortcut: progress counts files, not bytes; a single huge file only
         // moves it when it finishes. Use bytes if that ever feels wrong.
         if let Some(app) = app {
-            let _ = app.emit("import-progress", ImportProgress { done, total });
+            let _ = app.emit(
+                "import-progress",
+                ImportProgress {
+                    done,
+                    total,
+                    phase: "copy",
+                },
+            );
         }
     })?;
     let rel = dest_rel.join(name);
@@ -777,6 +786,19 @@ fn import_locked(
         rel.display(),
         copy_started.elapsed()
     );
+    // Staging 19 GB can take minutes: label the phase instead of a frozen 99%.
+    if copied > 0 && started.elapsed() >= Duration::from_secs(2) {
+        if let Some(app) = app {
+            let _ = app.emit(
+                "import-progress",
+                ImportProgress {
+                    done: copied,
+                    total: copied,
+                    phase: "commit",
+                },
+            );
+        }
+    }
     // The copy already happened: a failed commit is retried by the next push.
     let commit_started = Instant::now();
     match git::commit_all(root, &format!("gitpad: import {}", rel.display())) {

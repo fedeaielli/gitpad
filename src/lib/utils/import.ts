@@ -20,6 +20,7 @@ export async function importSource(source: string, base: string | null): Promise
   } finally {
     ui.importing = false
     ui.importPct = null
+    ui.importCommitting = false
   }
 }
 

@@ -38,9 +38,18 @@
   <span class="path">{active?.path ?? 'No file'}</span>
   <span class="spacer"></span>
   {#if gitStatus.syncing || ui.importing}
-    <span class="spinner" aria-label={ui.importing ? 'Importing' : 'Syncing'}></span>
+    <span
+      class="spinner"
+      aria-label={ui.importCommitting
+        ? 'Committing import'
+        : ui.importing
+          ? 'Importing'
+          : 'Syncing'}
+    ></span>
   {/if}
-  {#if ui.importPct !== null}
+  {#if ui.importCommitting}
+    <span class="pct">committing…</span>
+  {:else if ui.importPct !== null}
     <span class="pct">{ui.importPct}%</span>
   {/if}
   {#if badge === 'conflict'}
@@ -105,6 +114,7 @@
   }
   .pct {
     min-width: 3ch;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
   @keyframes spin {

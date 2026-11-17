@@ -43,6 +43,8 @@ export const ui = $state({
   importing: false,
   /** Import percentage, null until the backend reports a slow copy. */
   importPct: null as number | null,
+  /** True while a slow import is committing, after the copy finished. */
+  importCommitting: false,
   /** Folder that holds the clone; empty means the app data dir. */
   repoPath: '',
   showHidden: false,
