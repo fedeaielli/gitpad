@@ -650,12 +650,12 @@ fn count_files(dir: &Path, skip_git: bool) -> Result<usize, String> {
     Ok(total)
 }
 
-/// Copies `src` into `dest_dir` and returns the name it got there.
+/// Copies `src` into `dest_dir`; returns the name it got there and the file count.
 fn import_into(
     src: &Path,
     dest_dir: &Path,
     on_progress: &mut dyn FnMut(usize, usize),
-) -> Result<PathBuf, String> {
+) -> Result<(PathBuf, usize), String> {
     let meta =
         std::fs::symlink_metadata(src).map_err(|e| format!("import {}: {e}", src.display()))?;
     if meta.file_type().is_symlink() {
@@ -682,8 +682,10 @@ fn import_into(
         .to_string_lossy()
         .to_string();
     let target = unique_path(&dest, &name);
+    let copied;
     if meta.is_dir() {
         let total = count_files(&src, true)?;
+        copied = total;
         let mut done = 0;
         let mut on_file = || {
             done += 1;
@@ -699,11 +701,12 @@ fn import_into(
             let _ = std::fs::remove_file(&target);
             return Err(format!("import {}: {e}", src.display()));
         }
+        copied = 1;
         on_progress(1, 1);
     } else {
         return Err(format!("unsupported file type: {}", src.display()));
     }
-    Ok(PathBuf::from(target.file_name().unwrap_or_default()))
+    Ok((PathBuf::from(target.file_name().unwrap_or_default()), copied))
 }
 
 /// Native picker hands us a path outside the repo; the copy itself lands inside.
@@ -728,7 +731,13 @@ pub async fn fs_import(
     .await
     .map_err(|e| e.to_string())??;
     let app_status = app.clone();
+    let status_started = Instant::now();
     let _ = tokio::task::spawn_blocking(move || git::emit_current_status(&app_status)).await;
+    log::info!(
+        target: "editor",
+        "import status done in {:?}",
+        status_started.elapsed()
+    );
     Ok(rel_path(&rel))
 }
 
@@ -746,7 +755,8 @@ fn import_locked(
     let started = Instant::now();
     let mut last_emit = Instant::now();
     // The count walk is already part of the import: start timing from here.
-    let name = import_into(src, &root.join(dest_rel), &mut |done, total| {
+    let copy_started = Instant::now();
+    let (name, copied) = import_into(src, &root.join(dest_rel), &mut |done, total| {
         // A quick import gets a toast, not a counter that flashes for 0.2 s.
         if started.elapsed() < Duration::from_secs(2)
             || last_emit.elapsed() < Duration::from_millis(150)
@@ -761,10 +771,25 @@ fn import_locked(
         }
     })?;
     let rel = dest_rel.join(name);
-    log::info!(target: "editor", "import: {}", rel.display());
+    log::info!(
+        target: "editor",
+        "import copy done: {} ({copied} files) in {:?}",
+        rel.display(),
+        copy_started.elapsed()
+    );
     // The copy already happened: a failed commit is retried by the next push.
-    if let Err(e) = git::commit_all(root, &format!("gitpad: import {}", rel.display())) {
-        log::warn!(target: "editor", "commit after import failed: {e}");
+    let commit_started = Instant::now();
+    match git::commit_all(root, &format!("gitpad: import {}", rel.display())) {
+        Ok(()) => log::info!(
+            target: "editor",
+            "import commit done in {:?}",
+            commit_started.elapsed()
+        ),
+        Err(e) => log::warn!(
+            target: "editor",
+            "import commit failed after {:?}: {e}",
+            commit_started.elapsed()
+        ),
     }
     Ok(rel)
 }
@@ -1008,11 +1033,12 @@ mod tests {
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(src.join("a.md"), "one").unwrap();
 
-        let name = import_into(&src.join("a.md"), &root, &mut |_, _| {}).unwrap();
+        let (name, copied) = import_into(&src.join("a.md"), &root, &mut |_, _| {}).unwrap();
         assert_eq!(name, PathBuf::from("a.md"));
+        assert_eq!(copied, 1);
         assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");
 
-        let name = import_into(&src.join("a.md"), &root, &mut |_, _| {}).unwrap();
+        let (name, _) = import_into(&src.join("a.md"), &root, &mut |_, _| {}).unwrap();
         assert_eq!(name, PathBuf::from("a (1).md"));
         assert_eq!(std::fs::read_to_string(root.join("a (1).md")).unwrap(), "one");
 
@@ -1033,11 +1059,13 @@ mod tests {
         std::fs::write(src.join(".git/config"), "x").unwrap();
 
         let mut seen = Vec::new();
-        let name = import_into(&base.join("src/notes"), &root.join("target"), &mut |done, total| {
-            seen.push((done, total))
-        })
-        .unwrap();
+        let (name, copied) =
+            import_into(&base.join("src/notes"), &root.join("target"), &mut |done, total| {
+                seen.push((done, total))
+            })
+            .unwrap();
         assert_eq!(name, PathBuf::from("notes"));
+        assert_eq!(copied, 2);
         // keep.md and sub/nested.md; .git is skipped, like the copy does.
         assert_eq!(seen.last(), Some(&(2, 2)));
         assert_eq!(
