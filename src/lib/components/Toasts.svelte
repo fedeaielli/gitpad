@@ -67,6 +67,9 @@
       >
         {@render kindIcon(toast.kind)}
         <div class="body">
+          {#if toast.title}
+            <span class="title">{toast.title}</span>
+          {/if}
           <span class="message">{toast.message}</span>
           {#if toast.url}
             <button class="action" onclick={() => follow(toast)}>
@@ -143,7 +146,16 @@
     display: flex;
     min-width: 0;
     flex-direction: column;
-    gap: var(--sp-0);
+    gap: var(--sp-05);
+  }
+  .title {
+    color: var(--text);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .title + .message {
+    color: var(--muted);
   }
   .message {
     color: var(--text);

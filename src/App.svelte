@@ -454,7 +454,11 @@
     // Silent when offline or rate limited: only a real newer release shows.
     void checkUpdate()
       .then((u) => {
-        if (u.newer) pushToast(`GitPad ${u.latest} is available`, 'info', 'app', u.url, 'View release')
+        if (u.newer)
+          pushToast(`GitPad ${u.latest} is available`, 'info', 'app', {
+            url: u.url,
+            action: 'View release',
+          })
       })
       .catch(() => {})
     void listen('app-closing', async () => {
@@ -502,11 +506,9 @@
     void invoke<boolean>('auth_keyring_ok')
       .then((ok) => {
         if (!ok) {
-          pushToast(
-            'Keyring unavailable: the GitHub token is kept in a protected file.',
-            'warning',
-            'app',
-          )
+          pushToast('The GitHub token is kept in a protected file.', 'warning', 'app', {
+            title: 'Keyring unavailable',
+          })
         }
       })
       .catch(() => {})
