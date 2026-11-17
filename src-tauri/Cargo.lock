@@ -1472,7 +1472,7 @@ dependencies = [
 
 [[package]]
 name = "gitpad"
-version = "1.4.1"
+version = "1.5.0"
 dependencies = [
  "git2",
  "ignore",

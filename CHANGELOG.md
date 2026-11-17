@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.5.0 — 2026-11-17
+
+### Added
+- Drag a file or folder onto another folder in the file tree to move it, and
+  drop it on the list background to move it back to the root. A folder cannot
+  be dropped into itself or one of its own subfolders, and dropping it where it
+  already lives does nothing.
+- Import progress in the status bar: a percentage while a slow import copies,
+  then a committing phase when staging takes long enough to need one. Files
+  over 100 MB are copied but added to `.gitignore`, and a toast says how many
+  stayed local.
+- A local-only repository can be connected to GitHub from
+  *Settings → Sync → GitHub repository → Connect*: GitPad attaches `origin` and
+  pushes the existing history instead of cloning the repository again.
+- Toasts can carry a title. Errors, and toasts with an action, wait for the
+  user instead of disappearing on a timer, and the countdown pauses while the
+  pointer or focus rests on the toast.
+
+### Changed
+- Settings is one centred column, with the Sync tab grouped into two named
+  sections over a single repository card and one type scale and button shape
+  across every tab.
+- The interface runs on one spacing scale, one hover treatment and one focus
+  ring. Menus grow from the control that opened them, overlays fade out the way
+  they came in, splitters rubber-band at their limits, and notifications stack
+  in one tray instead of three floating cards.
+
+### Fixed
+- GitPad's own autosave is no longer reported as an external change: a save that
+  overlaps the filesystem watch keeps the tab open and autosave running.
+- Cloning or importing a repository from a URL alone no longer needs a folder:
+  the default clone folder is used, and a failing folder picker reports itself.
+- A repository without an `origin` remote is reported as local-only instead of
+  as a sync error.
+- Deleting from the file tree closes the menu at once, dims the rows being
+  removed and shows a spinner with the path in the status bar.
+- The source-control panel caps rendered change rows, and filesystem-change
+  events are coalesced into one scan instead of one scan per event.
+
+### Build
+- The Arch package builds from the release tag, so there is no archive checksum
+  to update for each release, and `options=('!lto')` keeps makepkg's `-flto`
+  from breaking ring's prebuilt assembly.
+
 ## 1.4.1 — 2026-11-13
 
 ### Fixed

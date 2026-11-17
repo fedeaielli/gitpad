@@ -33,7 +33,7 @@ Built with **Tauri 2**, **Rust**, **Svelte 5**, and **Monaco**. Built for Arch L
 2. **Choose a repository.** GitPad uses a private repository named `gitpad_notes` by default (the wizard lets you change the name), creates it if it does not exist, and clones it next to your documents (`~/Documents/gitpad_notes`). The wizard shows the path and lets you pick another folder.
 3. **Start writing.** With auto-sync on (the default), files are committed and pushed automatically.
 
-No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Repository folder → Change…*. GitPad opens an existing repository, or the repository above the folder you picked; a plain folder is initialized in place, and a repository without an `origin` remote commits locally and skips sync until you add one.
+No GitHub? **Use a local folder** from the first screen, or later from *Settings → Sync → Repository folder → Change…*. GitPad opens an existing repository, or the repository above the folder you picked; a plain folder is initialized in place, and a repository without an `origin` remote commits locally and skips sync. After signing in, *Settings → Sync → GitHub repository → Connect* attaches `origin` and pushes the existing history.
 
 ---
 
@@ -73,7 +73,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 
 ### Navigation
 
-- **File tree.** Create, rename, delete, move (drag an entry onto a folder), import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`. Folders are sorted by name, date, or type, and the choice is remembered.
+- **File tree.** Create, rename, delete, move (drag an entry onto a folder), import files or folders, and jump between notes. Slow imports report their percentage in the status bar; files over 100 MB are copied but kept out of Git. Folder creation keeps a `.gitkeep`. Folders are sorted by name, date, or type, and the choice is remembered.
 - **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search; press it again to close.
 - **History and File Timeline.** Hash and date on one line, message on the next, with restore and revert one click away.
 - **Every splitter is draggable.** Sidebar, preview, Git panel and timeline resize from their own handles.
@@ -146,7 +146,7 @@ Other distributions are not supported, but they are not blocked either: build fr
 | Distribution | How to run it |
 |---|---|
 | Arch Linux, Manjaro | `makepkg -si` in `packaging/`, or the release AppImage |
-| Debian 13, Ubuntu 24.04+ | from source: the 1.4.1 AppImage needs glibc 2.44, newer than the 2.39–2.41 they ship |
+| Debian 13, Ubuntu 24.04+ | from source: the release AppImage needs glibc 2.44, newer than the 2.39–2.41 they ship |
 | Fedora 41+, openSUSE Tumbleweed | from source, same reason |
 | Debian 11–12, Ubuntu 20.04–22.04, RHEL 8–9 | from source |
 | Windows 10/11 x64 | the NSIS installer above |
@@ -233,7 +233,7 @@ Deleting `config.json` resets settings but leaves the notes repository untouched
 - **External edits reload open tabs.** GitPad watches the repository with a filesystem watch. A file changed by another editor, the `git` CLI, or a script reloads its tab when the tab has no unsaved edits; a tab with unsaved edits is marked stale and its autosave pauses, so nothing is overwritten. Deleting a file elsewhere closes its tab with a "deleted externally" toast.
 - **The watcher skips `.git` and `.gitignore`d paths.** GitPad's own saves and commits never trigger a reload, and build output stays quiet. If the watch cannot start (watch limit, a folder moved under it), GitPad falls back to refreshing the tree and the Git status when the window regains focus.
 - **Remote images are blocked in preview.** The content security policy allows local/data images and GitHub avatars, not arbitrary remote images.
-- **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes.
+- **Imports block autosave.** A long import holds the worktree lock for the whole copy, so autosaves queue behind it and run when the copy finishes. Files over 100 MB are copied to disk, added to `.gitignore` and left out of the commit: GitHub rejects them, and a toast reports how many stayed local.
 - **Crash safety.** Closing the window, or `SIGTERM` on Linux, commits and pushes files already written before exit. A crash, `SIGKILL`, or a Windows logoff cannot be caught; the last edits remain local until the next start.
 - **Logs stop at 5 files.** Rotation keeps five 5 MB files, so the oldest sessions are dropped once the folder reaches roughly 25 MB.
 - **Without a keyring, the token lives in a protected file.** If the OS keyring is missing or locked on Linux, GitPad keeps the token in `auth.token` (mode 0600) under the app data dir, warns at startup, and still signs in after a restart. The file is removed on logout, or at the next sign-in when the keyring accepts the token.
