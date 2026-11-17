@@ -97,9 +97,9 @@
     width: min(380px, calc(100vw - 24px));
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-md);
     background: var(--surface-2);
-    box-shadow: var(--shadow-2);
+    box-shadow: var(--shadow-1);
     pointer-events: none;
   }
   .toast {
@@ -164,11 +164,11 @@
   }
   .close {
     display: grid;
+    align-self: start;
     place-items: center;
     width: 20px;
-    height: 20px;
-    /* Centred on the 16px first line, not on the row. */
-    margin-top: -2px;
+    height: 16px;
+    margin-top: 0;
     padding: 0;
     color: var(--muted);
     font-size: var(--fs-lg);
