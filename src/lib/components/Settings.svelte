@@ -780,13 +780,9 @@
     max-width: 560px;
     margin-inline: auto;
   }
-  /* Auto margins centre the group while there is room and collapse to nothing
-     once the rows outgrow the panel, so nothing is clipped. */
+  /* Anchored high in the panel: a little air under the tabs, no centring. */
   .section:first-child {
-    margin-top: auto;
-  }
-  .section:last-child {
-    margin-bottom: auto;
+    margin-top: var(--sp-4);
   }
   .section > h3 {
     margin: 0;
