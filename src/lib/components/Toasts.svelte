@@ -101,11 +101,16 @@
     flex-direction: column;
     width: min(380px, calc(100vw - 24px));
     overflow: hidden;
-    border: 1px solid var(--border);
+    /* No outline in the dark and light themes: the tinted rows separate the
+       tray from the editor. hc-black keeps its border, where tint cannot show. */
+    border: 1px solid transparent;
     border-radius: var(--r-md);
     background: var(--surface-2);
     box-shadow: var(--shadow-1);
     pointer-events: none;
+  }
+  :global([data-theme='hc-black']) .tray {
+    border-color: var(--border);
   }
   .toast {
     --kind: var(--accent-fg);
@@ -116,17 +121,28 @@
     gap: var(--sp-2);
     /* Right gap reserves the close button's column, which is out of flow. */
     padding: var(--sp-25) calc(var(--sp-3) + 24px) var(--sp-25) var(--sp-3);
-    /* Severity as a left edge, not a badge: the tray keeps the outer shape. */
-    box-shadow: inset 2px 0 0 var(--kind);
+    /* Severity lives in the surface, not in a stripe on its edge. */
+    background: color-mix(in srgb, var(--kind) 8%, var(--surface-2));
     pointer-events: auto;
+  }
+  .toast.info {
+    background: var(--surface-2);
+  }
+  /* Hover lightens the row in place, so the severity tint survives it. */
+  .toast::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--text);
+    opacity: 0;
+    transition: opacity var(--t-fast);
+    pointer-events: none;
+  }
+  .toast:hover::after {
+    opacity: 0.06;
   }
   .toast + .toast {
     border-top: 1px solid var(--divider);
-  }
-  .toast:hover {
-    /* Tints with the text colour, so it lifts in every theme (hc-black's
-       surface-3 is darker than its surface-2). */
-    background: color-mix(in srgb, var(--text) 6%, transparent);
   }
   .toast.error {
     --kind: var(--err);
