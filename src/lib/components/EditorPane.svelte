@@ -505,7 +505,7 @@
       tab.reloadKey = (tab.reloadKey ?? 0) + 1
       return
     }
-    const before = tab.content
+    const writing = inFlight.has(path)
     let content: string
     try {
       content = await invoke<string>('fs_read_file', { path })
@@ -517,10 +517,9 @@
       } else markStale(path)
       return
     }
-    // The user may have typed, or a save may have started, during the read.
-    // The pending set is not checked: it marks scheduled saves, not writes in flight.
-    const raced = inFlight.has(path) || tab.content !== before
-    const action = decideReload(tab, content, raced)
+    // A save may have started or finished during the read: either way the disk
+    // only ever held our own bytes.
+    const action = decideReload(tab, content, writing || inFlight.has(path))
     if (action === 'stale') return markStale(path)
     if (action === 'keep') return
     tab.content = content

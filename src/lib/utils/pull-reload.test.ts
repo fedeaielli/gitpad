@@ -39,14 +39,22 @@ describe('planPullReload', () => {
     expect(plan).toEqual({ reload: [], close: [], stale: ['a.md'] })
   })
 
-  it('marks tabs with a save in flight stale, clean or dirty', () => {
+  it('reloads a modified file even with a save in flight', () => {
     const change = [{ path: 'a.md', status: 'M' }]
     expect(planPullReload(change, [tab('a.md')], busyOn('a.md'))).toEqual({
-      reload: [],
+      reload: ['a.md'],
       close: [],
-      stale: ['a.md'],
+      stale: [],
     })
     expect(planPullReload(change, [tab('a.md', true)], busyOn('a.md'))).toEqual({
+      reload: ['a.md'],
+      close: [],
+      stale: [],
+    })
+  })
+
+  it('keeps a clean tab open when its file is deleted during a write', () => {
+    expect(planPullReload([{ path: 'a.md', status: 'D' }], [tab('a.md')], busyOn('a.md'))).toEqual({
       reload: [],
       close: [],
       stale: ['a.md'],
@@ -75,9 +83,12 @@ describe('decideReload', () => {
     expect(decideReload(dirty, 'someone else', false)).toBe('stale')
   })
 
-  it('marks a tab stale when a save or keystroke raced the read', () => {
-    expect(decideReload(tab('a.md', true, 'saved'), 'saved', true)).toBe('stale')
-    expect(decideReload(tab('a.md'), 'other', true)).toBe('stale')
+  it('keeps the buffer when our own write overlapped the read', () => {
+    // Windows: the fs event beats the slow autosave commit, so the watcher
+    // fires while the save is still in flight. Nothing changed upstream.
+    expect(decideReload(tab('a.md', true, 'saved'), 'saved', true)).toBe('keep')
+    expect(decideReload(tab('a.md', true, 'saved'), 'newer', true)).toBe('keep')
+    expect(decideReload(tab('a.md'), 'other', true)).toBe('keep')
   })
 
   it('applies new content to a clean tab', () => {
