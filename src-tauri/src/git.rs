@@ -1212,14 +1212,23 @@ pub async fn git_clone(
 }
 
 /// Clone another repository and make it the active one; the old clone stays on disk.
+/// No parent means the default clone folder, exactly like `git_clone`.
 #[tauri::command]
-pub async fn git_import_repo(app: AppHandle, url: String, parent: String) -> Result<MovedRepo, GitError> {
+pub async fn git_import_repo(
+    app: AppHandle,
+    url: String,
+    parent: Option<String>,
+) -> Result<MovedRepo, GitError> {
     // Empty when nothing was configured yet: the caller then has no tabs to close.
     let from = repo_dir(&app)
         .map(|path| path.to_string_lossy().into_owned())
         .unwrap_or_default();
     let name = repo_name_from_url(&url)?;
-    let target = fresh_clone_target(Path::new(parent.trim()), &name, Path::new(&from))?;
+    let parent = match parent.as_deref().map(str::trim).filter(|p| !p.is_empty()) {
+        Some(parent) => PathBuf::from(parent),
+        None => default_clone_dir(&app)?,
+    };
+    let target = fresh_clone_target(&parent, &name, Path::new(&from))?;
     clone_into(&app, &url, &target).await?;
     remember_repo(&app, target.clone());
     log::info!(target: "git", "repository: {} (imported)", target.display());
