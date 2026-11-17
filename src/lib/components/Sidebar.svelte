@@ -186,7 +186,7 @@
     align-items: center;
     flex-wrap: wrap;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--sp-2);
     /* Same height as the tab bar so the two headers line up. */
     box-sizing: border-box;
     min-height: var(--h-tabbar);

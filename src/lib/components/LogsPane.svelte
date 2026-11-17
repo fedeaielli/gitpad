@@ -253,7 +253,7 @@
     gap: var(--sp-05);
   }
   .chip {
-    padding: 3px 8px;
+    padding: 3px var(--sp-2);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: transparent;
@@ -303,8 +303,8 @@
     position: sticky;
     top: 0;
     display: flex;
-    gap: 8px;
-    padding: var(--sp-05) 8px;
+    gap: var(--sp-2);
+    padding: var(--sp-05) var(--sp-2);
     border-bottom: 1px solid var(--border);
     background: var(--surface-2);
     color: var(--muted);
@@ -319,8 +319,8 @@
   .line {
     display: grid;
     grid-template-columns: 62px 46px 52px 1fr;
-    gap: 8px;
-    padding: 1px 8px;
+    gap: var(--sp-2);
+    padding: 1px var(--sp-2);
     transition: background var(--t-fast);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -345,7 +345,7 @@
   }
   .empty {
     margin: 0;
-    padding: 12px;
+    padding: var(--sp-3);
     color: var(--muted);
   }
 </style>

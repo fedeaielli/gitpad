@@ -696,7 +696,7 @@
     right: 8px;
     bottom: 8px;
     margin: 0;
-    padding: var(--sp-05) 8px;
+    padding: var(--sp-05) var(--sp-2);
     border: 1px solid var(--err);
     border-radius: var(--r-sm);
     background: var(--surface-1);

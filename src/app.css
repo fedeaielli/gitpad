@@ -204,7 +204,7 @@ button:not(.win):not(:disabled):active {
 
 input,
 select {
-  padding: 3px 6px;
+  padding: 3px var(--sp-1);
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   background: var(--surface-2);

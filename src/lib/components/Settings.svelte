@@ -913,7 +913,7 @@
     font-size: var(--fs-xs);
   }
   .note {
-    margin: 12px 0 0;
+    margin: var(--sp-3) 0 0;
   }
   .value {
     min-width: 44px;
@@ -933,7 +933,7 @@
     display: flex;
     align-items: center;
     gap: var(--sp-25);
-    padding: var(--sp-05) 8px;
+    padding: var(--sp-05) var(--sp-2);
     border-radius: var(--r-sm);
     background: var(--surface-0);
   }
@@ -953,7 +953,7 @@
   }
   .add {
     display: flex;
-    gap: 8px;
+    gap: var(--sp-2);
     max-width: 560px;
   }
   .add input {
@@ -977,7 +977,7 @@
   .account {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-2);
   }
   .account img {
     width: 26px;
@@ -985,7 +985,7 @@
     border-radius: 50%;
   }
   .danger {
-    padding: var(--sp-05) 12px;
+    padding: var(--sp-05) var(--sp-3);
     border: 1px solid var(--err);
     border-radius: var(--r-sm);
     color: var(--err);

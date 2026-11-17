@@ -220,7 +220,7 @@
   }
   .trigger {
     height: 24px;
-    padding: 0 8px;
+    padding: 0 var(--sp-2);
     border: 0;
     border-radius: var(--r-sm);
     background: transparent;

@@ -510,7 +510,7 @@
   }
   .error button {
     flex: 0 0 auto;
-    padding: 1px 6px;
+    padding: 1px var(--sp-1);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: transparent;
@@ -665,12 +665,12 @@
   }
   .skeleton {
     height: 10px;
-    margin: 6px var(--sp-2);
+    margin: var(--sp-1) var(--sp-2);
     border-radius: var(--r-sm);
     background: var(--surface-2);
   }
   .empty {
-    padding: 6px var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
     color: var(--muted);
   }
   .diff {

@@ -400,7 +400,7 @@
     align-items: flex-start;
     justify-content: center;
     /* Anchored under the title bar, like the VS Code quick pick. */
-    padding: calc(var(--h-titlebar) + var(--sp-2)) 16px 0;
+    padding: calc(var(--h-titlebar) + var(--sp-2)) var(--sp-4) 0;
   }
   .backdrop {
     position: absolute;
@@ -423,8 +423,8 @@
     animation: gp-pop-in var(--t-fast) var(--ease-out);
   }
   input {
-    margin: 8px;
-    padding: 8px var(--sp-25);
+    margin: var(--sp-2);
+    padding: var(--sp-2) var(--sp-25);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-2);
@@ -433,12 +433,12 @@
   }
   .searching {
     min-height: 18px;
-    margin: 0 16px var(--sp-05);
+    margin: 0 var(--sp-4) var(--sp-05);
     color: var(--muted);
     font-size: var(--fs-xs);
   }
   .list {
-    padding: 0 6px 6px;
+    padding: 0 var(--sp-1) var(--sp-1);
     overflow: auto;
   }
   .item {
@@ -446,7 +446,7 @@
     align-items: center;
     gap: var(--sp-25);
     width: 100%;
-    padding: 6px 8px;
+    padding: var(--sp-1) var(--sp-2);
     border-radius: var(--r-md);
     text-align: left;
   }
@@ -510,7 +510,7 @@
   }
   .hint,
   .error {
-    margin: 12px 16px;
+    margin: var(--sp-3) var(--sp-4);
     font-size: var(--fs-sm);
   }
   .hint {

@@ -117,7 +117,7 @@
     transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-1);
     width: 40%;
     min-width: 240px;
     max-width: 520px;
@@ -126,11 +126,11 @@
     display: flex;
     flex: 1;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-1);
     min-width: 0;
     box-sizing: border-box;
     height: 24px;
-    padding: 0 6px;
+    padding: 0 var(--sp-1);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-sm);
     background: var(--surface-2);
@@ -199,7 +199,7 @@
   }
   /* A suffix of the field, not a badge floating inside it: separator, no box. */
   .search .chip {
-    padding-left: 8px;
+    padding-left: var(--sp-2);
     border-left: 1px solid var(--border);
   }
   /* Narrow windows: icon only, so it cannot collide with the title or controls. */
@@ -220,7 +220,7 @@
   .title {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-1);
     color: var(--muted);
     font-size: var(--fs-sm);
   }

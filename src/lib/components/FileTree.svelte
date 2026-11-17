@@ -396,12 +396,12 @@
     box-sizing: border-box;
     height: 100%;
     overflow-y: auto;
-    padding: 6px 0;
+    padding: var(--sp-1) 0;
   }
   ul {
     list-style: none;
     margin: 0;
-    padding-left: 12px;
+    padding-left: var(--sp-3);
   }
   .tree > :global(ul) {
     padding-left: 0;
@@ -409,7 +409,7 @@
   .row {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-1);
     /* Inset by 4px a side: the hover/selected fill stops short of the panel
        edge, and margin + padding still add up to the old 8px label offset. */
     width: calc(100% - 8px);
@@ -445,7 +445,7 @@
     background: var(--surface-2);
   }
   .rename {
-    padding: 0 8px;
+    padding: 0 var(--sp-2);
   }
   .rename input {
     width: 100%;
@@ -484,15 +484,15 @@
     white-space: nowrap;
   }
   .hint {
-    margin: var(--sp-05) 8px;
+    margin: var(--sp-05) var(--sp-2);
     color: var(--muted);
     font-size: var(--fs-xs);
   }
   .skeleton {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 6px var(--sp-25);
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-25);
   }
   .bone {
     height: 10px;
@@ -524,7 +524,7 @@
   .menu button {
     display: block;
     width: 100%;
-    padding: 5px 8px;
+    padding: 5px var(--sp-2);
     text-align: left;
     border-radius: var(--r-sm);
   }
@@ -536,7 +536,7 @@
     color: var(--err);
   }
   .menu p {
-    margin: var(--sp-05) 8px;
+    margin: var(--sp-05) var(--sp-2);
     white-space: nowrap;
   }
 </style>

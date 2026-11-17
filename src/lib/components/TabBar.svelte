@@ -225,7 +225,7 @@
     /* Owns the empty stretch of the tab: the whole surface opens the file, and
        the close control is pushed to the tab's right edge. */
     flex: 1;
-    gap: 6px;
+    gap: var(--sp-1);
     min-width: 0;
     padding: 0 var(--sp-05) 0 var(--sp-25);
     height: 100%;
@@ -263,7 +263,7 @@
     color: var(--text);
   }
   .close {
-    padding: 0 8px;
+    padding: 0 var(--sp-2);
     color: var(--muted);
   }
   .close:hover {
@@ -272,10 +272,10 @@
   .actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-1);
     flex: 0 0 auto;
     margin-left: auto;
-    padding: 0 6px;
+    padding: 0 var(--sp-1);
   }
   /* A short divider, not a full-height border: the strip already has its own
      line along the floor and the two would meet in a T. */

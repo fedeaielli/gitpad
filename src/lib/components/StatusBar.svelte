@@ -92,7 +92,7 @@
     display: inline-flex;
     align-items: center;
     min-height: 24px;
-    padding: 0 6px;
+    padding: 0 var(--sp-1);
     border-radius: var(--r-pill);
     background: var(--surface-1);
     color: var(--ok);

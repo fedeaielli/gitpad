@@ -209,7 +209,7 @@
     align-items: center;
     justify-content: space-between;
     min-height: 40px;
-    padding: 0 12px;
+    padding: 0 var(--sp-3);
     border-bottom: 1px solid var(--divider);
     font-weight: 600;
   }
@@ -237,11 +237,11 @@
     flex-direction: column;
     gap: var(--sp-0);
     overflow: auto;
-    padding: 6px;
+    padding: var(--sp-1);
     border-right: 1px solid var(--border);
   }
   .file {
-    padding: var(--sp-05) 8px;
+    padding: var(--sp-05) var(--sp-2);
     border-radius: var(--r-sm);
     overflow: hidden;
     text-align: left;
@@ -260,8 +260,8 @@
     flex: 1;
     flex-direction: column;
     min-width: 0;
-    padding: 8px;
-    gap: 8px;
+    padding: var(--sp-2);
+    gap: var(--sp-2);
   }
   .labels {
     display: flex;
@@ -277,7 +277,7 @@
   }
   .actions {
     display: flex;
-    gap: 6px;
+    gap: var(--sp-1);
   }
   .actions button,
   .done button {
@@ -302,7 +302,7 @@
     align-items: center;
     justify-content: center;
     flex: 1;
-    gap: 12px;
+    gap: var(--sp-3);
   }
   .done p,
   .hint {

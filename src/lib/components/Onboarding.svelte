@@ -398,7 +398,7 @@
   .head {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--sp-3);
   }
   .brand {
     display: grid;
@@ -459,9 +459,9 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-2);
     margin: 0;
-    padding: var(--sp-25) 12px;
+    padding: var(--sp-25) var(--sp-3);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-1);
@@ -538,7 +538,7 @@
   .shortcuts {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--sp-2);
     margin: 0;
     padding: 0;
     list-style: none;
@@ -547,14 +547,14 @@
     display: grid;
     grid-template-columns: 150px 1fr;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-2);
   }
   .keys {
     display: flex;
     gap: var(--sp-05);
   }
   kbd {
-    padding: 3px 8px;
+    padding: 3px var(--sp-2);
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     background: var(--surface-2);
@@ -575,28 +575,28 @@
   .stage {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-2);
   }
   .row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--sp-2);
   }
   .folder {
     display: flex;
     align-items: stretch;
-    gap: 8px;
+    gap: var(--sp-2);
   }
   /* Read-only on purpose: one trigger for the picker, not two. */
   .pick {
     display: flex;
     flex: 1;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-2);
     min-width: 0;
     margin: 0;
-    padding: 8px var(--sp-25);
+    padding: var(--sp-2) var(--sp-25);
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
     background: var(--surface-1);
@@ -629,8 +629,8 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 6px;
-    padding: 12px;
+    gap: var(--sp-1);
+    padding: var(--sp-3);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-1);
@@ -644,7 +644,7 @@
     overflow-wrap: anywhere;
   }
   .pill {
-    padding: 1px 8px;
+    padding: 1px var(--sp-2);
     border: 1px solid var(--border);
     border-radius: var(--r-pill);
     color: var(--muted);
@@ -672,7 +672,7 @@
     font-size: var(--fs-sm);
   }
   button {
-    padding: 6px 12px;
+    padding: var(--sp-1) var(--sp-3);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-2);
@@ -692,8 +692,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 8px 14px;
+    gap: var(--sp-2);
+    padding: var(--sp-2) 14px;
     border: 1px solid var(--accent);
     border-radius: var(--r-md);
     background: var(--accent);
@@ -701,7 +701,7 @@
     font-size: var(--fs-sm);
   }
   .full {
-    padding: 8px 14px;
+    padding: var(--sp-2) 14px;
     border-radius: var(--r-md);
     font-size: var(--fs-sm);
   }

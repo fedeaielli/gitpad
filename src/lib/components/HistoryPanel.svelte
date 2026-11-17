@@ -266,14 +266,14 @@
 <style>
   .error {
     margin: 0;
-    padding: var(--sp-05) 8px;
+    padding: var(--sp-05) var(--sp-2);
     color: var(--err);
     font-size: var(--fs-xs);
     overflow-wrap: anywhere;
   }
   .empty {
     margin: 0;
-    padding: 24px 12px;
+    padding: var(--sp-6) var(--sp-3);
     color: var(--muted);
     font-size: var(--fs-xs);
     text-align: center;
@@ -281,7 +281,7 @@
   }
   .filter {
     margin: 0;
-    padding: var(--sp-05) 8px;
+    padding: var(--sp-05) var(--sp-2);
     border-bottom: 1px solid var(--border);
     color: var(--muted);
     font-size: var(--fs-2xs);
@@ -299,10 +299,10 @@
     padding: 0;
   }
   .commits {
-    padding: var(--sp-0) 0 8px;
+    padding: var(--sp-0) 0 var(--sp-2);
   }
   .commit {
-    margin: 5px 8px;
+    margin: 5px var(--sp-2);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-2);
@@ -319,7 +319,7 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    padding: 7px 8px var(--sp-05);
+    padding: 7px var(--sp-2) var(--sp-05);
     background: var(--surface-1);
     color: var(--muted);
     font-size: var(--fs-2xs);
@@ -335,7 +335,7 @@
     flex-direction: column;
     gap: var(--sp-0);
     min-width: 0;
-    padding: 6px 8px;
+    padding: var(--sp-1) var(--sp-2);
     border-color: transparent;
     background: transparent;
     text-align: left;
@@ -421,11 +421,11 @@
     white-space: nowrap;
   }
   .actions {
-    padding: 0 8px var(--sp-05);
+    padding: 0 var(--sp-2) var(--sp-05);
   }
   .actions button {
     min-height: 32px;
-    padding: 0 12px;
+    padding: 0 var(--sp-3);
     border: 1px solid var(--border-strong);
     background: transparent;
     color: var(--accent-fg);
@@ -446,8 +446,8 @@
   .files li {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 1px 8px 1px 18px;
+    gap: var(--sp-1);
+    padding: 1px var(--sp-2) 1px 18px;
   }
   .path {
     flex: 1;

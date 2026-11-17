@@ -225,7 +225,7 @@
     background: var(--surface-0);
   }
   .status {
-    margin: 24px;
+    margin: var(--sp-6);
     color: var(--muted);
     font-size: var(--fs-sm);
   }
@@ -239,7 +239,7 @@
     justify-content: center;
     box-sizing: border-box;
     height: 100%;
-    padding: 16px;
+    padding: var(--sp-4);
   }
   .image img {
     max-width: 100%;
@@ -250,8 +250,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 16px;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
   }
   .pdf :global(.pdf-page) {
     width: 100%;
@@ -270,7 +270,7 @@
     box-sizing: border-box;
     max-width: 760px;
     margin: 0 auto;
-    padding: 24px;
+    padding: var(--sp-6);
     color: var(--text);
     line-height: 1.6;
   }
@@ -297,7 +297,7 @@
   }
   .doc :global(th),
   .doc :global(td) {
-    padding: var(--sp-05) 8px;
+    padding: var(--sp-05) var(--sp-2);
     border: 1px solid var(--border);
     text-align: left;
     vertical-align: top;

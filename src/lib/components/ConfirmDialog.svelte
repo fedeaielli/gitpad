@@ -69,7 +69,7 @@
     position: relative;
     z-index: 1;
     width: min(420px, calc(100vw - 48px));
-    padding: 16px;
+    padding: var(--sp-4);
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
     background: var(--surface-3);
@@ -111,7 +111,7 @@
     font-weight: 600;
   }
   p {
-    margin: var(--sp-25) 0 16px;
+    margin: var(--sp-25) 0 var(--sp-4);
     color: var(--text);
     font-size: var(--fs-sm);
     line-height: 1.5;
@@ -120,10 +120,10 @@
   .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--sp-2);
   }
   .actions button {
-    padding: var(--sp-05) 12px;
+    padding: var(--sp-05) var(--sp-3);
     border: 1px solid var(--border-strong);
     background: transparent;
     color: var(--text);

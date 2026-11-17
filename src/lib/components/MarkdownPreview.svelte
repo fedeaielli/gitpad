@@ -117,7 +117,7 @@
   }
   .markdown-body {
     min-width: 0;
-    padding: 16px 24px;
+    padding: var(--sp-4) var(--sp-6);
     background: transparent;
     color: var(--text);
   }

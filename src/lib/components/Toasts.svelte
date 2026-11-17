@@ -50,7 +50,7 @@
     z-index: 70;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--sp-2);
     width: min(380px, calc(100vw - 24px));
     pointer-events: none;
   }
@@ -60,7 +60,7 @@
     grid-template-columns: 20px 1fr 22px;
     align-items: start;
     gap: var(--sp-25);
-    padding: 11px 12px 11px 14px;
+    padding: 11px var(--sp-3) 11px 14px;
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-2);

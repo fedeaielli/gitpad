@@ -164,9 +164,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--sp-2);
     width: 100%;
-    padding: 7px 12px;
+    padding: 7px var(--sp-3);
     border: 1px solid var(--accent);
     border-radius: var(--r-md);
     background: var(--accent);
@@ -188,7 +188,7 @@
     animation: gp-fade-in var(--t-fast) var(--ease-out);
   }
   .code strong {
-    margin: 0 6px;
+    margin: 0 var(--sp-1);
     font-family: ui-monospace, monospace;
     letter-spacing: 0.08em;
   }
