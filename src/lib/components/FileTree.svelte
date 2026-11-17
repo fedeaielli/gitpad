@@ -71,17 +71,24 @@
     const to = join(parentOf(node.path), value)
     if (!value || to === node.path) return
     try {
-      await invoke('fs_rename', { from: node.path, to })
-      retarget(node.path, to)
-      ui.expanded = ui.expanded.map((p) =>
-        p === node.path || p.startsWith(`${node.path}/`)
-          ? to + p.slice(node.path.length)
-          : p,
-      )
-      await loadTree()
+      await relocate(node.path, to)
     } catch (e) {
       pushToast(`Rename failed: ${errorMessage(e)}`)
     }
+  }
+
+  /// A rename and a drag land here: move the entry on disk, then follow it in
+  /// the open tabs and the expanded folders. Throws so callers word their toast.
+  async function relocate(from: string, to: string) {
+    await invoke('fs_rename', { from, to })
+    retarget(from, to)
+    ui.expanded = ui.expanded.map((p) =>
+      p === from || p.startsWith(`${from}/`) ? to + p.slice(from.length) : p,
+    )
+    // The entry must be visible where it landed, like every create/import flow.
+    const base = parentOf(to)
+    if (base && !ui.expanded.includes(base)) ui.expanded = [...ui.expanded, base]
+    await loadTree()
   }
 
   function toggle(path: string) {
