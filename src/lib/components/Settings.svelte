@@ -769,22 +769,31 @@
     display: flex;
     align-items: center;
     gap: var(--sp-4);
-    font-size: var(--fs-sm);
   }
-  /* Grouped settings: one heading names what the rows below decide. */
+  /* Grouped settings: one heading names what the rows below decide, in one
+     column centred in the dialog. */
   .section {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    /* Rows stay a readable column, not the full width of the dialog. */
+    width: 100%;
     max-width: 560px;
+    margin-inline: auto;
+  }
+  /* Auto margins centre the group while there is room and collapse to nothing
+     once the rows outgrow the panel, so nothing is clipped. */
+  .section:first-child {
+    margin-top: auto;
+  }
+  .section:last-child {
+    margin-bottom: auto;
   }
   .section > h3 {
     margin: 0;
     color: var(--muted);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     font-weight: 500;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
   /* Divider between groups only: the first one opens the tab under its title. */
@@ -797,7 +806,6 @@
     display: flex;
     align-items: center;
     gap: var(--sp-2);
-    font-size: var(--fs-sm);
     cursor: pointer;
   }
   .toggle input {
@@ -808,7 +816,6 @@
   .field > span:first-child {
     min-width: 120px;
     color: var(--muted);
-    font-size: var(--fs-sm);
   }
   /* One control width: the value it sets, not the whole dialog. */
   .field select,
@@ -823,13 +830,13 @@
   .modal input[type='text'],
   .modal input[type='number'] {
     box-sizing: border-box;
-    height: 28px;
+    height: 30px;
     padding: 0 var(--sp-2);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
   }
   /* The native stepper is a fourth style; the range already sets the value. */
   .modal input[type='number'] {
@@ -857,7 +864,7 @@
   .hint,
   .note {
     color: var(--muted);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
   }
   .path {
     overflow-wrap: anywhere;
@@ -874,7 +881,7 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
-  /* The house button: the 28 px row the inputs set, on the surface above the
+  /* The house button: the 30 px row the inputs set, on the surface above the
      panel so it reads as a control, not as text. */
   .change,
   .primary {
@@ -882,13 +889,13 @@
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    height: 28px;
+    height: 30px;
     padding: 0 var(--sp-3);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: var(--surface-2);
     color: var(--text);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
     white-space: nowrap;
   }
   /* Same meaning as in the onboarding and conflict dialogs: the choice the
@@ -910,7 +917,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    padding: var(--sp-3);
+    padding: var(--sp-4);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     background: var(--surface-1);
@@ -921,7 +928,6 @@
     gap: var(--sp-2);
     margin: 0;
     min-width: 0;
-    font-size: var(--fs-sm);
   }
   .folder .label {
     flex: 0 0 auto;
@@ -982,7 +988,7 @@
   .swatch {
     width: 24px;
     height: 24px;
-    /* Centred inside the 28 px row the other controls set. */
+    /* Centred inside the 30 px row the other controls set. */
     margin: var(--sp-0) 0;
     padding: 0;
     border: 1px solid var(--border-strong);
@@ -1084,12 +1090,12 @@
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
-    height: 28px;
+    height: 30px;
     padding: 0 var(--sp-3);
     border: 1px solid var(--err);
     border-radius: var(--r-md);
     color: var(--err);
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
     justify-self: start;
   }
   .danger:hover:not(:disabled) {
