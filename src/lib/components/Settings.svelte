@@ -9,6 +9,7 @@
   import { contrast } from '../utils/color'
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
   import { focusTrap } from '../utils/focus'
+  import { tip } from '../utils/tooltip'
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, gitStatus, type GitStatus } from '../stores/git.svelte'
   import { auth, forgetUser, loadUser, signInWithPat } from '../stores/auth.svelte'
@@ -398,117 +399,117 @@
           </select>
         </label>
       {:else if tab === 'sync'}
-        <div class="field">
-          <span>Auto-sync</span>
-          <label class="inline">
+        <section class="section">
+          <h3>Automatic sync</h3>
+          <label class="toggle">
             <input type="checkbox" bind:checked={ui.autoSync} />
-            Push automatically after edits
+            <span>Push automatically after each save</span>
           </label>
-        </div>
-        <div class="field">
-          <span>Repository folder</span>
-          <div class="inline">
-            <span class="hint path">{ui.repoPath || 'Default app folder'}</span>
-            <button
-              type="button"
-              class="change"
-              title="Use an existing folder; it is initialized when needed"
-              disabled={localBusy}
-              onclick={useLocalRepo}
-            >
-              {localBusy ? 'Opening…' : 'Change…'}
-            </button>
-          </div>
-        </div>
-        <div class="field">
-          <span>Move repository</span>
-          <div class="inline">
-            <span class="hint">Moves the folder on disk to another location</span>
-            <button
-              type="button"
-              class="change"
-              disabled={moving || !ui.repoPath}
-              onclick={moveRepo}
-            >
-              {moving ? 'Moving…' : 'Move…'}
-            </button>
-          </div>
-        </div>
-        <div class="field">
-          <span>Import repository</span>
-          <div class="inline">
-            <span class="hint">Clone another repo and switch to it</span>
-            <button
-              type="button"
-              class="change"
-              aria-expanded={importOpen}
-              onclick={() => (importOpen = !importOpen)}
-            >
-              {importOpen ? 'Cancel' : 'Import…'}
-            </button>
-          </div>
-        </div>
-        {#if importOpen}
-          <div class="import">
-            <input
-              type="text"
-              class="wide"
-              placeholder="https://github.com/user/repo.git"
-              aria-label="Repository URL to import"
-              bind:value={importUrl}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') void importRepo()
-              }}
-            />
+          <label class="field">
+            <span>Autosave delay</span>
             <div class="inline">
-              <span class="hint path">
-                {importFolder || 'Default folder (next to your documents)'}
-              </span>
-              <button type="button" class="change" disabled={importing} onclick={chooseImportFolder}>
-                Choose…
-              </button>
+              <input
+                type="range"
+                min="500"
+                max="10000"
+                step="500"
+                value={ui.saveDebounceMs}
+                oninput={(e) => (ui.saveDebounceMs = e.currentTarget.valueAsNumber)}
+              />
+              <span class="value">{ui.saveDebounceMs / 1000}s</span>
             </div>
+          </label>
+          <label class="field">
+            <span>Push delay</span>
             <div class="inline">
+              <input
+                type="number"
+                min="5"
+                max="300"
+                value={Math.round(ui.pushIdleMs / 1000)}
+                onchange={(e) =>
+                  clamp(e.currentTarget.valueAsNumber, 5, 300, (n) => (ui.pushIdleMs = n * 1000))}
+              />
+              <span class="hint">seconds after the last edit</span>
+            </div>
+          </label>
+        </section>
+
+        <section class="section">
+          <h3>Repository</h3>
+          <div class="repo">
+            <p class="folder">
+              <span class="label">Folder</span>
+              <span class="path">{ui.repoPath || 'Default app folder'}</span>
+            </p>
+            <div class="actions">
               <button
                 type="button"
-                class="change go"
-                disabled={importing || !importUrl.trim()}
-                onclick={importRepo}
+                class="change"
+                use:tip={'Open an existing folder; a plain folder is initialised with git'}
+                disabled={localBusy}
+                onclick={useLocalRepo}
               >
-                {importing ? 'Cloning…' : 'Clone as active repository'}
+                {localBusy ? 'Opening…' : 'Use another folder…'}
               </button>
-              <span class="hint">Open tabs close: they belong to the current repository.</span>
+              <button
+                type="button"
+                class="change"
+                use:tip={'Move the folder on disk to another location'}
+                disabled={moving || !ui.repoPath}
+                onclick={moveRepo}
+              >
+                {moving ? 'Moving…' : 'Move folder…'}
+              </button>
+              <button
+                type="button"
+                class="change"
+                aria-expanded={importOpen}
+                onclick={() => (importOpen = !importOpen)}
+              >
+                {importOpen ? 'Cancel import' : 'Import…'}
+              </button>
             </div>
+            {#if importOpen}
+              <div class="import">
+                <input
+                  type="text"
+                  class="url"
+                  placeholder="https://github.com/user/repo.git"
+                  aria-label="Repository URL to import"
+                  bind:value={importUrl}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') void importRepo()
+                  }}
+                />
+                <div class="pick">
+                  <span class="hint path">
+                    {importFolder || 'Default folder (next to your documents)'}
+                  </span>
+                  <button
+                    type="button"
+                    class="change"
+                    disabled={importing}
+                    onclick={chooseImportFolder}
+                  >
+                    Choose…
+                  </button>
+                </div>
+                <div class="actions">
+                  <button
+                    type="button"
+                    class="change cta"
+                    disabled={importing || !importUrl.trim()}
+                    onclick={importRepo}
+                  >
+                    {importing ? 'Cloning…' : 'Clone as active repository'}
+                  </button>
+                  <span class="hint">Open tabs close: they belong to the current repository.</span>
+                </div>
+              </div>
+            {/if}
           </div>
-        {/if}
-        <label class="field">
-          <span>Save debounce</span>
-          <div class="inline">
-            <input
-              type="range"
-              min="500"
-              max="10000"
-              step="500"
-              value={ui.saveDebounceMs}
-              oninput={(e) => (ui.saveDebounceMs = e.currentTarget.valueAsNumber)}
-            />
-            <span class="value">{ui.saveDebounceMs / 1000}s</span>
-          </div>
-        </label>
-        <label class="field">
-          <span>Push after idle</span>
-          <div class="inline">
-            <input
-              type="number"
-              min="5"
-              max="300"
-              value={Math.round(ui.pushIdleMs / 1000)}
-              onchange={(e) =>
-                clamp(e.currentTarget.valueAsNumber, 5, 300, (n) => (ui.pushIdleMs = n * 1000))}
-            />
-            <span class="hint">seconds, 5–300</span>
-          </div>
-        </label>
+        </section>
       {:else if tab === 'editor'}
         <label class="field">
           <span>Keybindings</span>
@@ -770,6 +771,38 @@
     gap: var(--sp-4);
     font-size: var(--fs-sm);
   }
+  /* Grouped settings: one heading names what the rows below decide. */
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+  }
+  .section > h3 {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  /* Divider between groups only: the first one opens the tab under its title. */
+  .section + .section {
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--divider);
+  }
+  /* A switch row: the text names the setting, so it needs no label column. */
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+  }
+  .toggle input {
+    flex: 0 0 auto;
+    margin: 0;
+    accent-color: var(--accent);
+  }
   .field > span:first-child {
     min-width: 120px;
     color: var(--muted);
@@ -870,23 +903,73 @@
     opacity: 0.5;
     cursor: default;
   }
+  /* The repository as one object: where it lives, then what can move it. */
+  .repo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
+  }
+  .folder {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+    margin: 0;
+    min-width: 0;
+    font-size: var(--fs-sm);
+  }
+  .folder .label {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .folder .path {
+    min-width: 0;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  /* The one commit in the tab: clone and switch. */
+  .change.cta {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .change.cta:hover:not(:disabled) {
+    border-color: var(--accent-fg);
+    background: color-mix(in srgb, var(--accent) 88%, #fff);
+  }
+  /* Import is a well inside the card: this is the field you fill in. */
   .import {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
-    padding: var(--sp-2) var(--sp-3);
+    padding: var(--sp-2);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
-    background: var(--surface-1);
+    background: var(--surface-0);
   }
-  .import .go {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--on-accent);
+  .import .url {
+    width: 100%;
+    max-width: none;
   }
-  .import .go:hover:not(:disabled) {
-    border-color: var(--accent-fg);
-    filter: brightness(1.1);
+  .pick {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+  .pick .hint {
+    flex: 1;
+    min-width: 0;
   }
   .accent-picker {
     display: flex;
