@@ -30,6 +30,9 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'hr', detail: 'Horizontal rule', build: () => ({ text: '---\n', select: [4, 4] }) },
 ]
 
+/// Picks the target in a second stage, so it has no pure builder like the rest.
+export const NOTE_COMMAND = { id: 'note', detail: 'Link a note' }
+
 /// Table edits instead of text: the registration applies them to the block
 /// around the caret, so they only show up inside a table cell.
 export const TABLE_COMMANDS = [

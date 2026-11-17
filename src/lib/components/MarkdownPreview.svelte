@@ -8,6 +8,10 @@
   import codeLight from 'highlight.js/styles/github.css?url'
   import { registerThemeStyles } from '../utils/themes'
   import { openExternal } from '../utils/open'
+  import { openFileInTab } from '../utils/open-file'
+  import { resolveNoteLink } from '../utils/note-link'
+  import { errorMessage } from '../stores/git.svelte'
+  import { pushToast } from '../stores/toasts.svelte'
   import { tabs } from '../stores/tabs.svelte'
   import { getEditor } from '../editor/bridge'
 
@@ -93,7 +97,13 @@
     const href = anchor?.getAttribute('href')
     if (!href) return
     e.preventDefault()
-    if (/^https?:\/\//.test(href)) void openExternal(href)
+    if (/^https?:\/\//.test(href)) return void openExternal(href)
+    const tab = tabs.tabs.find((candidate) => candidate.id === tabs.activeTabId)
+    const target = tab && resolveNoteLink(tab.path, href)
+    // Only Markdown notes open in the app: other local files are not ours to render.
+    if (target && /\.md$/i.test(target)) {
+      void openFileInTab(target).catch((error) => pushToast(errorMessage(error), 'error'))
+    }
   }
 
   // Attached on the node so the container stays non-interactive for a11y.

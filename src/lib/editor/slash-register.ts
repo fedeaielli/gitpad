@@ -1,6 +1,7 @@
 import type * as monaco from 'monaco-editor'
 import {
   CODE_LANGUAGES,
+  NOTE_COMMAND,
   SLASH_COMMANDS,
   TABLE_COMMANDS,
   slashQuery,
@@ -8,6 +9,8 @@ import {
 } from './slash-commands'
 import { addColumn, addRow, cellIndex, parseTable, removeColumn, removeRow } from './table'
 import { writeTable } from './table-register'
+import { ui, type FileNode } from '../stores/ui.svelte'
+import { noteLink, noteLinkLabel } from '../utils/note-link'
 
 const RUN = 'gitpad.slash.insert'
 
@@ -16,12 +19,22 @@ type Arg =
   | { kind: 'command'; id: string }
   | { kind: 'table'; id: string }
   | { kind: 'language'; value: string }
+  | { kind: 'note'; path: string }
 
-/// The `/` menu for Markdown notes. One provider, two stages: commands, then
-/// the language of a code fence. Returns the disposer for the editor lifecycle.
+/// Every Markdown note in the tree: what `/note` offers.
+function notes(nodes: FileNode[]): string[] {
+  return nodes.flatMap((node) =>
+    node.type === 'dir' ? notes(node.children ?? []) : /\.md$/i.test(node.path) ? [node.path] : [],
+  )
+}
+
+/// The `/` menu for Markdown notes. One provider, three stages: commands, then
+/// the language of a code fence, then the target of a note link. Returns the
+/// disposer for the editor lifecycle.
 export function registerSlashCommands(m: typeof monaco, editor: Editor): () => void {
-  // The code command deletes its own text and waits for the language pick.
-  let awaiting: { path: string; line: number } | null = null
+  // The code command deletes its own text and waits for the language pick;
+  // `/note` waits the same way for the file pick.
+  let awaiting: { path: string; line: number; kind: 'code' | 'note' } | null = null
   // Typing over a selection replaces it, so keep its text for the wrap commands.
   // The start position proves the slash was typed on top of it.
   let cached: { path: string; text: string; line: number; column: number } | null = null
@@ -74,7 +87,7 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
       applying = false
       const start = range.getStartPosition()
       editor.setPosition(start)
-      awaiting = { path: model.uri.path, line: start.lineNumber }
+      awaiting = { path: model.uri.path, line: start.lineNumber, kind: 'code' }
       editor.trigger('slash', 'editor.action.triggerSuggest', {})
       return
     }
@@ -87,6 +100,35 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
         positionAfter(start, built.text, built.select[1]),
       ),
     )
+    editor.focus()
+  }
+
+  /// `/note` opens the file pick: the target does not exist until one is chosen.
+  function pickNote() {
+    const model = editor.getModel()
+    const range = slashRange()
+    if (!model || !range) return
+    applying = true
+    editor.executeEdits('slash', [{ range, text: '' }])
+    applying = false
+    const start = range.getStartPosition()
+    editor.setPosition(start)
+    awaiting = { path: model.uri.path, line: start.lineNumber, kind: 'note' }
+    editor.trigger('slash', 'editor.action.triggerSuggest', {})
+  }
+
+  function insertNote(target: string) {
+    const model = editor.getModel()
+    const position = editor.getPosition()
+    if (!model || !position) return
+    awaiting = null
+    const from = model.uri.path.replace(/^\//, '')
+    const text = noteLink(from, target)
+    const range = new m.Range(position.lineNumber, position.column, position.lineNumber, position.column)
+    applying = true
+    editor.executeEdits('slash', [{ range, text }])
+    applying = false
+    editor.setPosition(positionAfter(position, text, text.length))
     editor.focus()
   }
 
@@ -151,6 +193,8 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
   const command = m.editor.registerCommand(RUN, (_accessor, arg: Arg) => {
     if (arg.kind === 'language') return insertFence(arg.value)
     if (arg.kind === 'table') return applyTableOp(arg.id)
+    if (arg.kind === 'note') return insertNote(arg.path)
+    if (arg.id === NOTE_COMMAND.id) return pickNote()
     const cmd = SLASH_COMMANDS.find((candidate) => candidate.id === arg.id)
     if (cmd) runCommand(cmd)
   })
@@ -161,6 +205,26 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
       const stage = awaiting
       if (stage && stage.path === model.uri.path && stage.line === position.lineNumber) {
         const range = new m.Range(position.lineNumber, position.column, position.lineNumber, position.column)
+        if (stage.kind === 'note') {
+          const current = model.uri.path.replace(/^\//, '')
+          return {
+            suggestions: notes(ui.fileTree)
+              .filter((path) => path !== current)
+              .map((path) => ({
+                label: noteLinkLabel(path),
+                detail: path,
+                kind: m.languages.CompletionItemKind.File,
+                insertText: '',
+                filterText: path,
+                range,
+                command: {
+                  id: RUN,
+                  title: `Link ${path}`,
+                  arguments: [{ kind: 'note', path }],
+                },
+              })),
+          }
+        }
         return {
           suggestions: CODE_LANGUAGES.map((language) => ({
             label: language,
@@ -194,7 +258,7 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
       return {
         suggestions: [
           ...(query.cell ? table : []),
-          ...SLASH_COMMANDS.map((cmd, index) => ({
+          ...[NOTE_COMMAND, ...SLASH_COMMANDS].map((cmd, index) => ({
             label: '/' + cmd.id,
             detail: cmd.detail,
             kind: m.languages.CompletionItemKind.Snippet,
