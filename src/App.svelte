@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
+  import { fade } from 'svelte/transition'
+  import { prefersReducedMotion } from 'svelte/motion'
   import { invoke } from '@tauri-apps/api/core'
   import { listen } from '@tauri-apps/api/event'
   import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -620,20 +622,30 @@
   {/if}
 </div>
 
+<!-- The wrapper fades the whole fixed overlay out on removal; the overlay keeps
+     its own entrance. 0px tall, so it never moves the app behind it. -->
 {#if ui.commandPaletteOpen}
-  <CommandPalette />
+  <div out:fade={{ duration: prefersReducedMotion.current ? 0 : 120 }}>
+    <CommandPalette />
+  </div>
 {/if}
 
 {#if gitStatus.conflicts.length > 0 && !ui.conflictsHidden && ConflictModal}
-  <ConflictModal />
+  <div out:fade={{ duration: prefersReducedMotion.current ? 0 : 120 }}>
+    <ConflictModal />
+  </div>
 {/if}
 
 {#if ui.settingsOpen}
-  <Settings />
+  <div out:fade={{ duration: prefersReducedMotion.current ? 0 : 120 }}>
+    <Settings />
+  </div>
 {/if}
 
 {#if ui.shortcutsOpen}
-  <Shortcuts />
+  <div out:fade={{ duration: prefersReducedMotion.current ? 0 : 120 }}>
+    <Shortcuts />
+  </div>
 {/if}
 
 <Toasts />

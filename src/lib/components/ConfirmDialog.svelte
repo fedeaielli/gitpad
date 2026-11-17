@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition'
+  import { prefersReducedMotion } from 'svelte/motion'
   import { confirmState, settleConfirm } from '../stores/confirm.svelte'
 
   let confirmButton = $state<HTMLButtonElement>()
@@ -21,7 +23,7 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#if current}
-  <div class="overlay">
+  <div class="overlay" out:fade={{ duration: prefersReducedMotion.current ? 0 : 120 }}>
     <button class="scrim" aria-label="Cancel" onclick={() => settleConfirm(false)}></button>
     <div
       class="dialog {kind}"
