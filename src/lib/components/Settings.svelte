@@ -167,20 +167,24 @@
   }
 
   async function chooseImportFolder() {
-    const picked = await open({ directory: true, multiple: false, title: 'Clone repository into' })
-    if (typeof picked === 'string' && picked) importFolder = picked
+    try {
+      const picked = await open({ directory: true, multiple: false, title: 'Clone repository into' })
+      if (typeof picked === 'string' && picked) importFolder = picked
+    } catch (e) {
+      pushToast(`choose folder: ${errorMessage(e)}`)
+    }
   }
 
   async function importRepo() {
     const url = importUrl.trim()
-    if (!url || !importFolder || importing) return
+    if (!url || importing) return
     // Unsaved edits belong to the repo being replaced, so they must land first.
     if (!(await flushPendingSave())) return
     importing = true
     try {
       const result = await invoke<{ from: string; to: string }>('git_import_repo', {
         url,
-        parent: importFolder,
+        parent: importFolder || null,
       })
       // Open tabs point into the old clone: they close instead of retargeting.
       for (const tab of [...tabs.tabs]) closeTab(tab.id)
@@ -441,7 +445,7 @@
             />
             <div class="inline">
               <span class="hint path">
-                {importFolder || 'Choose the folder that will hold the clone'}
+                {importFolder || 'Default folder (next to your documents)'}
               </span>
               <button type="button" class="change" disabled={importing} onclick={chooseImportFolder}>
                 Choose…
@@ -451,7 +455,7 @@
               <button
                 type="button"
                 class="change go"
-                disabled={importing || !importUrl.trim() || !importFolder}
+                disabled={importing || !importUrl.trim()}
                 onclick={importRepo}
               >
                 {importing ? 'Cloning…' : 'Clone as active repository'}
