@@ -231,6 +231,8 @@
     // Close the menu first: a big folder takes seconds, and a dialog that stays
     // put reads as a dead click.
     menu = null
+    // shortcut: spinner, no percentage — fs_delete reports nothing until it
+    // returns; emit progress like fs_import if deletes over ~10 s become common.
     ui.deleting = path
     try {
       await invoke('fs_delete', { path })
