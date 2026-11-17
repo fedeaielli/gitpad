@@ -10,7 +10,7 @@ import {
 import { addColumn, addRow, cellIndex, parseTable, removeColumn, removeRow } from './table'
 import { writeTable } from './table-register'
 import { ui, type FileNode } from '../stores/ui.svelte'
-import { noteLink, noteLinkLabel } from '../utils/note-link'
+import { noteLink, noteLinkLabel, noteOrder } from '../utils/note-link'
 
 const RUN = 'gitpad.slash.insert'
 
@@ -208,21 +208,21 @@ export function registerSlashCommands(m: typeof monaco, editor: Editor): () => v
         if (stage.kind === 'note') {
           const current = model.uri.path.replace(/^\//, '')
           return {
-            suggestions: notes(ui.fileTree)
-              .filter((path) => path !== current)
-              .map((path) => ({
-                label: noteLinkLabel(path),
-                detail: path,
-                kind: m.languages.CompletionItemKind.File,
-                insertText: '',
-                filterText: path,
-                range,
-                command: {
-                  id: RUN,
-                  title: `Link ${path}`,
-                  arguments: [{ kind: 'note', path }],
-                },
-              })),
+            // Monaco sorts by sortText, so the index keeps the folder order.
+            suggestions: noteOrder(notes(ui.fileTree), current).map((path, index) => ({
+              label: noteLinkLabel(path),
+              detail: path,
+              kind: m.languages.CompletionItemKind.File,
+              insertText: '',
+              filterText: path,
+              sortText: String(index).padStart(3, '0'),
+              range,
+              command: {
+                id: RUN,
+                title: `Link ${path}`,
+                arguments: [{ kind: 'note', path }],
+              },
+            })),
           }
         }
         return {

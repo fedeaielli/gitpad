@@ -14,6 +14,21 @@ export function noteRelativePath(from: string, to: string): string {
   return [...fromDir.slice(common).map(() => '..'), ...toParts.slice(common)].join('/')
 }
 
+/// Pick-list order: the current folder first, then every other note by path.
+/// The source note is left out: a link to itself is never useful.
+export function noteOrder(paths: string[], from: string): string[] {
+  const folder = from.split('/').slice(0, -1).join('/')
+  const near: string[] = []
+  const far: string[] = []
+  for (const path of paths) {
+    if (path === from) continue
+    const dir = path.split('/').slice(0, -1).join('/')
+    ;(dir === folder ? near : far).push(path)
+  }
+  const byPath = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
+  return [...near.sort(byPath), ...far.sort(byPath)]
+}
+
 /// The note name is the link text: the folder already shows in the path.
 export function noteLinkLabel(path: string): string {
   return path.slice(path.lastIndexOf('/') + 1).replace(/\.md$/i, '')

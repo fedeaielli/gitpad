@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { noteLink, noteRelativePath, resolveNoteLink } from './note-link'
+import { noteLink, noteOrder, noteRelativePath, resolveNoteLink } from './note-link'
 
 describe('noteRelativePath', () => {
   it('stays in the same folder', () => {
@@ -24,6 +24,22 @@ describe('noteLink', () => {
 
   it('encodes spaces and parentheses in the destination', () => {
     expect(noteLink('a.md', 'my note (draft).md')).toBe('[my note (draft)](my%20note%20%28draft%29.md)')
+  })
+})
+
+describe('noteOrder', () => {
+  it('puts the current folder first, then the rest by path', () => {
+    expect(
+      noteOrder(['other/z.md', 'notes/c.md', 'notes/b.md', 'a.md'], 'notes/a.md'),
+    ).toEqual(['notes/b.md', 'notes/c.md', 'a.md', 'other/z.md'])
+  })
+
+  it('treats root notes as the current folder', () => {
+    expect(noteOrder(['notes/b.md', 'b.md', 'a.md'], 'a.md')).toEqual(['b.md', 'notes/b.md'])
+  })
+
+  it('drops the source note', () => {
+    expect(noteOrder(['a.md', 'b.md'], 'a.md')).toEqual(['b.md'])
   })
 })
 
