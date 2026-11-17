@@ -2,7 +2,8 @@ use crate::git;
 use serde::Serialize;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
-use tauri::{AppHandle, Manager};
+use std::time::{Duration, Instant};
+use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_log::log;
 
 #[derive(Serialize, Clone)]
@@ -16,6 +17,14 @@ pub struct FileEntry {
     pub children: Option<Vec<FileEntry>>,
     /// Seconds since the epoch, for the "modified" sort mode.
     pub modified: Option<u64>,
+}
+
+/// Sent only for imports long enough to need it, so the status bar spinner
+/// gets a percentage instead of sitting silent.
+#[derive(Serialize, Clone)]
+struct ImportProgress {
+    done: usize,
+    total: usize,
 }
 
 /// Names Windows rejects or silently rewrites: reserved devices, a trailing dot
@@ -587,6 +596,15 @@ fn unique_path(dir: &Path, name: &str) -> PathBuf {
 /// `skip_git` keeps a user's nested `.git` out of the notes repo, while a moved
 /// clone must carry its own.
 pub(crate) fn copy_tree(src: &Path, dst: &Path, skip_git: bool) -> Result<(), String> {
+    copy_tree_with(src, dst, skip_git, &mut || {})
+}
+
+fn copy_tree_with(
+    src: &Path,
+    dst: &Path,
+    skip_git: bool,
+    on_file: &mut dyn FnMut(),
+) -> Result<(), String> {
     std::fs::create_dir_all(dst).map_err(|e| format!("copy {}: {e}", src.display()))?;
     let entries = std::fs::read_dir(src).map_err(|e| format!("copy {}: {e}", src.display()))?;
     for entry in entries {
@@ -600,17 +618,44 @@ pub(crate) fn copy_tree(src: &Path, dst: &Path, skip_git: bool) -> Result<(), St
             .map_err(|e| format!("copy {}: {e}", path.display()))?;
         let target = dst.join(entry.file_name());
         if file_type.is_dir() {
-            copy_tree(&path, &target, skip_git)?;
+            copy_tree_with(&path, &target, skip_git, on_file)?;
         } else if file_type.is_file() {
             std::fs::copy(&path, &target)
                 .map_err(|e| format!("copy {}: {e}", path.display()))?;
+            on_file();
         }
     }
     Ok(())
 }
 
+/// Same walk and skip rules as `copy_tree`, to size the import before it starts.
+fn count_files(dir: &Path, skip_git: bool) -> Result<usize, String> {
+    let mut total = 0;
+    let entries = std::fs::read_dir(dir).map_err(|e| format!("count {}: {e}", dir.display()))?;
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("count {}: {e}", dir.display()))?;
+        if skip_git && entry.file_name() == ".git" {
+            continue;
+        }
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .map_err(|e| format!("count {}: {e}", path.display()))?;
+        if file_type.is_dir() {
+            total += count_files(&path, skip_git)?;
+        } else if file_type.is_file() {
+            total += 1;
+        }
+    }
+    Ok(total)
+}
+
 /// Copies `src` into `dest_dir` and returns the name it got there.
-fn import_into(src: &Path, dest_dir: &Path) -> Result<PathBuf, String> {
+fn import_into(
+    src: &Path,
+    dest_dir: &Path,
+    on_progress: &mut dyn FnMut(usize, usize),
+) -> Result<PathBuf, String> {
     let meta =
         std::fs::symlink_metadata(src).map_err(|e| format!("import {}: {e}", src.display()))?;
     if meta.file_type().is_symlink() {
@@ -638,7 +683,13 @@ fn import_into(src: &Path, dest_dir: &Path) -> Result<PathBuf, String> {
         .to_string();
     let target = unique_path(&dest, &name);
     if meta.is_dir() {
-        if let Err(e) = copy_tree(&src, &target, true) {
+        let total = count_files(&src, true)?;
+        let mut done = 0;
+        let mut on_file = || {
+            done += 1;
+            on_progress(done, total);
+        };
+        if let Err(e) = copy_tree_with(&src, &target, true, &mut on_file) {
             // A half-copied folder would look like a successful import.
             let _ = std::fs::remove_dir_all(&target);
             return Err(e);
@@ -648,6 +699,7 @@ fn import_into(src: &Path, dest_dir: &Path) -> Result<PathBuf, String> {
             let _ = std::fs::remove_file(&target);
             return Err(format!("import {}: {e}", src.display()));
         }
+        on_progress(1, 1);
     } else {
         return Err(format!("unsupported file type: {}", src.display()));
     }
@@ -669,8 +721,9 @@ pub async fn fs_import(
     let gate = repo_gate(&app);
     let root_task = root.clone();
     let src = PathBuf::from(&source);
+    let app_task = app.clone();
     let rel = tauri::async_runtime::spawn_blocking(move || {
-        import_locked(&root_task, &src, &dest_rel, &gate)
+        import_locked(&root_task, &src, &dest_rel, &gate, Some(&app_task))
     })
     .await
     .map_err(|e| e.to_string())??;
@@ -684,12 +737,29 @@ fn import_locked(
     src: &Path,
     dest_rel: &Path,
     gate: &std::sync::RwLock<()>,
+    app: Option<&AppHandle>,
 ) -> Result<PathBuf, String> {
     // The gate covers the whole copy and its commit: waiting for the autosave
     // is better than committing a half-copied tree. The buffer stays in the
     // webview until this returns.
     let _gate = gate.write().map_err(|e| e.to_string())?;
-    let name = import_into(src, &root.join(dest_rel))?;
+    let started = Instant::now();
+    let mut last_emit = Instant::now();
+    // The count walk is already part of the import: start timing from here.
+    let name = import_into(src, &root.join(dest_rel), &mut |done, total| {
+        // A quick import gets a toast, not a counter that flashes for 0.2 s.
+        if started.elapsed() < Duration::from_secs(2)
+            || last_emit.elapsed() < Duration::from_millis(150)
+        {
+            return;
+        }
+        last_emit = Instant::now();
+        // shortcut: progress counts files, not bytes; a single huge file only
+        // moves it when it finishes. Use bytes if that ever feels wrong.
+        if let Some(app) = app {
+            let _ = app.emit("import-progress", ImportProgress { done, total });
+        }
+    })?;
     let rel = dest_rel.join(name);
     log::info!(target: "editor", "import: {}", rel.display());
     // The copy already happened: a failed commit is retried by the next push.
@@ -938,11 +1008,11 @@ mod tests {
         std::fs::create_dir_all(&root).unwrap();
         std::fs::write(src.join("a.md"), "one").unwrap();
 
-        let name = import_into(&src.join("a.md"), &root).unwrap();
+        let name = import_into(&src.join("a.md"), &root, &mut |_, _| {}).unwrap();
         assert_eq!(name, PathBuf::from("a.md"));
         assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");
 
-        let name = import_into(&src.join("a.md"), &root).unwrap();
+        let name = import_into(&src.join("a.md"), &root, &mut |_, _| {}).unwrap();
         assert_eq!(name, PathBuf::from("a (1).md"));
         assert_eq!(std::fs::read_to_string(root.join("a (1).md")).unwrap(), "one");
 
@@ -962,8 +1032,14 @@ mod tests {
         std::fs::write(src.join("sub/nested.md"), "n").unwrap();
         std::fs::write(src.join(".git/config"), "x").unwrap();
 
-        let name = import_into(&base.join("src/notes"), &root.join("target")).unwrap();
+        let mut seen = Vec::new();
+        let name = import_into(&base.join("src/notes"), &root.join("target"), &mut |done, total| {
+            seen.push((done, total))
+        })
+        .unwrap();
         assert_eq!(name, PathBuf::from("notes"));
+        // keep.md and sub/nested.md; .git is skipped, like the copy does.
+        assert_eq!(seen.last(), Some(&(2, 2)));
         assert_eq!(
             std::fs::read_to_string(root.join("target/notes/keep.md")).unwrap(),
             "k"
@@ -973,7 +1049,12 @@ mod tests {
             "n"
         );
         assert!(!root.join("target/notes/.git").exists());
-        assert!(import_into(&root.join("target/notes"), &root.join("target/notes/sub")).is_err());
+        assert!(import_into(
+            &root.join("target/notes"),
+            &root.join("target/notes/sub"),
+            &mut |_, _| {}
+        )
+        .is_err());
 
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -994,7 +1075,7 @@ mod tests {
         let locked = src.join("locked");
         std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
 
-        import_into(&src, &root).unwrap_err();
+        import_into(&src, &root, &mut |_, _| {}).unwrap_err();
 
         assert!(!root.join("notes").exists(), "a partial copy was left behind");
         std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
@@ -1039,7 +1120,8 @@ mod tests {
         std::fs::write(base.join("a.md"), "one").unwrap();
         let gate = std::sync::RwLock::new(());
 
-        let rel = import_locked(&root, &base.join("a.md"), Path::new(""), &gate).unwrap();
+        let rel =
+            import_locked(&root, &base.join("a.md"), Path::new(""), &gate, None).unwrap();
         assert_eq!(rel, PathBuf::from("a.md"));
         assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");
         assert!(gate.try_write().is_ok());
@@ -1074,7 +1156,7 @@ mod tests {
         let src_task = base.join("a.md");
 
         assert_waits_for_gate(move |gate| {
-            import_locked(&root_task, &src_task, Path::new(""), &gate).is_ok()
+            import_locked(&root_task, &src_task, Path::new(""), &gate, None).is_ok()
         });
         assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");
 
