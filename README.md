@@ -73,7 +73,7 @@ Most note apps keep your writing in a proprietary database. GitPad keeps it in p
 
 ### Navigation
 
-- **File tree.** Create, rename, delete, import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`. Folders are sorted by name, date, or type, and the choice is remembered.
+- **File tree.** Create, rename, delete, move (drag an entry onto a folder), import files or folders, and jump between notes. Folder creation keeps a `.gitkeep`. Folders are sorted by name, date, or type, and the choice is remembered.
 - **Command palette.** `Ctrl+P` for files, `>` for commands, and `>search` for full-text search; press it again to close.
 - **History and File Timeline.** Hash and date on one line, message on the next, with restore and revert one click away.
 - **Every splitter is draggable.** Sidebar, preview, Git panel and timeline resize from their own handles.
@@ -198,6 +198,7 @@ Saving is automatic (2 s debounce) and pushing is automatic too (30 s idle, wind
 Mouse and UI actions:
 
 - Right-click a file in the tree to create, rename, or delete.
+- Drag a file or folder onto a folder to move it there; drop it on the list background to move it back to the root.
 - Middle-click a tab to close it.
 - Click the conflict badge in the status bar to reopen the merge dialog.
 - Open settings from the gear in the status bar.
