@@ -9,6 +9,7 @@ const base: SyncOutcomeInput = {
   hadAhead: false,
   pushed: true,
   conflicts: false,
+  hasRemote: true,
   error: null,
 }
 
@@ -28,6 +29,13 @@ describe('syncOutcome', () => {
     expect(syncOutcome({ ...base, conflicts: true, pushed: false })).toEqual({
       kind: 'error',
       message: 'Resolve the conflicts first',
+    })
+  })
+
+  it('never claims a push for a folder without a remote', () => {
+    expect(syncOutcome({ ...base, hasRemote: false })).toEqual({
+      kind: 'info',
+      message: 'Saved locally — this folder is not connected to GitHub',
     })
   })
 

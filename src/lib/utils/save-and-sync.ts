@@ -27,6 +27,7 @@ export async function saveAndSync() {
         hadAhead,
         pushed: false,
         conflicts: false,
+        hasRemote: gitStatus.hasRemote,
         error: null,
       })
       pushToast(out.message, out.kind)
@@ -47,6 +48,7 @@ export async function saveAndSync() {
       hadAhead,
       pushed,
       conflicts: gitStatus.conflicts.length > 0,
+      hasRemote: gitStatus.hasRemote,
       error: gitStatus.error,
     })
     pushToast(out.message, out.kind)

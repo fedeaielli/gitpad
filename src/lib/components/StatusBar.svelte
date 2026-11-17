@@ -18,6 +18,7 @@
     if (gitStatus.syncing) return 'syncing'
     if (gitStatus.conflicts.length > 0) return 'conflict'
     if (gitStatus.diverged) return 'diverged'
+    if (!gitStatus.hasRemote) return 'local only'
     if (gitStatus.ahead > 0) return 'queued'
     return 'synced'
   })
@@ -106,6 +107,9 @@
     color: var(--err);
   }
   .badge.no {
+    color: var(--muted);
+  }
+  .badge.local {
     color: var(--muted);
   }
   .spinner {

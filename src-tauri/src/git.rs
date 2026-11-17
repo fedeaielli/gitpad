@@ -40,6 +40,8 @@ pub struct GitStatus {
     pub ahead: usize,
     pub behind: usize,
     pub diverged: bool,
+    /// False for a repository initialized in place: commits stay local.
+    pub has_remote: bool,
     /// Epoch seconds of the last push GitPad made from this clone.
     pub last_push: Option<u64>,
 }
@@ -554,6 +556,7 @@ fn status_of(repo: &Repository) -> Result<GitStatus, GitError> {
         ahead,
         behind,
         diverged: ahead > 0 && behind > 0,
+        has_remote: repo.find_remote("origin").is_ok(),
         last_push: last_push_secs(repo),
     })
 }

@@ -20,6 +20,8 @@ export interface GitStatus {
   ahead: number
   behind: number
   diverged: boolean
+  /** False for a repository initialized in place: commits stay local. */
+  hasRemote: boolean
   /** Epoch seconds of the last push GitPad made from this clone. */
   lastPush: number | null
 }
@@ -42,6 +44,7 @@ export const gitStatus = $state({
   ahead: 0,
   behind: 0,
   diverged: false,
+  hasRemote: true,
   lastPush: null as Date | null,
   conflicts: [] as ConflictFile[],
   error: null as string | null,
@@ -57,6 +60,7 @@ export function applyGitStatus(status: GitStatus) {
   gitStatus.ahead = status.ahead
   gitStatus.behind = status.behind
   gitStatus.diverged = status.diverged
+  gitStatus.hasRemote = status.hasRemote
   gitStatus.conflicts = status.conflicts
   // Recorded per clone, so switching repository clears a stale timestamp.
   gitStatus.lastPush = status.lastPush ? new Date(status.lastPush * 1000) : null

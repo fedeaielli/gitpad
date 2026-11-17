@@ -8,6 +8,7 @@ export interface SyncOutcomeInput {
   hadAhead: boolean
   pushed: boolean
   conflicts: boolean
+  hasRemote: boolean
   error: string | null
 }
 
@@ -23,6 +24,12 @@ export function syncOutcome(i: SyncOutcomeInput): {
     }
   }
   if (i.conflicts) return { kind: 'error', message: 'Resolve the conflicts first' }
+  if (!i.hasRemote) {
+    return {
+      kind: 'info',
+      message: 'Saved locally — this folder is not connected to GitHub',
+    }
+  }
   if (!i.pushed && isOfflineError(i.error)) {
     return {
       kind: 'error',
