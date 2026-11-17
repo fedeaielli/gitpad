@@ -750,6 +750,11 @@
     border-radius: var(--r-sm) var(--r-sm) 0 0;
     background: transparent;
     color: var(--muted);
+    /* The same size and weight on every tab: the accent bar and the colour
+       carry selection, not a step in the type. */
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
     cursor: pointer;
   }
   .tab:hover {
@@ -762,7 +767,6 @@
   .tab.active {
     background: var(--surface-2);
     color: var(--text);
-    font-weight: 500;
   }
   /* Inset past the corners: a border-top would follow the radius and bow. */
   .tab.active::after {
