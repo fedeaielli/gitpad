@@ -845,6 +845,32 @@ pub fn push_only_blocking(
     status_of(&repo)
 }
 
+/// Give an existing local repository an `origin` and push its commits there.
+pub fn attach_origin_blocking(
+    path: &Path,
+    url: &str,
+    token: Option<String>,
+    gate: std::sync::Arc<std::sync::RwLock<()>>,
+) -> Result<GitStatus, GitError> {
+    let repo = open_repo(path)?;
+    match repo.find_remote("origin") {
+        Ok(_) => repo.remote_set_url("origin", url).map_err(git_err)?,
+        // libgit2 writes the default fetch refspec, so pull works afterwards.
+        Err(_) => {
+            repo.remote("origin", url).map_err(git_err)?;
+        }
+    }
+    {
+        let _gate = gate.write().map_err(|e| e.to_string())?;
+        commit_pending(&repo, None)?;
+    }
+    // shortcut: a GitHub repository that already has commits rejects this push
+    // and the error reaches the UI; no unrelated-history merge. upgrade: merge
+    // when a user hits it and the notes are worth keeping.
+    push_refs(&repo, token)?;
+    status_of(&repo)
+}
+
 fn push_refs(repo: &Repository, token: Option<String>) -> Result<(), GitError> {
     // A local-only repository keeps its commits; there is no remote to send to.
     if repo.find_remote("origin").is_err() {
@@ -1332,6 +1358,23 @@ pub async fn git_use_local(app: AppHandle, path: String) -> Result<LocalRepo, Gi
         initialized,
         remote,
     })
+}
+
+/// Attach `origin` to the active repository and push: a local-only folder keeps
+/// its history instead of being cloned again somewhere else.
+#[tauri::command]
+pub async fn git_attach_origin(app: AppHandle, url: String) -> Result<GitStatus, GitError> {
+    let path = repo_dir(&app)?;
+    let gate = app.state::<crate::AppState>().repo_gate.clone();
+    let status = tokio::task::spawn_blocking(move || {
+        let token = auth::token().ok();
+        attach_origin_blocking(&path, &url, token, gate)
+    })
+    .await
+    .map_err(|e| format!("git task: {e}"))??;
+    log::info!(target: "git", "sync: origin attached");
+    emit_status(&app, &status)?;
+    Ok(status)
 }
 
 /// Shared clone body: the caller owns target resolution and the repo cache.
@@ -2972,6 +3015,35 @@ mod tests {
         let head = reopened.head().unwrap();
         let commit = head.peel_to_commit().unwrap();
         assert_eq!(commit.message(), Some("gitpad: update a.md"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn attach_origin_pushes_the_local_history() {
+        let root = tmp("attach-origin");
+        let remote_path = root.join("remote.git");
+        Repository::init_bare(&remote_path).unwrap();
+        let local = root.join("local");
+        let repo = Repository::init(&local).unwrap();
+        commit_file(&repo, "a.md", "one");
+        let branch = current_branch(&repo).unwrap();
+        drop(repo);
+
+        let status = attach_origin_blocking(
+            &local,
+            remote_path.to_str().unwrap(),
+            None,
+            std::sync::Arc::new(std::sync::RwLock::new(())),
+        )
+        .unwrap();
+
+        assert!(status.has_remote);
+        // The push updates refs/remotes/origin/<branch>: nothing is left pending.
+        assert_eq!((status.ahead, status.behind), (0, 0));
+        let remote = Repository::open_bare(&remote_path).unwrap();
+        assert!(remote
+            .refname_to_id(&format!("refs/heads/{branch}"))
+            .is_ok());
         let _ = std::fs::remove_dir_all(&root);
     }
 

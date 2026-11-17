@@ -428,6 +428,7 @@ pub fn run() {
             git::git_move_repo,
             git::git_import_repo,
             git::git_use_local,
+            git::git_attach_origin,
             git::git_pull,
             git::git_push,
             git::git_discard_file,

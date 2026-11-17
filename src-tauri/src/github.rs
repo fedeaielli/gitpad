@@ -127,10 +127,13 @@ pub async fn github_get_user(state: State<'_, AppState>) -> Result<UserInfo, Str
     Ok(user)
 }
 
+/// `init: false` is for a repository that will receive an existing local
+/// history: an auto-initialized README would leave the notes on a second branch.
 #[tauri::command]
 pub async fn github_init_repo(
     app: AppHandle,
     state: State<'_, AppState>,
+    init: Option<bool>,
 ) -> Result<RepoInfo, String> {
     // The wizard shows these steps: each one is a round-trip that can take seconds.
     let _ = app.emit("onboarding-stage", "account");
@@ -154,7 +157,7 @@ pub async fn github_init_repo(
     let body = serde_json::json!({
         "name": DEFAULT_REPO_NAME,
         "private": true,
-        "auto_init": true,
+        "auto_init": init.unwrap_or(true),
     });
     let _ = app.emit("onboarding-stage", "creating");
     let res = state

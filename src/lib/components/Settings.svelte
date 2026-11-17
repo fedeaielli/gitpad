@@ -10,7 +10,7 @@
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
   import { focusTrap } from '../utils/focus'
   import { open } from '@tauri-apps/plugin-dialog'
-  import { errorMessage, applyGitStatus, type GitStatus } from '../stores/git.svelte'
+  import { errorMessage, applyGitStatus, gitStatus, type GitStatus } from '../stores/git.svelte'
   import { auth, forgetUser, loadUser, signInWithPat } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
   import LogsPane from './LogsPane.svelte'
@@ -76,6 +76,7 @@
   let newLang = $state('plaintext')
   let extMessage = $state('')
   let moving = $state(false)
+  let connecting = $state(false)
   let localBusy = $state(false)
   let importOpen = $state(false)
   let importUrl = $state('')
@@ -262,6 +263,22 @@
   async function refreshUser() {
     await loadUser(true)
     accountError = auth.user ? '' : 'not connected'
+  }
+
+  /// A local-only folder keeps its history: attach `origin` and push, no clone.
+  async function attachToGithub() {
+    if (connecting) return
+    connecting = true
+    try {
+      const repo = await invoke<{ cloneUrl: string }>('github_init_repo', { init: false })
+      applyGitStatus(await invoke<GitStatus>('git_attach_origin', { url: repo.cloneUrl }))
+      ui.treeVersion += 1
+      pushToast('Repository connected to GitHub', 'success')
+    } catch (e) {
+      pushToast(`connect repository: ${errorMessage(e)}`)
+    } finally {
+      connecting = false
+    }
   }
 
   async function signIn() {
@@ -592,6 +609,17 @@
               <span>{user.login}</span>
             </div>
           </div>
+          {#if gitStatus.configured && !gitStatus.hasRemote}
+            <div class="field">
+              <span>GitHub repository</span>
+              <div class="inline">
+                <span class="hint">Local only — commits stay on this machine</span>
+                <button class="change" disabled={connecting} onclick={attachToGithub}>
+                  {connecting ? 'Connecting…' : 'Connect'}
+                </button>
+              </div>
+            </div>
+          {/if}
           <div class="field">
             <span></span>
             <button class="danger" onclick={logout}>Logout</button>
