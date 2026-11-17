@@ -776,6 +776,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
+    /* Rows stay a readable column, not the full width of the dialog. */
+    max-width: 560px;
   }
   .section > h3 {
     margin: 0;
