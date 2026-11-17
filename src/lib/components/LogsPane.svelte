@@ -296,7 +296,7 @@
     border-radius: var(--r-md);
     background: var(--surface-0);
     font-family: ui-monospace, monospace;
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     line-height: 1.5;
   }
   .session {
@@ -318,7 +318,7 @@
   }
   .line {
     display: grid;
-    grid-template-columns: 62px 46px 52px 1fr;
+    grid-template-columns: 70px 46px 56px 1fr;
     gap: var(--sp-2);
     padding: 1px var(--sp-2);
     transition: background var(--t-fast);

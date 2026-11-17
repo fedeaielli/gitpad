@@ -782,6 +782,9 @@
     overflow-y: auto;
     padding: var(--sp-4) var(--sp-4) var(--sp-6);
     background: var(--surface-0);
+    /* One type scale for every tab: rows, values and controls read at 15 px,
+       the hints and group titles sit a step below. */
+    font-size: 15px;
   }
   .field {
     display: grid;
@@ -850,7 +853,7 @@
     border-radius: var(--r-md);
     background: var(--surface-0);
     color: var(--text);
-    font-size: var(--fs-md);
+    font-size: inherit;
   }
   /* The native stepper is a fourth style; the range already sets the value. */
   .modal input[type='number'] {
@@ -910,7 +913,7 @@
     border-radius: var(--r-md);
     background: var(--surface-2);
     color: var(--text);
-    font-size: var(--fs-md);
+    font-size: inherit;
     white-space: nowrap;
   }
   /* Same meaning as in the onboarding and conflict dialogs: the choice the
@@ -1054,7 +1057,7 @@
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: var(--fs-sm);
+    font-size: inherit;
   }
   .extensions li {
     display: flex;
@@ -1109,7 +1112,7 @@
     border: 1px solid var(--err);
     border-radius: var(--r-md);
     color: var(--err);
-    font-size: var(--fs-md);
+    font-size: inherit;
     justify-self: start;
   }
   .danger:hover:not(:disabled) {
