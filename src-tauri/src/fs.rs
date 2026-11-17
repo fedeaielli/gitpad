@@ -1,5 +1,6 @@
 use crate::git;
 use serde::Serialize;
+use std::collections::HashSet;
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -27,6 +28,17 @@ struct ImportProgress {
     total: usize,
     /// "copy" carries a percentage; "commit" has no byte progress to report.
     phase: &'static str,
+}
+
+/// GitHub rejects files over 100 MiB: importing one would only poison history.
+const MAX_TRACKED_BYTES: u64 = 100 * 1024 * 1024;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    path: String,
+    ignored_files: usize,
+    ignored_bytes: u64,
 }
 
 /// Names Windows rejects or silently rewrites: reserved devices, a trailing dot
@@ -652,6 +664,93 @@ fn count_files(dir: &Path, skip_git: bool) -> Result<usize, String> {
     Ok(total)
 }
 
+/// Anchors the pattern at the repo root and escapes gitignore glob characters,
+/// so a name like `disk [1].img` matches itself and nothing else.
+fn gitignore_pattern(rel: &Path) -> String {
+    let mut pattern = String::from("/");
+    for ch in rel.to_string_lossy().chars() {
+        if matches!(ch, '\\' | '*' | '?' | '[' | ']' | '#' | '!') {
+            pattern.push('\\');
+        }
+        pattern.push(ch);
+    }
+    pattern
+}
+
+fn large_files(dir: &Path, root: &Path, found: &mut Vec<(String, u64)>) -> Result<(), String> {
+    let entries = std::fs::read_dir(dir).map_err(|e| format!("scan {}: {e}", dir.display()))?;
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("scan {}: {e}", dir.display()))?;
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .map_err(|e| format!("scan {}: {e}", path.display()))?;
+        if file_type.is_dir() {
+            large_files(&path, root, found)?;
+        } else if file_type.is_file() {
+            let len = entry
+                .metadata()
+                .map_err(|e| format!("scan {}: {e}", path.display()))?
+                .len();
+            if len > MAX_TRACKED_BYTES {
+                let rel = path.strip_prefix(root).unwrap_or(&path);
+                found.push((gitignore_pattern(rel), len));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Keeps files GitHub would reject out of the next commit. They stay on disk;
+/// returns how many were found and their total size.
+fn ignore_large_files(root: &Path, target: &Path) -> Result<(usize, u64), String> {
+    let meta = std::fs::metadata(target).map_err(|e| format!("scan {}: {e}", target.display()))?;
+    let mut found = Vec::new();
+    if meta.is_dir() {
+        large_files(target, root, &mut found)?;
+    } else if meta.is_file() && meta.len() > MAX_TRACKED_BYTES {
+        let rel = target.strip_prefix(root).unwrap_or(target);
+        found.push((gitignore_pattern(rel), meta.len()));
+    }
+    if found.is_empty() {
+        return Ok((0, 0));
+    }
+
+    let ignore_path = root.join(".gitignore");
+    let existing = match std::fs::read_to_string(&ignore_path) {
+        Ok(text) => text,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(e) => return Err(format!("read {}: {e}", ignore_path.display())),
+    };
+    let known: HashSet<&str> = existing.lines().map(str::trim_end).collect();
+    let missing: Vec<&(String, u64)> = found
+        .iter()
+        .filter(|(pattern, _)| !known.contains(pattern.as_str()))
+        .collect();
+    if !missing.is_empty() {
+        let mut add = String::new();
+        // Never glue the first pattern onto an existing unterminated line.
+        if !existing.is_empty() && !existing.ends_with('\n') {
+            add.push('\n');
+        }
+        if !existing.contains("# Imported files over 100 MB") {
+            add.push_str("# Imported files over 100 MB stay local (GitHub rejects them).\n");
+        }
+        for (pattern, _) in &missing {
+            add.push_str(pattern);
+            add.push('\n');
+        }
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&ignore_path)
+            .map_err(|e| format!("open {}: {e}", ignore_path.display()))?;
+        file.write_all(add.as_bytes())
+            .map_err(|e| format!("write {}: {e}", ignore_path.display()))?;
+    }
+    Ok((found.len(), found.iter().map(|(_, len)| len).sum()))
+}
+
 /// Copies `src` into `dest_dir`; returns the name it got there and the file count.
 fn import_into(
     src: &Path,
@@ -717,7 +816,7 @@ pub async fn fs_import(
     app: AppHandle,
     source: String,
     dest_dir: Option<String>,
-) -> Result<String, git::GitError> {
+) -> Result<ImportResult, git::GitError> {
     let root = git::repo_dir(&app)?;
     let dest_rel = match dest_dir.as_deref() {
         Some(dir) => resolve_in(&root, dir)?,
@@ -727,7 +826,7 @@ pub async fn fs_import(
     let root_task = root.clone();
     let src = PathBuf::from(&source);
     let app_task = app.clone();
-    let rel = tauri::async_runtime::spawn_blocking(move || {
+    let (rel, ignored_files, ignored_bytes) = tauri::async_runtime::spawn_blocking(move || {
         import_locked(&root_task, &src, &dest_rel, &gate, Some(&app_task))
     })
     .await
@@ -740,7 +839,11 @@ pub async fn fs_import(
         "import status done in {:?}",
         status_started.elapsed()
     );
-    Ok(rel_path(&rel))
+    Ok(ImportResult {
+        path: rel_path(&rel),
+        ignored_files,
+        ignored_bytes,
+    })
 }
 
 fn import_locked(
@@ -749,7 +852,7 @@ fn import_locked(
     dest_rel: &Path,
     gate: &std::sync::RwLock<()>,
     app: Option<&AppHandle>,
-) -> Result<PathBuf, String> {
+) -> Result<(PathBuf, usize, u64), String> {
     // The gate covers the whole copy and its commit: waiting for the autosave
     // is better than committing a half-copied tree. The buffer stays in the
     // webview until this returns.
@@ -786,6 +889,21 @@ fn import_locked(
         rel.display(),
         copy_started.elapsed()
     );
+    let (ignored_files, ignored_bytes) = match ignore_large_files(root, &root.join(&rel)) {
+        Ok(counts) => counts,
+        // The note still gets committed: losing the ignore list is not worth failing.
+        Err(e) => {
+            log::warn!(target: "editor", "import: could not update .gitignore: {e}");
+            (0, 0)
+        }
+    };
+    if ignored_files > 0 {
+        log::info!(
+            target: "editor",
+            "import kept {ignored_files} files ({} MB) local in .gitignore",
+            ignored_bytes / (1024 * 1024)
+        );
+    }
     // Staging 19 GB can take minutes: label the phase instead of a frozen 99%.
     if copied > 0 && started.elapsed() >= Duration::from_secs(2) {
         if let Some(app) = app {
@@ -813,7 +931,7 @@ fn import_locked(
             commit_started.elapsed()
         ),
     }
-    Ok(rel)
+    Ok((rel, ignored_files, ignored_bytes))
 }
 
 #[tauri::command]
@@ -1132,6 +1250,42 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn ignore_large_files_lists_them_once_and_keeps_the_header() {
+        let base = std::env::temp_dir().join(format!("gitpad-ignore-big-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let root = base.join("repo");
+        let target = root.join("imported");
+        std::fs::create_dir_all(target.join("disks")).unwrap();
+        std::fs::write(root.join(".gitignore"), "notes").unwrap();
+        let big = target.join("disks/disk [1].img");
+        std::fs::File::options()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&big)
+            .unwrap()
+            .set_len(MAX_TRACKED_BYTES + 1)
+            .unwrap();
+        std::fs::write(target.join("small.md"), "s").unwrap();
+
+        let (files, bytes) = ignore_large_files(&root, &target).unwrap();
+        assert_eq!(files, 1);
+        assert_eq!(bytes, MAX_TRACKED_BYTES + 1);
+
+        let once = std::fs::read_to_string(root.join(".gitignore")).unwrap();
+        assert!(once.starts_with("notes\n# Imported files over 100 MB"));
+        assert_eq!(once.matches("/imported/disks/disk \\[1\\].img").count(), 1);
+        assert!(!once.contains("small.md"));
+
+        // A second import of the same folder must not duplicate the pattern.
+        ignore_large_files(&root, &target).unwrap();
+        assert_eq!(std::fs::read_to_string(root.join(".gitignore")).unwrap(), once);
+
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
     #[test]
     fn same_entry_matches_one_path_spelled_twice() {
         let root = std::env::temp_dir().join(format!("gitpad-entry-{}", std::process::id()));
@@ -1170,7 +1324,7 @@ mod tests {
         std::fs::write(base.join("a.md"), "one").unwrap();
         let gate = std::sync::RwLock::new(());
 
-        let rel =
+        let (rel, _, _) =
             import_locked(&root, &base.join("a.md"), Path::new(""), &gate, None).unwrap();
         assert_eq!(rel, PathBuf::from("a.md"));
         assert_eq!(std::fs::read_to_string(root.join("a.md")).unwrap(), "one");

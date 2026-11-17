@@ -5,7 +5,7 @@
   import { ui, type FileNode } from '../stores/ui.svelte'
   import { tabs, discardUnder, retarget } from '../stores/tabs.svelte'
   import { openFileInTab } from '../utils/open-file'
-  import { pickAndImport } from '../utils/import'
+  import { pickAndImport, notifyIgnored } from '../utils/import'
   import FileIcon from './FileIcon.svelte'
   import { sortNodes, visibleNodes } from '../utils/file-sort'
   import { canMoveInto, moveTarget } from '../utils/move'
@@ -199,13 +199,15 @@
     const base = menuBase()
     menu = null
     try {
-      const path = await pickAndImport(directory, base || null)
-      if (!path) return
+      const result = await pickAndImport(directory, base || null)
+      if (!result) return
+      const path = result.path
       if (base && !ui.expanded.includes(base)) ui.expanded = [...ui.expanded, base]
       await loadTree()
       if (!directory) {
         await openFile({ name: path.split('/').pop() ?? path, path, type: 'file' })
       }
+      notifyIgnored(result)
     } catch (e) {
       pushToast(`Import failed: ${errorMessage(e)}`)
     }

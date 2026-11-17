@@ -23,8 +23,9 @@ describe('pickAndImport', () => {
 
   it('imports the picked source into the given base', async () => {
     openMock.mockResolvedValue('/home/user/notes.md')
-    invokeMock.mockResolvedValue('notes (1).md')
-    await expect(pickAndImport(false, 'inbox')).resolves.toBe('notes (1).md')
+    const result = { path: 'notes (1).md', ignoredFiles: 0, ignoredBytes: 0 }
+    invokeMock.mockResolvedValue(result)
+    await expect(pickAndImport(false, 'inbox')).resolves.toEqual(result)
     expect(invokeMock).toHaveBeenCalledWith('fs_import', {
       source: '/home/user/notes.md',
       destDir: 'inbox',

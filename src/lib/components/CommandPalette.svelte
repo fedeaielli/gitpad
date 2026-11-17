@@ -8,7 +8,7 @@
   import { errorMessage, gitStatus, syncNow } from '../stores/git.svelte'
   import { saveAndSync } from '../utils/save-and-sync'
   import { newFileError } from '../utils/new-file'
-  import { importSource, pickImportSource } from '../utils/import'
+  import { importSource, pickImportSource, notifyIgnored } from '../utils/import'
   import { openFileInTab } from '../utils/open-file'
   import { pushToast } from '../stores/toasts.svelte'
   import { revealLine } from '../editor/bridge'
@@ -226,10 +226,11 @@
       const source = await pickImportSource(directory)
       if (!source) return
       pushToast('Importing…', 'info')
-      const path = await importSource(source, null)
+      const result = await importSource(source, null)
       ui.treeVersion += 1
-      if (!directory) await openFileInTab(path)
-      pushToast(`Imported ${path}`, 'success')
+      if (!directory) await openFileInTab(result.path)
+      pushToast(`Imported ${result.path}`, 'success')
+      notifyIgnored(result)
     } catch (e) {
       pushToast(errorMessage(e), 'error')
     }
