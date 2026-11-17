@@ -454,7 +454,7 @@
     // Silent when offline or rate limited: only a real newer release shows.
     void checkUpdate()
       .then((u) => {
-        if (u.newer) pushToast(`GitPad ${u.latest} is available`, 'info', 'app', u.url)
+        if (u.newer) pushToast(`GitPad ${u.latest} is available`, 'info', 'app', u.url, 'View release')
       })
       .catch(() => {})
     void listen('app-closing', async () => {

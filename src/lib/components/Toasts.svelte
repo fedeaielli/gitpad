@@ -2,7 +2,14 @@
   import { fly } from 'svelte/transition'
   import { flip } from 'svelte/animate'
   import { prefersReducedMotion } from 'svelte/motion'
-  import { toasts, dismissToast, type Toast, type ToastKind } from '../stores/toasts.svelte'
+  import {
+    toasts,
+    dismissToast,
+    pauseToast,
+    resumeToast,
+    type Toast,
+    type ToastKind,
+  } from '../stores/toasts.svelte'
   import { openExternal } from '../utils/open'
 
   function icon(kind: ToastKind) {
@@ -17,20 +24,28 @@
   }
 </script>
 
-<div class="toasts" aria-label="Notifications">
+<div class="toasts" role="region" aria-label="Notifications">
   {#each toasts.items as toast (toast.id)}
     <div
       class="toast {toast.kind}"
       role={toast.kind === 'error' ? 'alert' : 'status'}
-      transition:fly={{ y: 6, duration: prefersReducedMotion.current ? 0 : 120 }}
+      in:fly={{ y: 8, duration: prefersReducedMotion.current ? 0 : 140 }}
+      out:fly={{ y: 4, duration: prefersReducedMotion.current ? 0 : 100 }}
       animate:flip={{ duration: prefersReducedMotion.current ? 0 : 150 }}
+      onmouseenter={() => pauseToast(toast.id)}
+      onmouseleave={() => resumeToast(toast.id)}
+      onfocusin={() => pauseToast(toast.id)}
+      onfocusout={() => resumeToast(toast.id)}
     >
       <span class="icon" aria-hidden="true">{icon(toast.kind)}</span>
-      {#if toast.url}
-        <button class="message link" onclick={() => follow(toast)}>{toast.message}</button>
-      {:else}
+      <div class="body">
         <span class="message">{toast.message}</span>
-      {/if}
+        {#if toast.url}
+          <button class="action" onclick={() => follow(toast)}>
+            {toast.action ?? 'Open link'}
+          </button>
+        {/if}
+      </div>
       <button
         class="close"
         aria-label="Dismiss notification"
@@ -45,8 +60,8 @@
 <style>
   .toasts {
     position: fixed;
-    right: 12px;
-    bottom: calc(var(--h-statusbar) + 16px);
+    right: var(--sp-3);
+    bottom: calc(var(--h-statusbar) + var(--sp-4));
     z-index: 70;
     display: flex;
     flex-direction: column;
@@ -57,10 +72,10 @@
   .toast {
     --kind: var(--accent-fg);
     display: grid;
-    grid-template-columns: 20px 1fr 22px;
+    grid-template-columns: 20px 1fr 24px;
     align-items: start;
     gap: var(--sp-25);
-    padding: 11px var(--sp-3) 11px 14px;
+    padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-2);
@@ -98,25 +113,35 @@
     border: 1px solid var(--warn);
     background: transparent;
   }
+  .body {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: var(--sp-05);
+  }
   .message {
     color: var(--text);
     font-size: var(--fs-sm);
     line-height: 1.45;
     overflow-wrap: anywhere;
   }
-  .message.link {
+  /* The action names what it does; the message itself is not a link. */
+  .action {
+    align-self: start;
     padding: 0;
     border: none;
     background: none;
     color: var(--accent-fg);
     font: inherit;
+    font-size: var(--fs-sm);
     text-align: left;
+    text-decoration: none;
+  }
+  .action:hover {
     text-decoration: underline;
-    cursor: pointer;
   }
   .close {
     display: grid;
-    align-self: center;
     place-items: center;
     width: 24px;
     height: 24px;
