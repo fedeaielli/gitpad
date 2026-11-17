@@ -12,17 +12,37 @@
   } from '../stores/toasts.svelte'
   import { openExternal } from '../utils/open'
 
-  function icon(kind: ToastKind) {
-    if (kind === 'error' || kind === 'warning') return '!'
-    return kind === 'success' ? '✓' : 'i'
-  }
-
   function follow(toast: Toast) {
     if (!toast.url) return
     void openExternal(toast.url)
     dismissToast(toast.id)
   }
 </script>
+
+{#snippet kindIcon(kind: ToastKind)}
+  <svg
+    class="icon"
+    viewBox="0 0 16 16"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    aria-hidden="true"
+  >
+    <circle cx="8" cy="8" r="6.25" />
+    {#if kind === 'success'}
+      <path d="M5.2 8.2 7.2 10.2 10.8 5.9" />
+    {:else if kind === 'error'}
+      <path d="M6.1 6.1l3.8 3.8M9.9 6.1l-3.8 3.8" />
+    {:else if kind === 'warning'}
+      <path d="M8 4.7v4.1M8 11.3v.1" />
+    {:else}
+      <path d="M8 7.3v4M8 4.7v.1" />
+    {/if}
+  </svg>
+{/snippet}
 
 <div class="toasts" role="region" aria-label="Notifications">
   {#each toasts.items as toast (toast.id)}
@@ -37,7 +57,7 @@
       onfocusin={() => pauseToast(toast.id)}
       onfocusout={() => resumeToast(toast.id)}
     >
-      <span class="icon" aria-hidden="true">{icon(toast.kind)}</span>
+      {@render kindIcon(toast.kind)}
       <div class="body">
         <span class="message">{toast.message}</span>
         {#if toast.url}
@@ -72,14 +92,17 @@
   .toast {
     --kind: var(--accent-fg);
     display: grid;
-    grid-template-columns: 20px 1fr 24px;
+    grid-template-columns: 16px 1fr 20px;
     align-items: start;
-    gap: var(--sp-25);
-    padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
     border: 1px solid var(--border);
-    border-radius: var(--r-md);
+    border-radius: var(--r-sm);
     background: var(--surface-2);
-    box-shadow: var(--shadow-1);
+    /* Severity as a left edge, not a floating badge: inset keeps the corners round. */
+    box-shadow:
+      inset 3px 0 0 var(--kind),
+      var(--shadow-1);
     pointer-events: auto;
   }
   .toast.error {
@@ -93,36 +116,19 @@
     --kind: var(--accent-fg);
   }
   .icon {
-    display: grid;
-    place-items: center;
-    box-sizing: border-box;
-    width: 20px;
-    height: 20px;
-    border-radius: var(--r-pill);
-    background: var(--surface-3);
+    display: block;
     color: var(--kind);
-    font-size: var(--fs-sm);
-    font-weight: 700;
-    line-height: 1;
-  }
-  .toast.error .icon {
-    background: var(--err);
-    color: var(--on-accent);
-  }
-  .toast.warning .icon {
-    border: 1px solid var(--warn);
-    background: transparent;
   }
   .body {
     display: flex;
     min-width: 0;
     flex-direction: column;
-    gap: var(--sp-05);
+    gap: var(--sp-0);
   }
   .message {
     color: var(--text);
     font-size: var(--fs-sm);
-    line-height: 1.45;
+    line-height: 1.35;
     overflow-wrap: anywhere;
   }
   /* The action names what it does; the message itself is not a link. */
@@ -143,8 +149,10 @@
   .close {
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
+    /* Centred on the 16px first line, not on the card. */
+    margin-top: -2px;
     padding: 0;
     color: var(--muted);
     font-size: var(--fs-lg);
