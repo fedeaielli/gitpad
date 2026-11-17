@@ -12,7 +12,8 @@
   import { tip } from '../utils/tooltip'
   import { restoreFileAt } from '../utils/restore'
   import { isCurrentVersion } from '../utils/file-history'
-  import { clampTimelineHeight } from '../utils/timeline'
+  import { clampTimelineHeight, timelineMax, MIN_TIMELINE } from '../utils/timeline'
+  import { resist } from '../utils/rubberband'
   import FileIcon from './FileIcon.svelte'
 
   interface FileDiff {
@@ -220,6 +221,13 @@
     })
   }
 
+  // Overshoot during the drag only: ui.* stays clamped, so the panel settles
+  // back to a legal size the moment the pointer is released.
+  let dragHeight = $state<number | null>(null)
+  let dragListWidth = $state<number | null>(null)
+  const shownHeight = $derived(dragHeight ?? ui.timelineHeight)
+  const shownListWidth = $derived(dragListWidth ?? ui.timelineListWidth)
+
   function startResize(e: PointerEvent) {
     dragging = true
     startY = e.clientY
@@ -230,11 +238,14 @@
   function moveResize(e: PointerEvent) {
     if (!dragging) return
     const column = frame?.parentElement?.clientHeight ?? window.innerHeight
-    ui.timelineHeight = clampTimelineHeight(column, startHeight + (startY - e.clientY))
+    const wanted = startHeight + (startY - e.clientY)
+    ui.timelineHeight = clampTimelineHeight(column, wanted)
+    dragHeight = Math.round(resist(wanted, MIN_TIMELINE, timelineMax(column)))
   }
 
   function endResize() {
     dragging = false
+    dragHeight = null
   }
 
   let splitting = $state(false)
@@ -251,13 +262,14 @@
 
   function moveSplit(e: PointerEvent) {
     if (!splitting) return
-    ui.timelineListWidth = Math.round(
-      Math.min(560, Math.max(180, splitWidth + e.clientX - splitX)),
-    )
+    const raw = splitWidth + e.clientX - splitX
+    ui.timelineListWidth = Math.round(Math.min(560, Math.max(180, raw)))
+    dragListWidth = Math.round(resist(raw, 180, 560))
   }
 
   function endSplit() {
     splitting = false
+    dragListWidth = null
   }
 
   /// Created on first use: an empty diff editor draws a sash between two blank
@@ -298,7 +310,7 @@
 
 <section
   class="timeline"
-  style="height: {ui.timelineHeight}px"
+  style="height: {shownHeight}px"
   aria-label="File history"
   bind:this={frame}
 >
@@ -338,7 +350,7 @@
   {/if}
 
   <div class="body">
-    <ul class="commits" style="flex: 0 0 {ui.timelineListWidth}px">
+    <ul class="commits" style="flex: 0 0 {shownListWidth}px">
       {#if commit}
         {#each files as file (file.path)}
           <li class="row" class:active={selected === file.path}>

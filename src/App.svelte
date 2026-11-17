@@ -40,6 +40,7 @@
   } from './lib/stores/git.svelte'
   import { loadConfig, saveConfig, type Config } from './lib/utils/config'
   import { clampTimelineHeight } from './lib/utils/timeline'
+  import { resist } from './lib/utils/rubberband'
   import { checkUpdate } from './lib/utils/update'
 
   let configLoaded = $state(false)
@@ -104,9 +105,13 @@
   const maxSidebar = () => Math.max(MIN_SIDEBAR, window.innerWidth - MIN_EDITOR)
   // The wrapper declares its size: WebKit does not recompute a flex-basis:auto
   // wrapper when the panel inside it changes width, so the panel was clipped.
+  // dragWidth carries the rubber-band overshoot; ui.sidebarWidth stays clamped
+  // so the saved config can never hold a width past the editor's floor.
+  let dragWidth = $state<number | null>(null)
+  const shownSidebar = $derived(dragWidth ?? ui.sidebarWidth)
   const leftWidth = $derived(
     ui.sidebarOpen
-      ? `calc(var(--w-activitybar) + ${ui.sidebarWidth}px)`
+      ? `calc(var(--w-activitybar) + ${shownSidebar}px)`
       : 'var(--w-activitybar)',
   )
   let resizing = $state(false)
@@ -123,13 +128,14 @@
   }
   function moveResize(e: PointerEvent) {
     if (!resizing) return
+    const raw = resizeWidth + e.clientX - resizeX
     // Rounded: config_save takes a u32, and a fractional width fails the save.
-    ui.sidebarWidth = Math.round(
-      Math.min(maxSidebar(), Math.max(MIN_SIDEBAR, resizeWidth + e.clientX - resizeX)),
-    )
+    ui.sidebarWidth = Math.round(Math.min(maxSidebar(), Math.max(MIN_SIDEBAR, raw)))
+    dragWidth = Math.round(resist(raw, MIN_SIDEBAR, maxSidebar()))
   }
   function endResize() {
     resizing = false
+    dragWidth = null
   }
   /// Shrinking the window must not let the saved width swallow the editor.
   function clampSidebar() {
