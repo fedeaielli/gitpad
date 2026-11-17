@@ -277,7 +277,7 @@
     min-width: 14px;
     height: 14px;
     padding: 0 3px;
-    border-radius: 7px;
+    border-radius: var(--r-pill);
     background: var(--accent);
     color: var(--on-accent);
     font-size: var(--fs-2xs);

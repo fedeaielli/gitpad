@@ -250,7 +250,7 @@
     background: var(--surface-2);
   }
   .win.close:hover {
-    background: #c42b1c;
+    background: var(--close-hover);
     color: #fff;
   }
   .win svg {

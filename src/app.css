@@ -68,7 +68,8 @@
   --r-md: 9px;
   --r-lg: 14px;
   --r-overlay: 18px;
-  --r-pill: 10px;
+  /* Fully round: dots, badges, drag handles. Clamped on small boxes. */
+  --r-pill: 999px;
 
   --fs-2xs: 10px;
   --fs-xs: 11px;
@@ -87,6 +88,9 @@
   --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
   --focus-ring: 2px solid var(--accent-fg);
+
+  /* Windows' own close-button red: the same on every theme. */
+  --close-hover: #c42b1c;
 }
 
 :root[data-theme='vs'] {

@@ -646,7 +646,7 @@
   .pill {
     padding: 1px 8px;
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: var(--r-pill);
     color: var(--muted);
     font-size: var(--fs-xs);
     line-height: 1.6;
