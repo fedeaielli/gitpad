@@ -129,6 +129,9 @@
     padding: var(--sp-4) var(--sp-6);
     background: transparent;
     color: var(--text);
+    /* The bundled CSS names a system stack; the preview reads as GitPad. */
+    font-family: inherit;
+    font-size: var(--fs-lg);
   }
   /* github-markdown-css hardcodes cool greys instead of variables: these few
      rules carry the warm palette into the elements that actually show. */

@@ -77,14 +77,14 @@
       'editorSuggestWidget.background': '#2b2824',
       'editorSuggestWidget.border': '#6f685d',
       'editorSuggestWidget.foreground': '#d8d3ca',
-      'editorSuggestWidget.selectedBackground': '#35312c',
+      'editorSuggestWidget.selectedBackground': '#1f2b34',
       'editorSuggestWidget.selectedForeground': '#ffffff',
       'editorSuggestWidget.highlightForeground': '#4daafc',
       'editorSuggestWidget.focusHighlightForeground': '#4daafc',
       'editorSuggestWidgetStatus.foreground': '#a39d93',
       // Widgets that otherwise inherit VS Code's cool greys.
       'list.hoverBackground': '#2b2824',
-      'list.activeSelectionBackground': '#264f78',
+      'list.activeSelectionBackground': '#1f2b34',
       'list.activeSelectionForeground': '#d8d3ca',
       'list.inactiveSelectionBackground': '#2b2824',
       'list.highlightForeground': '#4daafc',
@@ -128,13 +128,13 @@
       'editorSuggestWidget.background': '#f2eee4',
       'editorSuggestWidget.border': '#8f887b',
       'editorSuggestWidget.foreground': '#24211d',
-      'editorSuggestWidget.selectedBackground': '#e8e3d7',
+      'editorSuggestWidget.selectedBackground': '#d5dddf',
       'editorSuggestWidget.selectedForeground': '#24211d',
       'editorSuggestWidget.highlightForeground': '#005fb8',
       'editorSuggestWidget.focusHighlightForeground': '#005fb8',
       'editorSuggestWidgetStatus.foreground': '#6b665c',
       'list.hoverBackground': '#e8e3d7',
-      'list.activeSelectionBackground': '#d6e6f7',
+      'list.activeSelectionBackground': '#d5dddf',
       'list.activeSelectionForeground': '#24211d',
       'list.inactiveSelectionBackground': '#ece7db',
       'list.highlightForeground': '#005fb8',
@@ -676,8 +676,8 @@
   }
   .vim {
     position: absolute;
-    right: 8px;
-    bottom: 6px;
+    right: var(--sp-2);
+    bottom: var(--sp-1);
     z-index: 5;
     padding: 0 var(--sp-05);
     border-radius: var(--r-sm);
@@ -693,8 +693,8 @@
   }
   .error {
     position: absolute;
-    right: 8px;
-    bottom: 8px;
+    right: var(--sp-2);
+    bottom: var(--sp-2);
     margin: 0;
     padding: var(--sp-05) var(--sp-2);
     border: 1px solid var(--err);
