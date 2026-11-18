@@ -288,7 +288,7 @@
                       <span class="msg">{humanize(commit.message)}</span>
                       <span class="meta">
                         <code>{commit.shortHash}</code>
-                        <span>{timeLabel(commit.timestamp)}</span>
+                        <span class="time">{timeLabel(commit.timestamp)}</span>
                         {#if commit.author && commit.author !== 'GitPad'}
                           <span class="author">{commit.author}</span>
                         {/if}
@@ -583,6 +583,7 @@
     justify-content: center;
     gap: 3px;
     min-width: 0;
+    container-type: inline-size;
     padding: var(--sp-1) var(--sp-25);
     border: 0;
     border-radius: 0;
@@ -628,6 +629,19 @@
   }
   .meta .files-count {
     margin-left: auto;
+  }
+  /* The sidebar can shrink to 150px: keep the hash and drop the rest before
+     anything clips. */
+  @container (max-width: 170px) {
+    .meta .files-count,
+    .meta .author {
+      display: none;
+    }
+  }
+  @container (max-width: 120px) {
+    .meta .time {
+      display: none;
+    }
   }
   .expand {
     display: grid;
