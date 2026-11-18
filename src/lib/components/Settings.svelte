@@ -113,10 +113,13 @@
 
   /// Chrome colours each theme card previews. shortcut: a new theme needs an
   /// entry here too, add one when a theme lands.
-  const THEME_PREVIEW: Record<string, { bg: string; fg: string; accent: string }> = {
-    'gitpad-dark': { bg: '#1c1a18', fg: '#d8d3ca', accent: '#0078d4' },
-    vs: { bg: '#fbf9f4', fg: '#24211d', accent: '#005fb8' },
-    'hc-black': { bg: '#000000', fg: '#ffffff', accent: '#f38518' },
+  const THEME_PREVIEW: Record<
+    string,
+    { name: string; bg: string; fg: string; accent: string }
+  > = {
+    'gitpad-dark': { name: 'GitPad Dark', bg: '#1c1a18', fg: '#d8d3ca', accent: '#0078d4' },
+    vs: { name: 'Light', bg: '#fbf9f4', fg: '#24211d', accent: '#005fb8' },
+    'hc-black': { name: 'High contrast', bg: '#000000', fg: '#ffffff', accent: '#f38518' },
   }
 
   // The dialog is mounted per opening, so the requested tab is read here.
@@ -432,7 +435,7 @@
                       <span class="bar line"></span>
                       <span class="bar accent"></span>
                     </span>
-                    <span class="name">{theme}</span>
+                    <span class="name">{preview?.name ?? theme}</span>
                   </label>
                 {/each}
               </div>
