@@ -121,16 +121,19 @@
     }
   })
 
-  // A press outside the field closes the list. A backdrop button would swallow
-  // the click that closed it, so the host had to be clicked twice.
+  // A click outside the field closes the list and is swallowed: the click that
+  // dismisses a list must not also activate the element under it. Closing on
+  // the click, not on the press, makes that one event to consume.
   $effect(() => {
     if (!open) return
-    const outside = (event: PointerEvent) => {
+    const outside = (event: MouseEvent) => {
       if (event.target instanceof Node && wrapper?.contains(event.target)) return
       closeList()
+      event.preventDefault()
+      event.stopPropagation()
     }
-    window.addEventListener('pointerdown', outside, true)
-    return () => window.removeEventListener('pointerdown', outside, true)
+    window.addEventListener('click', outside, true)
+    return () => window.removeEventListener('click', outside, true)
   })
 </script>
 
