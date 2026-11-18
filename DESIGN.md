@@ -66,13 +66,27 @@ uppercase, `letter-spacing: 0.08em`, weight 500.
   `--r-lg` cards and sections, `--r-overlay` modals. Never a literal radius.
 - Elevation: `--shadow-1` controls and popovers, `--shadow-2` modals.
 
+## Frozen metrics
+
+Two dense, scrollable surfaces keep their pre-refactor sizes because the
+uniform 32 px control reads heavy there. These are the only naming exceptions
+to the rules above.
+
+- Command palette field: ~37 px tall, own padding (`--sp-2`/`--sp-25`) and
+  `--surface-2` fill. The list body stays `--surface-0`.
+- History cards: 13 px counts and empty title, 12 px day label and empty hint,
+  3 px row gap, 28 px inline `Restore`, 26 px refresh, 4 px badge radius, and
+  the 1 px accent stripe on the active commit with `--surface-3` fills.
+  Buttons keep the shared classes and only override the metrics they need.
+
 ## Selection and emphasis
 
 - Persistent selection (file, tab, panel entry, settings section) is a tint:
   `color-mix(in srgb, var(--accent) 12%, var(--surface-1))`, with the icon or
   label switching to `--accent-fg`.
 - Full accent fill is transient: command palette cursor, menu row hover.
-- No 2 px accent stripes on panel edges; the tint carries the state.
+- No 2 px accent stripes on panel edges; the tint carries the state. The
+  active history commit keeps its 1 px inset stripe (see Frozen metrics).
 - Focus stays a 2 px `--accent-fg` ring with `outline-offset: -2px`.
 
 ## Motion
