@@ -92,7 +92,11 @@ to the rules above.
 ## Motion
 
 - Hover, press and colour changes: `--t-fast` (150 ms) with `--ease-out`.
-- Panels, tints and layout shifts: `--t-base` (180 ms) with `--ease-out`.
+- Panel contents, tints and hover surfaces: `--t-base` (180 ms) with `--ease-out`.
+- Structural geometry — sidebar width, timeline height, timeline split — tracks
+  the pointer 1:1 while it is down and settles with `--t-spring` on release. It
+  does not animate during the drag: Monaco relayouts on every frame anyway, and
+  a transition there fights the pointer.
 - Enter animations that should settle like a physical object use
   `--t-spring` (420 ms) with `--ease-spring` (critically damped, no bounce).
   Bounce is reserved for momentum carried by a gesture; nothing here has one.
