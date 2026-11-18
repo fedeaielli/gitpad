@@ -570,25 +570,9 @@
     background: var(--surface-3);
   }
   .commit.active {
-    border-color: var(--accent);
-    background: transparent;
-  }
-  /* The card's 1px border sits outside this radius, so the accent follows the
-     curve instead of squaring off against it. */
-  .commit.active:first-child {
-    border-top-left-radius: calc(var(--r-lg) - 1px);
-    border-top-right-radius: calc(var(--r-lg) - 1px);
-  }
-  .commit.active:last-child {
-    border-bottom-left-radius: calc(var(--r-lg) - 1px);
-    border-bottom-right-radius: calc(var(--r-lg) - 1px);
-  }
-  .commit.active:only-child {
-    border-radius: calc(var(--r-lg) - 1px);
-  }
-  /* The active row's 1px bottom border replaces the next divider. */
-  .commit.active + .commit {
-    border-top-color: transparent;
+    border-left-color: var(--accent);
+    background: var(--surface-3);
+    box-shadow: inset 1px 0 0 var(--accent);
   }
   .head-row {
     display: flex;
