@@ -710,42 +710,45 @@
           </section>
         {:else if tab === 'about'}
           <section class="section">
-            <div class="field">
-              <span>Version</span>
-              <span>{aboutVersion ? `GitPad ${aboutVersion}` : 'GitPad'}</span>
-            </div>
-            <div class="field">
-              <span>Updates</span>
-              <div class="inline">
-                <button class="change" disabled={updateState === 'checking'} onclick={checkForUpdates}>
+            <div class="about-card">
+              <div class="about-head">
+                <div class="about-id">
+                  <h3 class="about-name">GitPad</h3>
+                  {#if aboutVersion}
+                    <span class="about-version">v{aboutVersion}</span>
+                  {/if}
+                </div>
+                <button
+                  class="change accent"
+                  disabled={updateState === 'checking'}
+                  onclick={checkForUpdates}
+                >
                   {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
                 </button>
-                {#if updateState === 'newer'}
+              </div>
+              {#if updateState === 'newer'}
+                <div class="inline">
                   <button class="primary" onclick={() => void openExternal(releaseUrl)}>
                     Get GitPad {latestVersion}
                   </button>
-                {/if}
-              </div>
-            </div>
-            {#if updateState === 'current'}
-              <p class="note" role="status">You are on the latest version.</p>
-            {:else if updateState === 'failed'}
-              <p class="note" role="status">Could not reach GitHub. Try again later.</p>
-            {/if}
-            <div class="field">
-              <span>Author</span>
-              <div class="inline">
-                <button class="change" onclick={() => void openExternal('https://github.com/fedeaielli')}>
+                </div>
+              {:else if updateState === 'current'}
+                <p class="note" role="status">You are on the latest version.</p>
+              {:else if updateState === 'failed'}
+                <p class="note" role="status">Could not reach GitHub. Try again later.</p>
+              {/if}
+              <div class="about-links">
+                <button class="link" onclick={() => void openExternal('https://github.com/fedeaielli')}>
                   @fedeaielli
                 </button>
                 <button
-                  class="change"
+                  class="link"
                   onclick={() => void openExternal('https://github.com/fedeaielli/gitpad')}
                 >
                   Source
                 </button>
                 <button
-                  class="change"
+                  class="link"
                   onclick={() => void openExternal('https://github.com/fedeaielli/gitpad/releases')}
                 >
                   Releases
@@ -753,7 +756,8 @@
               </div>
             </div>
             {#if changelog}
-              <pre class="changelog" aria-label="Changelog for this version">{changelog}</pre>
+              <h3>Changelog</h3>
+              <pre class="changelog" aria-label="Changelog for this version">{changelogText}</pre>
             {/if}
           </section>
         {:else}
@@ -1050,6 +1054,67 @@
   .path {
     overflow-wrap: anywhere;
   }
+  /* About as one product card: identity, update action, then the links. */
+  .about-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
+  }
+  .about-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+  }
+  .about-id {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+  }
+  /* The app names itself here: not the uppercase section eyebrow. */
+  .about-card .about-name {
+    margin: 0;
+    color: var(--text);
+    font-size: var(--fs-xl);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-transform: none;
+  }
+  .about-version {
+    padding: var(--sp-0) var(--sp-2);
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  .about-card .note {
+    margin: 0;
+  }
+  .about-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--divider);
+  }
+  .link {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-size: var(--fs-sm);
+    cursor: pointer;
+  }
+  .link:hover {
+    color: var(--text);
+    text-decoration: underline;
+  }
   .changelog {
     margin: 0;
     padding: var(--sp-3);
@@ -1087,6 +1152,15 @@
   .change:hover:not(:disabled),
   .primary:hover:not(:disabled) {
     background: var(--surface-3);
+  }
+  /* The one filled accent action in Settings: update checks. */
+  .change.accent {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .change.accent:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 88%, black);
   }
   .change:disabled,
   .primary:disabled {
