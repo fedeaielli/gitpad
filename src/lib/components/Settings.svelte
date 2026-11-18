@@ -407,6 +407,7 @@
 
       <div
         class="body"
+        class:logs={tab === 'logs'}
         id="settings-panel"
         role="tabpanel"
         aria-labelledby="settings-tab-{tab}"
@@ -948,6 +949,14 @@
     /* One type scale for every tab: rows, values and controls read at 16 px,
        the hints and group titles sit a step below. */
     font-size: var(--fs-lg);
+  }
+  .body.logs {
+    overflow: hidden;
+  }
+  /* The log owns the height left under its toolbar. */
+  .body.logs .section {
+    flex: 1;
+    min-height: 0;
   }
   /* Rows run the panel's full width: the label opens the row and the control
      closes it, so the eye scans one left edge and one right edge. */

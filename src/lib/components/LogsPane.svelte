@@ -145,207 +145,313 @@
   })
 </script>
 
-<div class="bar">
-  <select aria-label="Log session" bind:value={selected} onchange={() => void load()}>
-    {#if files.length === 0}
-      <option value="">No log files</option>
-    {/if}
-    {#each files as file (file.name)}
-      <option value={file.name}>{fileLabel(file)} · {bytes(file.size)}</option>
-    {/each}
-  </select>
-  <select aria-label="Log level" bind:value={level}>
-    {#each LEVELS as item (item.id)}
-      <option value={item.id}>{item.label}</option>
-    {/each}
-  </select>
-  <div class="chips" role="group" aria-label="Log category">
-    {#each CATEGORIES as item (item.id)}
-      <button
-        type="button"
-        class="chip"
-        aria-pressed={categories.includes(item.id)}
-        onclick={() => toggle(item.id)}
-      >
-        {item.label}
+<div class="pane">
+  <div class="filters">
+    <div class="row">
+      <div class="group grow">
+        <label class="label" for="log-session">Session</label>
+        <select id="log-session" bind:value={selected} onchange={() => void load()}>
+          {#if files.length === 0}
+            <option value="">No log files</option>
+          {/if}
+          {#each files as file (file.name)}
+            <option value={file.name}>{fileLabel(file)} · {bytes(file.size)}</option>
+          {/each}
+        </select>
+      </div>
+      <button type="button" class="refresh" disabled={loading} onclick={() => void refresh()}>
+        {loading ? 'Loading…' : 'Refresh'}
       </button>
-    {/each}
+    </div>
+    <div class="row">
+      <div class="group level">
+        <label class="label" for="log-level">Level</label>
+        <select id="log-level" bind:value={level}>
+          {#each LEVELS as item (item.id)}
+            <option value={item.id}>{item.label}</option>
+          {/each}
+        </select>
+      </div>
+      <div class="group">
+        <span class="label" id="log-category">Category</span>
+        <div class="chips" role="group" aria-labelledby="log-category">
+          {#each CATEGORIES as item (item.id)}
+            <button
+              type="button"
+              class="chip"
+              aria-pressed={categories.includes(item.id)}
+              onclick={() => toggle(item.id)}
+            >
+              {item.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+      <div class="group grow">
+        <label class="label" for="log-search">Search</label>
+        <input
+          id="log-search"
+          type="search"
+          placeholder="Search messages"
+          bind:value={queryInput}
+          oninput={applyQuery.run}
+        />
+      </div>
+    </div>
   </div>
-  <input
-    type="search"
-    placeholder="Search messages"
-    aria-label="Search logs"
-    bind:value={queryInput}
-    oninput={applyQuery.run}
-  />
-  <button type="button" class="refresh" disabled={loading} onclick={() => void refresh()}>
-    {loading ? 'Loading…' : 'Refresh'}
-  </button>
-</div>
 
-{#if error}
-  <p class="note" role="alert">{error}</p>
-{/if}
-
-<p class="note">
-  {total === 0
-    ? 'No lines match.'
-    : `${Math.min(total, limit)} of ${total} lines — newest session first.`}
-</p>
-
-<div class="log" role="log" aria-label="Log lines">
-  {#each rows as row (row.key)}
-    {#if row.kind === 'session'}
-      <div class="session">
-        <span>{new Date(row.startedAt).toLocaleString()}</span>
-        {#if row.running}
-          <span class="now">running</span>
-        {/if}
-        {#if row.quiet}
-          <span class="idle">app started</span>
-        {/if}
-      </div>
-    {:else}
-      <div class="line {row.entry.level}">
-        <span class="time">{row.entry.time || '—'}</span>
-        <span class="level">{row.entry.level}</span>
-        <span class="cat">{row.entry.category}</span>
-        <span class="msg">{row.entry.message}</span>
-      </div>
-    {/if}
-  {/each}
-  {#if total === 0 && !loading}
-    <p class="empty">
-      {files.length === 0
-        ? 'GitPad has not written a log file yet.'
-        : 'Nothing here with these filters.'}
-    </p>
+  {#if error}
+    <p class="note error" role="alert">{error}</p>
   {/if}
-</div>
 
-{#if total > limit}
-  <button type="button" class="more" onclick={() => (limit += 300)}>
-    Show more
-  </button>
-{/if}
+  <div class="meta">
+    <span class="note">
+      {total === 0
+        ? '0 lines'
+        : `${Math.min(total, limit)} of ${total} ${total === 1 ? 'line' : 'lines'}`}
+    </span>
+    {#if total > limit}
+      <button type="button" class="more" onclick={() => (limit += 300)}>Show more</button>
+    {/if}
+  </div>
+
+  <!-- A scrollable region needs focus to be reachable and scrolled by keyboard. -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div class="log" role="log" aria-label="Log lines" tabindex="0">
+    {#each rows as row (row.key)}
+      {#if row.kind === 'session'}
+        <div class="session">
+          <span>{new Date(row.startedAt).toLocaleString()}</span>
+          <span class="session-state">
+            {#if row.running}
+              <span class="now">running</span>
+            {/if}
+            {#if row.quiet}
+              <span class="idle">app started</span>
+            {/if}
+          </span>
+        </div>
+      {:else}
+        <div class="line {row.entry.level}">
+          <span class="time">{row.entry.time || '—'}</span>
+          <span class="level">{row.entry.level}</span>
+          <span class="cat">{row.entry.category}</span>
+          <span class="msg">{row.entry.message}</span>
+        </div>
+      {/if}
+    {/each}
+    {#if total === 0 && !loading}
+      <p class="empty">
+        {files.length === 0
+          ? 'GitPad has not written a log file yet.'
+          : 'Nothing here with these filters.'}
+      </p>
+    {/if}
+  </div>
+</div>
 
 <style>
-  .bar {
+  /* Fills the tab: only the log scrolls, never the settings body. */
+  .pane {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--sp-2);
+    min-height: 0;
+  }
+  .filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+  .row {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
     gap: var(--sp-2);
+  }
+  .group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-05);
+    min-width: 0;
+  }
+  .group.grow {
+    flex: 1 1 160px;
+  }
+  .group.level {
+    flex: 0 0 140px;
+  }
+  .label {
+    color: var(--muted);
+    font-size: var(--fs-xs);
   }
   select,
   input {
-    padding: var(--sp-1) var(--sp-2);
+    box-sizing: border-box;
+    width: 100%;
+    height: 32px;
+    padding: 0 var(--sp-2);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
-    background: var(--surface-0);
+    background: var(--surface-1);
     color: var(--text);
+    font: inherit;
   }
-  input {
-    flex: 1;
-    min-width: 140px;
+  .refresh,
+  .more {
+    flex: 0 0 auto;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+  }
+  .refresh {
+    box-sizing: border-box;
+    min-width: 96px;
+    height: 32px;
+    padding: 0 var(--sp-3);
+  }
+  .refresh:hover:not(:disabled),
+  .more:hover {
+    background: var(--surface-2);
+  }
+  .refresh:disabled {
+    opacity: 0.55;
   }
   .chips {
     display: flex;
     gap: var(--sp-05);
   }
   .chip {
-    padding: 3px var(--sp-2);
+    height: 32px;
+    padding: 0 var(--sp-2);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
-    background: transparent;
+    background: var(--surface-1);
     color: var(--muted);
-    font-size: var(--fs-xs);
+    font: inherit;
+    font-size: var(--fs-md);
+    cursor: pointer;
   }
   .chip[aria-pressed='true'] {
     border-color: var(--accent);
-    background: var(--accent);
-    color: var(--on-accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
+    color: var(--accent-fg);
   }
-  .refresh,
-  .more {
-    padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-0);
-    color: var(--text);
-  }
-  .refresh:hover:not(:disabled),
-  .more:hover {
-    border-color: var(--border-strong);
+  .meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    min-height: 24px;
   }
   .note {
     margin: 0;
     color: var(--muted);
     font-size: var(--fs-xs);
   }
+  .note.error {
+    color: var(--err);
+  }
   .more {
-    align-self: flex-start;
+    height: 24px;
+    padding: 0 var(--sp-2);
+    border-color: var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+  }
+  .more:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+    background: transparent;
   }
   .log {
-    /* Fills the panel and never shrinks under its rows: a collapsed box hides
-       the content behind its own border. */
     flex: 1 1 auto;
-    min-height: 120px;
-    max-height: min(46vh, 480px);
+    min-height: 96px;
     overflow: auto;
     border: 1px solid var(--border);
     border-radius: var(--r-md);
-    background: var(--surface-0);
+    background: var(--surface-1);
     font-family: ui-monospace, monospace;
-    font-size: var(--fs-sm);
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.55;
   }
   .session {
     position: sticky;
     top: 0;
+    z-index: 1;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: var(--sp-2);
-    padding: var(--sp-05) var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
     border-bottom: 1px solid var(--border);
+    border-left: 2px solid transparent;
     background: var(--surface-2);
     color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  .session-state {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    white-space: nowrap;
   }
   .now {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
     color: var(--ok);
   }
+  .now::before {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    content: '';
+  }
   .idle {
-    color: var(--muted);
     opacity: 0.8;
   }
   .line {
     display: grid;
-    grid-template-columns: 70px 46px 56px 1fr;
+    grid-template-columns: 68px 48px 56px 1fr;
     gap: var(--sp-2);
-    padding: 1px var(--sp-2);
-    transition: background var(--t-fast);
+    padding: 2px var(--sp-2);
+    border-left: 2px solid transparent;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
   .line:hover {
     background: var(--surface-2);
   }
+  .line.warn {
+    border-left-color: var(--warn);
+  }
+  .line.error {
+    border-left-color: var(--err);
+  }
   .time,
   .cat {
     color: var(--muted);
   }
   .level {
-    text-transform: uppercase;
     color: var(--muted);
+    text-transform: uppercase;
   }
   .line.warn .level {
     color: var(--warn);
   }
-  .line.error .level,
-  .line.error .msg {
+  .line.error .level {
     color: var(--err);
   }
   .empty {
     margin: 0;
-    padding: var(--sp-3);
+    padding: var(--sp-4);
     color: var(--muted);
   }
 </style>
