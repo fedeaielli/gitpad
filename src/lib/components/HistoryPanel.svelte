@@ -197,7 +197,18 @@
   {/if}
   <ul class="commits">
     {#each groups as group (group.key)}
-      <li class="day">{group.label}</li>
+      <li class="day">
+        <span class="day-name">
+          <span class="dot" aria-hidden="true"></span>
+          {group.label}
+        </span>
+        <span
+          class="day-count"
+          aria-label={`${group.commits.length} commit${group.commits.length === 1 ? '' : 's'}`}
+        >
+          {group.commits.length}
+        </span>
+      </li>
       {#each group.commits as commit (commit.hash)}
         {@const kind = kindOf(commit.message)}
         <li
@@ -343,11 +354,32 @@
     position: sticky;
     top: 0;
     z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
     padding: 7px var(--sp-2) var(--sp-05);
     background: var(--surface-1);
     color: var(--muted);
     font-size: var(--fs-2xs);
     font-weight: 600;
+  }
+  .day-name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    min-width: 0;
+  }
+  .dot {
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--accent);
+  }
+  .day-count {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
   }
   .head-row {
     display: flex;
