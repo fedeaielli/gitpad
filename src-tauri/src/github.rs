@@ -21,6 +21,12 @@ static FLOW_GEN: AtomicU64 = AtomicU64::new(0);
 pub struct UserInfo {
     pub login: String,
     pub avatar_url: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub bio: Option<String>,
+    #[serde(default)]
+    pub created_at: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -301,8 +307,21 @@ mod tests {
         let user: UserInfo = serde_json::from_str(r#"{"login":"octo","avatar_url":"https://a/b"}"#)
             .expect("user payload");
         assert_eq!(user.login, "octo");
+        assert!(user.name.is_none());
+        assert!(user.created_at.is_none());
         let user = serde_json::to_value(&user).unwrap();
         assert_eq!(user["avatarUrl"], "https://a/b");
+
+        let full: UserInfo = serde_json::from_str(
+            r#"{"login":"octo","avatar_url":"https://a/b","name":"Octo Cat","bio":"Cat","created_at":"2011-01-25T18:44:36Z"}"#,
+        )
+        .expect("full user payload");
+        assert_eq!(full.name.as_deref(), Some("Octo Cat"));
+        assert_eq!(full.bio.as_deref(), Some("Cat"));
+        assert_eq!(full.created_at.as_deref(), Some("2011-01-25T18:44:36Z"));
+        let full = serde_json::to_value(&full).unwrap();
+        assert_eq!(full["name"], "Octo Cat");
+        assert_eq!(full["createdAt"], "2011-01-25T18:44:36Z");
 
         let repo: RepoInfo = serde_json::from_str(
             r#"{"name":"notes","full_name":"octo/notes","clone_url":"https://x/y.git","private":true}"#,

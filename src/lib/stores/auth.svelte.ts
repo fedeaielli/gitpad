@@ -3,6 +3,9 @@ import { invoke } from '@tauri-apps/api/core'
 export interface GithubUser {
   login: string
   avatarUrl: string
+  name?: string | null
+  bio?: string | null
+  createdAt?: string | null
 }
 
 /// The activity bar and the account tab share one copy: a window focus used to
