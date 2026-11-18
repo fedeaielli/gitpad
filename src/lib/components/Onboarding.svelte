@@ -396,9 +396,11 @@
     position: fixed;
     inset: 0;
     z-index: 100;
+    /* Scrolls instead of centring: a card taller than a 480 px window would
+       clip at both ends, and the actions are at the end. */
     display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow-y: auto;
+    padding: var(--sp-6) 0;
     background: var(--surface-0);
   }
   .card {
@@ -407,6 +409,7 @@
     gap: var(--sp-3);
     width: 480px;
     max-width: calc(100vw - var(--sp-6));
+    margin: auto;
     padding: var(--sp-6);
     background: var(--surface-1);
     border: 1px solid var(--border);
