@@ -338,6 +338,11 @@
       oninput={onInput}
       onkeydown={onKeydown}
       aria-label="Search files or run a command"
+      role="combobox"
+      aria-expanded={items.length > 0}
+      aria-controls="palette-list"
+      aria-autocomplete="list"
+      aria-activedescendant={items.length > 0 ? `palette-item-${selected}` : undefined}
       placeholder={prompt
         ? `New ${prompt} name`
         : searching
@@ -346,7 +351,7 @@
       spellcheck="false"
     />
     <p class="searching" role="status">{pending ? 'Searching…' : ''}</p>
-    <div class="list" bind:this={listEl}>
+    <div class="list" bind:this={listEl} role="listbox" id="palette-list" aria-label="Results">
       {#if prompt}
         <p class="hint">
           {text.trim()
@@ -365,6 +370,10 @@
           <button
             class="item"
             class:active={i === selected}
+            role="option"
+            id="palette-item-{i}"
+            aria-selected={i === selected}
+            tabindex="-1"
             onmousemove={() => (selected = i)}
             onclick={() => activate(item)}
           >
