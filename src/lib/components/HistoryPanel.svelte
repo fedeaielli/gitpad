@@ -227,8 +227,14 @@
 {:else}
   <div class="panel" aria-busy={loading}>
     <div class="summary">
-      <span class="count">
-        {loading ? 'Loading…' : `${commits.length} commit${commits.length === 1 ? '' : 's'}`}
+      <span class="summary-scope">
+        <span class="count">
+          {loading ? 'Loading…' : `${commits.length} commit${commits.length === 1 ? '' : 's'}`}
+        </span>
+        <span class="sep" aria-hidden="true">·</span>
+        <span class="scope" title={filePath || undefined}>
+          {filePath ? filePath.split('/').pop() : 'All history'}
+        </span>
       </span>
       <button
         class="refresh"
@@ -245,11 +251,6 @@
       </button>
     </div>
 
-    {#if filePath}
-      <p class="filter">
-        History for <code>{filePath.split('/').pop()}</code>
-      </p>
-    {/if}
     {#if error}
       <p class="error" role="alert">{error}</p>
     {/if}
@@ -359,12 +360,34 @@
     gap: var(--sp-2);
     padding: var(--sp-2) var(--sp-25) var(--sp-1);
   }
+  .summary-scope {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    gap: var(--sp-05);
+    min-width: 0;
+    overflow: hidden;
+  }
   .count {
+    flex: 0 0 auto;
     padding-left: var(--sp-0);
     color: var(--muted);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
+  }
+  .sep {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+  }
+  .scope {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .refresh {
     display: grid;
@@ -410,18 +433,6 @@
     .refresh.busy svg {
       animation: none;
     }
-  }
-  .filter {
-    margin: 0;
-    padding: 0 var(--sp-25) var(--sp-1);
-    color: var(--muted);
-    font-size: var(--fs-2xs);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .filter code {
-    color: var(--accent-fg);
   }
   .error {
     margin: 0;
