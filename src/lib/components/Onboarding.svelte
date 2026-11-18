@@ -373,6 +373,13 @@
       <p class="hintbox"><kbd>Ctrl</kbd><kbd>P</kbd> opens the command palette</p>
       <button class="cta" onclick={finish}>Start editing</button>
     {/if}
+    {#if step === 'auth' || (step === 'repo' && repo && !busy)}
+      <div class="foot">
+        <button class="back" onclick={() => (step = step === 'repo' ? 'auth' : 'welcome')}>
+          Back
+        </button>
+      </div>
+    {/if}
     {#if user && step !== 'done'}
       <p class="muted">Signed in as {user.login}</p>
     {/if}
@@ -589,6 +596,14 @@
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-1);
+  }
+  /* The footer keeps only the way back: forward lives with each step's action. */
+  .foot {
+    display: flex;
+  }
+  .back {
+    padding: var(--sp-1) 14px;
+    font-size: var(--fs-sm);
   }
   .label {
     color: var(--muted);
