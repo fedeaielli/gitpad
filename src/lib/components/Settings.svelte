@@ -881,7 +881,7 @@
     min-height: 0;
   }
   /* The sections as a column: one row each, the same height, the rail's full
-     width. Selection is the accent bar plus --surface-2, never a type step. */
+     width. Selection is an accent tint on the row, never a type step. */
   .rail {
     display: flex;
     flex: 0 0 200px;
@@ -893,7 +893,6 @@
     background: var(--surface-1);
   }
   .tab {
-    position: relative;
     display: flex;
     flex: 0 0 56px;
     align-items: center;
@@ -924,20 +923,14 @@
     background: color-mix(in srgb, var(--surface-2) 55%, transparent);
     color: var(--text);
   }
+  /* The same accent tint as a toast: the selected section reads as a tinted
+     surface, not as a stripe on its edge. */
   .tab.active {
-    background: var(--surface-2);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
     color: var(--text);
   }
-  /* Inset past the corners: a border-left would follow the radius and bow. */
-  .tab.active::before {
-    position: absolute;
-    top: var(--r-sm);
-    bottom: var(--r-sm);
-    left: 0;
-    width: 2px;
-    border-radius: var(--r-pill);
-    background: var(--accent);
-    content: '';
+  .tab.active svg {
+    color: var(--accent-fg);
   }
   .body {
     display: flex;
