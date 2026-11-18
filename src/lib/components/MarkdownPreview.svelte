@@ -17,7 +17,6 @@
 
   registerThemeStyles({
     'gitpad-dark': { markdown: markdownDark, code: codeDark },
-    'vs-dark': { markdown: markdownDark, code: codeDark },
     vs: { markdown: markdownLight, code: codeLight },
     'hc-black': { markdown: markdownDark, code: codeDark },
   })
