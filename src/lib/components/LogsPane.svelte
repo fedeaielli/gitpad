@@ -313,13 +313,16 @@
     min-width: 96px;
     height: 32px;
     padding: 0 var(--sp-3);
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
   }
-  .refresh:hover:not(:disabled),
-  .more:hover {
-    background: var(--surface-2);
+  .refresh:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 88%, black);
   }
   .refresh:disabled {
     opacity: 0.55;
+    cursor: default;
   }
   .chips {
     display: flex;
