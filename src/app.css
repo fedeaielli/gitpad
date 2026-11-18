@@ -80,7 +80,38 @@
 
   --t-fast: 150ms;
   --t-base: 180ms;
+  --t-spring: 420ms;
   --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  /* Critically damped spring (damping 1.0, response 0.35 s), sampled as a CSS
+     easing curve. WebKit without linear() keeps the line above. */
+  --ease-spring: var(--ease-out);
+  --ease-spring: linear(
+    0,
+    0.04,
+    0.131,
+    0.243,
+    0.358,
+    0.466,
+    0.562,
+    0.645,
+    0.715,
+    0.774,
+    0.821,
+    0.859,
+    0.89,
+    0.914,
+    0.934,
+    0.949,
+    0.96,
+    0.97,
+    0.977,
+    0.982,
+    0.986,
+    0.99,
+    0.992,
+    0.994,
+    1
+  );
 
   /* Two levels, each with a 1px inset highlight so edges catch light. */
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.32),
@@ -202,14 +233,115 @@ button:not(.win):not(:disabled):active {
   transform: translateY(1px);
 }
 
-input,
-select {
-  padding: 3px var(--sp-1);
+/* One shape for every control: the 32 px row the settings dialog set. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 var(--sp-3);
   border: 1px solid var(--border-strong);
   border-radius: var(--r-md);
   background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.btn:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* The one filled action on a screen. */
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.btn-primary:hover:not(:disabled) {
+  border-color: var(--accent-fg);
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
+}
+.btn-danger {
+  border-color: var(--err);
+  background: transparent;
+  color: var(--err);
+}
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--err) 14%, transparent);
+}
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+/* Square icon control; 24 for chrome, 28 for dialogs. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.icon-btn.lg {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-md);
+}
+
+input,
+select {
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-0);
   color: inherit;
   font: inherit;
+  font-size: var(--fs-sm);
+}
+textarea {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-0);
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+/* Shared busy indicator; panels do not each define their own spin. */
+.spin {
+  animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* One focus ring everywhere; the editor draws its own. */
