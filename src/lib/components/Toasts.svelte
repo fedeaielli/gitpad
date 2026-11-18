@@ -78,7 +78,7 @@
           {/if}
         </div>
         <button
-          class="close"
+          class="icon-btn close"
           aria-label="Dismiss notification"
           onclick={() => dismissToast(toast.id)}
         >
@@ -200,11 +200,6 @@
     top: 50%;
     right: var(--sp-3);
     translate: 0 -50%;
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
     color: var(--muted);
     opacity: 0.55;
     transition: opacity var(--t-fast);

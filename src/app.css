@@ -247,7 +247,6 @@ button:not(.win):not(:disabled):active {
   background: var(--surface-2);
   color: var(--text);
   font: inherit;
-  font-size: var(--fs-sm);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -324,7 +323,6 @@ select {
   background: var(--surface-0);
   color: inherit;
   font: inherit;
-  font-size: var(--fs-sm);
 }
 textarea {
   border: 1px solid var(--border-strong);
@@ -332,7 +330,6 @@ textarea {
   background: var(--surface-0);
   color: inherit;
   font: inherit;
-  font-size: var(--fs-sm);
 }
 /* Shared busy indicator; panels do not each define their own spin. */
 .spin {

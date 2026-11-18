@@ -38,9 +38,9 @@
       </div>
       <p id="confirm-message">{current.message}</p>
       <div class="actions">
-        <button onclick={() => settleConfirm(false)}>{current.cancelLabel ?? 'Cancel'}</button>
+        <button class="btn" onclick={() => settleConfirm(false)}>{current.cancelLabel ?? 'Cancel'}</button>
         <button
-          class="confirm"
+          class="btn {kind === 'info' ? 'btn-primary' : 'btn-danger'}"
           bind:this={confirmButton}
           onclick={() => settleConfirm(true)}
         >
@@ -74,9 +74,9 @@
     padding: var(--sp-4);
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
-    background: var(--surface-3);
+    background: var(--surface-1);
     box-shadow: var(--shadow-2);
-    animation: gp-panel-in var(--t-base) var(--ease-out);
+    animation: gp-panel-in var(--t-spring) var(--ease-spring);
   }
   .head {
     display: flex;
@@ -123,25 +123,5 @@
     display: flex;
     justify-content: flex-end;
     gap: var(--sp-2);
-  }
-  .actions button {
-    padding: var(--sp-05) var(--sp-3);
-    border: 1px solid var(--border-strong);
-    background: transparent;
-    color: var(--text);
-    font-size: var(--fs-sm);
-  }
-  .actions button:hover {
-    background: var(--surface-2);
-  }
-  .actions .confirm {
-    border-color: var(--accent);
-    color: var(--accent-fg);
-    font-weight: 600;
-  }
-  .dialog.warning .confirm,
-  .dialog.error .confirm {
-    border-color: var(--err);
-    color: var(--err);
   }
 </style>

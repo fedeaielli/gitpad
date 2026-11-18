@@ -122,7 +122,7 @@
       GitHub login is unavailable: this build has no OAuth client id (GITHUB_CLIENT_ID).
     </p>
   {:else}
-    <button class="start sweep" disabled={busy} onclick={start}>
+    <button class="btn btn-primary start sweep" disabled={busy} onclick={start}>
       <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
         <path
           fill="currentColor"
@@ -161,18 +161,7 @@
     min-width: 0;
   }
   .start {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-2);
     width: 100%;
-    padding: 7px var(--sp-3);
-    border: 1px solid var(--accent);
-    border-radius: var(--r-md);
-    background: var(--accent);
-    color: var(--on-accent);
-    font-size: var(--fs-sm);
-    cursor: pointer;
   }
   .start:disabled {
     opacity: 0.6;

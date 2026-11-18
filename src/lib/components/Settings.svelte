@@ -420,7 +420,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-label="Settings" use:focusTrap>
     <header>
       <h2>Settings</h2>
-      <button class="close" aria-label="Close settings" onclick={() => (ui.settingsOpen = false)}>
+      <button class="icon-btn lg close" aria-label="Close settings" onclick={() => (ui.settingsOpen = false)}>
         ×
       </button>
     </header>
@@ -602,7 +602,7 @@
               <div class="actions">
                 <button
                   type="button"
-                  class="change"
+                  class="btn"
                   use:tip={'Open an existing folder; a plain folder is initialised with git'}
                   disabled={localBusy}
                   onclick={useLocalRepo}
@@ -611,7 +611,7 @@
                 </button>
                 <button
                   type="button"
-                  class="change"
+                  class="btn"
                   use:tip={'Move the folder on disk to another location'}
                   disabled={moving || !ui.repoPath}
                   onclick={moveRepo}
@@ -620,7 +620,7 @@
                 </button>
                 <button
                   type="button"
-                  class="change"
+                  class="btn"
                   aria-expanded={importOpen}
                   onclick={() => (importOpen = !importOpen)}
                 >
@@ -645,7 +645,7 @@
                     </span>
                     <button
                       type="button"
-                      class="change"
+                      class="btn"
                       disabled={importing}
                       onclick={chooseImportFolder}
                     >
@@ -655,7 +655,7 @@
                   <div class="actions">
                     <button
                       type="button"
-                      class="change cta sweep"
+                      class="btn btn-primary sweep"
                       disabled={importing || !importUrl.trim()}
                       onclick={importRepo}
                     >
@@ -768,7 +768,7 @@
                     <span class="ext">.{ext}</span>
                     <span class="lang">{lang}</span>
                     <button
-                      class="remove"
+                      class="icon-btn lg remove"
                       aria-label="Remove .{ext}"
                       onclick={() => removeExtension(ext)}
                     >
@@ -797,7 +797,7 @@
                   {/each}
                 </select>
               </label>
-              <button class="change accent sweep" onclick={addExtension}>Add</button>
+              <button class="btn btn-primary sweep" onclick={addExtension}>Add</button>
             </div>
             {#if extMessage}
               <p class="note" role="status">{extMessage}</p>
@@ -818,7 +818,7 @@
                   {/if}
                 </div>
                 <button
-                  class="change accent sweep"
+                  class="btn sweep"
                   disabled={updateState === 'checking'}
                   onclick={checkForUpdates}
                 >
@@ -827,7 +827,7 @@
               </div>
               {#if updateState === 'newer'}
                 <div class="inline">
-                  <button class="primary" onclick={() => void openExternal(releaseUrl)}>
+                  <button class="btn btn-primary" onclick={() => void openExternal(releaseUrl)}>
                     Get GitPad {latestVersion}
                   </button>
                 </div>
@@ -916,7 +916,7 @@
                       <span>GitHub repository</span>
                       <div class="inline">
                         <span class="hint">Local only — commits stay on this machine</span>
-                        <button class="change" disabled={connecting} onclick={attachToGithub}>
+                        <button class="btn" disabled={connecting} onclick={attachToGithub}>
                           {connecting ? 'Connecting…' : 'Connect'}
                         </button>
                       </div>
@@ -928,7 +928,7 @@
                   <p class="note">
                     No repository yet. Set one up in Sync to start committing your notes.
                   </p>
-                  <button class="change" onclick={() => (tab = 'sync')}>Open Sync</button>
+                  <button class="btn" onclick={() => (tab = 'sync')}>Open Sync</button>
                 </div>
               {/if}
             </section>
@@ -937,7 +937,7 @@
               <h3>Session</h3>
               <div class="field">
                 <span>Profile data</span>
-                <button class="change" disabled={accountPending} onclick={refreshUser}>
+                <button class="btn" disabled={accountPending} onclick={refreshUser}>
                   {accountPending ? 'Refreshing…' : 'Refresh account'}
                 </button>
               </div>
@@ -964,7 +964,7 @@
               </div>
               <div class="field">
                 <span>End this session. Your notes stay on this machine.</span>
-                <button class="danger" onclick={logout}>Logout</button>
+                <button class="btn btn-danger" onclick={logout}>Logout</button>
               </div>
             </section>
           {:else}
@@ -986,7 +986,7 @@
                     bind:value={pat}
                     onkeydown={(e) => e.key === 'Enter' && signIn()}
                   />
-                  <button class="primary" disabled={!pat.trim() || signingIn} onclick={signIn}>
+                  <button class="btn btn-primary" disabled={!pat.trim() || signingIn} onclick={signIn}>
                     {signingIn ? 'Signing in…' : 'Sign in'}
                   </button>
                 </div>
@@ -1028,7 +1028,7 @@
     border-radius: var(--r-overlay);
     background: var(--surface-1);
     box-shadow: var(--shadow-2);
-    animation: gp-panel-in var(--t-base) var(--ease-out);
+    animation: gp-panel-in var(--t-spring) var(--ease-spring);
   }
   header {
     display: flex;
@@ -1045,22 +1045,7 @@
     font-weight: 600;
   }
   .close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--r-md);
-    background: transparent;
-    color: var(--muted);
     font-size: var(--fs-xl);
-    cursor: pointer;
-  }
-  .close:hover {
-    background: var(--surface-0);
-    color: var(--text);
   }
   .layout {
     display: flex;
@@ -1196,21 +1181,8 @@
   .field input[type='text'],
   .field input[type='number'],
   .field .inline,
-  .field button.change {
+  .field .btn {
     max-width: 340px;
-  }
-  /* One shape for every control in the dialog: same height, same radius. */
-  .modal select,
-  .modal input[type='text'],
-  .modal input[type='number'] {
-    box-sizing: border-box;
-    height: 32px;
-    padding: 0 var(--sp-2);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-0);
-    color: var(--text);
-    font-size: inherit;
   }
   /* The native stepper is a fourth style; the range already sets the value. */
   .modal input[type='number'] {
@@ -1454,43 +1426,6 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
-  /* The house button: the 30 px row the inputs set, on the surface above the
-     panel so it reads as a control, not as text. */
-  .change,
-  .primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-    height: 32px;
-    padding: 0 var(--sp-3);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-2);
-    color: var(--text);
-    font-size: inherit;
-    white-space: nowrap;
-  }
-  /* Same meaning as in the onboarding and conflict dialogs: the choice the
-     dialog recommends, coloured, not a second filled shape. */
-  .primary {
-    color: var(--ok);
-  }
-  .change:hover:not(:disabled),
-  .primary:hover:not(:disabled) {
-    background: var(--surface-3);
-  }
-  /* The one filled accent action in Settings: update checks. */
-  .change.accent {
-    border-color: var(--accent);
-    color: var(--on-accent);
-    background: var(--accent);
-  }
-  .change:disabled,
-  .primary:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
   /* The repository as one object: where it lives, then what can move it. */
   .repo {
     display: flex;
@@ -1553,16 +1488,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--sp-2);
-  }
-  /* The one commit in the tab: clone and switch. */
-  .change.cta {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-  .change.cta:hover:not(:disabled) {
-    border-color: var(--accent-fg);
-    background: color-mix(in srgb, var(--accent) 88%, #fff);
   }
   /* Import is a well inside the card: this is the field you fill in. */
   .import {
@@ -1748,22 +1673,7 @@
   .lang {
     color: var(--muted);
   }
-  .remove {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: none;
-    border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--muted);
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-  }
-  .remove:hover {
+  .remove:hover:not(:disabled) {
     background: color-mix(in srgb, var(--err) 12%, transparent);
     color: var(--err);
   }
@@ -1798,20 +1708,6 @@
     width: 100%;
     height: 32px;
     min-width: 0;
-  }
-  .danger {
-    display: inline-flex;
-    align-items: center;
-    box-sizing: border-box;
-    height: 32px;
-    padding: 0 var(--sp-3);
-    border: 1px solid var(--err);
-    border-radius: var(--r-md);
-    color: var(--err);
-    font-size: inherit;
-  }
-  .danger:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--err) 14%, transparent);
   }
   /* The window's minimum is 720 px: the rail gives 40 px back before the
      labels start wrapping. */

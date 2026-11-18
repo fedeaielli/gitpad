@@ -19,7 +19,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" use:focusTrap>
     <header>
       <h2>Keyboard shortcuts</h2>
-      <button class="close" aria-label="Close keyboard shortcuts" onclick={close}>×</button>
+      <button class="icon-btn lg close" aria-label="Close keyboard shortcuts" onclick={close}>×</button>
     </header>
     <ul class="list">
       {#each helpRows as shortcut (shortcut.label)}
@@ -60,9 +60,9 @@
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
-    background: var(--surface-2);
+    background: var(--surface-1);
     box-shadow: var(--shadow-2);
-    animation: gp-panel-in var(--t-base) var(--ease-out);
+    animation: gp-panel-in var(--t-spring) var(--ease-spring);
   }
   header {
     display: flex;
@@ -79,26 +79,12 @@
     font-weight: 600;
   }
   .close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    border: none;
-    border-radius: var(--r-md);
-    background: transparent;
-    color: var(--muted);
     font-size: var(--fs-xl);
-    cursor: pointer;
-  }
-  .close:hover {
-    background: var(--surface-0);
-    color: var(--text);
   }
   .list {
     margin: 0;
     padding: var(--sp-2) var(--sp-4) var(--sp-3);
+    background: var(--surface-0);
     list-style: none;
   }
   .list li {
@@ -113,14 +99,14 @@
   .keys {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: var(--sp-05);
     flex: 0 0 auto;
   }
   kbd {
-    padding: 1px 5px;
+    padding: var(--sp-0) var(--sp-05);
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
-    background: var(--surface-0);
+    background: var(--surface-1);
     color: var(--muted);
     font-family: inherit;
     font-size: var(--fs-xs);

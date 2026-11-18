@@ -49,7 +49,9 @@ comes from the filled accent. A destructive confirm keeps `--err`.
 
 - `--fs-lg` 16 px: dialog and onboarding body, settings rows.
 - `--fs-md` 14 px: panel content, file and commit rows.
-- `--fs-sm` 12.5 px: secondary text, buttons, paths.
+- `--fs-sm` 12.5 px: secondary text, compact chrome labels, paths.
+- Controls inherit the size of their surface; do not set a font size on a
+  button or input unless the surface demands it.
 - `--fs-xs` 11 px: meta, hints, uppercase group labels.
 - `--fs-2xs` 10 px: badges and counts.
 

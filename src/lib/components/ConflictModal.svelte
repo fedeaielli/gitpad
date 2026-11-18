@@ -134,7 +134,7 @@
   >
     <header>
       <span id="conflict-title">Merge conflicts ({files.length})</span>
-      <button class="close" aria-label="Close" onclick={close}>×</button>
+      <button class="icon-btn lg" aria-label="Close" onclick={close}>×</button>
     </header>
 
     <div class="body">
@@ -161,14 +161,14 @@
           </div>
           <div class="diff" bind:this={host}></div>
           <div class="actions">
-            <button disabled={busy} onclick={() => accept('accept_ours')}>Accept Local</button>
-            <button disabled={busy} onclick={() => accept('accept_theirs')}>Accept Remote</button>
-            <button disabled={busy} onclick={editManually}>Edit Manually</button>
+            <button class="btn" disabled={busy} onclick={() => accept('accept_ours')}>Accept Local</button>
+            <button class="btn" disabled={busy} onclick={() => accept('accept_theirs')}>Accept Remote</button>
+            <button class="btn" disabled={busy} onclick={editManually}>Edit Manually</button>
           </div>
         {:else}
           <div class="done">
             <p>Every conflicted file has been resolved.</p>
-            <button class="primary" disabled={busy} onclick={confirm}>
+            <button class="btn btn-primary" disabled={busy} onclick={confirm}>
               {busy ? 'Merging…' : 'Confirm Merge'}
             </button>
           </div>
@@ -198,38 +198,26 @@
     width: 1000px;
     max-width: calc(100vw - 48px);
     height: 80vh;
-    background: var(--surface-3);
+    background: var(--surface-1);
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
-    animation: gp-panel-in var(--t-base) var(--ease-out);
+    animation: gp-panel-in var(--t-spring) var(--ease-spring);
   }
   header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 40px;
-    padding: 0 var(--sp-3);
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
     border-bottom: 1px solid var(--divider);
     font-weight: 600;
-  }
-  .close {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    color: var(--muted);
-    font-size: var(--fs-lg);
-  }
-  .close:hover {
-    color: var(--text);
   }
   .body {
     display: flex;
     flex: 1;
     min-height: 0;
+    background: var(--surface-0);
   }
   nav {
     display: flex;
@@ -237,13 +225,15 @@
     flex-direction: column;
     gap: var(--sp-0);
     overflow: auto;
-    padding: var(--sp-1);
-    border-right: 1px solid var(--border);
+    padding: var(--sp-2);
+    border-right: 1px solid var(--divider);
+    background: var(--surface-1);
   }
   .file {
-    padding: var(--sp-05) var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
     border-radius: var(--r-sm);
     overflow: hidden;
+    color: var(--text);
     text-align: left;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -252,8 +242,8 @@
     background: var(--surface-2);
   }
   .file.active {
-    background: var(--accent);
-    color: var(--on-accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
+    color: var(--text);
   }
   .detail {
     display: flex;
@@ -277,24 +267,11 @@
   }
   .actions {
     display: flex;
-    gap: var(--sp-1);
-  }
-  .actions button,
-  .done button {
-    padding: var(--sp-05) var(--sp-25);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-2);
-  }
-  .actions button:hover:not(:disabled) {
-    border-color: var(--border-strong);
+    gap: var(--sp-2);
   }
   button:disabled {
     opacity: 0.5;
     cursor: default;
-  }
-  .primary {
-    color: var(--ok);
   }
   .done {
     display: flex;
