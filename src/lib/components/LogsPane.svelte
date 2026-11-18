@@ -283,7 +283,7 @@
     flex: 0 0 140px;
   }
   .label {
-    color: var(--muted);
+    color: var(--accent-fg);
     font-size: var(--fs-xs);
   }
   select,
