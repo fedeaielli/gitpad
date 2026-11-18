@@ -71,12 +71,14 @@
   /* Fully round: dots, badges, drag handles. Clamped on small boxes. */
   --r-pill: 999px;
 
-  --fs-2xs: 10px;
-  --fs-xs: 11px;
-  --fs-sm: 12.5px;
-  --fs-md: 14px;
-  --fs-lg: 16px;
-  --fs-xl: 20px;
+  /* rem, not px: the small end of the scale must follow the user's base size,
+     or a 10 px badge stays 10 px while the rest of the window grows. */
+  --fs-2xs: 0.625rem;
+  --fs-xs: 0.6875rem;
+  --fs-sm: 0.78125rem;
+  --fs-md: 0.875rem;
+  --fs-lg: 1rem;
+  --fs-xl: 1.25rem;
 
   --t-fast: 150ms;
   --t-base: 180ms;

@@ -389,7 +389,7 @@
     flex: 0 0 auto;
     padding-left: var(--sp-0);
     color: var(--muted);
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
   }
@@ -448,13 +448,13 @@
   .empty-title {
     margin: 0;
     color: var(--text);
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 500;
   }
   .empty-hint {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   .days,
   .card,
@@ -478,7 +478,7 @@
     padding: var(--sp-2) var(--sp-25) var(--sp-1);
     background: var(--surface-1);
     color: var(--accent-fg);
-    font-size: 12px;
+    font-size: 0.75rem;
     line-height: 1.2;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -503,7 +503,7 @@
     flex: 0 0 auto;
     padding-right: var(--sp-25);
     color: var(--muted);
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
@@ -721,7 +721,7 @@
   .files .text-btn {
     min-height: 28px;
     padding: 0 var(--sp-1);
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
   }
   .files .text-btn:hover:not(:disabled) {

@@ -55,6 +55,8 @@ comes from the filled accent. A destructive confirm keeps `--err`.
   button or input unless the surface demands it.
 - `--fs-xs` 11 px: meta, hints, uppercase group labels.
 - `--fs-2xs` 10 px: badges and counts.
+- Those six steps are declared in `rem`, so they follow the user's base font
+  size; the px figures above are the size at the 16 px default.
 
 No literal font sizes in components. Group labels use `--accent-fg`,
 uppercase, `letter-spacing: 0.08em`, weight 500.
@@ -74,10 +76,11 @@ to the rules above.
 
 - Command palette field: ~37 px tall, own padding (`--sp-2`/`--sp-25`) and
   `--surface-2` fill. The list body stays `--surface-0`.
-- History cards: 13 px counts and empty title, 12 px day label and empty hint,
-  3 px row gap, 28 px inline `Restore`, 26 px refresh, 4 px badge radius, and
-  the 1 px accent stripe on the active commit with `--surface-3` fills.
-  Buttons keep the shared classes and only override the metrics they need.
+- History cards: 13 px counts and empty title (0.8125rem), 12 px day label and
+  empty hint (0.75rem), 3 px row gap, 28 px inline `Restore`, 26 px refresh,
+  4 px badge radius, and the 1 px accent stripe on the active commit with
+  `--surface-3` fills. Buttons keep the shared classes and only override the
+  metrics they need.
 
 ## Selection and emphasis
 
