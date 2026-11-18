@@ -1137,10 +1137,6 @@
   .field > :last-child {
     justify-self: end;
   }
-  /* The whole row is the label, so the whole row toggles the box. */
-  .field:has(:global(.check)) {
-    cursor: pointer;
-  }
   /* The reason is in the hint; the row does not pretend to be editable. */
   .field.disabled {
     opacity: 0.6;
