@@ -8,6 +8,7 @@
 
   import { open } from '@tauri-apps/plugin-dialog'
   import { openExternal } from '../utils/open'
+  import { tip } from '../utils/tooltip'
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
   import { pushToast } from '../stores/toasts.svelte'
@@ -335,7 +336,7 @@
         </div>
         <p class="label">Local folder</p>
         <div class="folder">
-          <p class="pick" title={target || 'Default app folder'}>
+          <p class="pick" use:tip={target || 'Default app folder'}>
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
               <path d="M1.8 4.2h4l1.4 1.6h7v7.4a.6.6 0 0 1-.6.6H2.4a.6.6 0 0 1-.6-.6Z" />
             </svg>

@@ -235,7 +235,7 @@
           {loading ? 'Loading…' : `${commits.length} commit${commits.length === 1 ? '' : 's'}`}
         </span>
         <span class="sep" aria-hidden="true">·</span>
-        <span class="scope" title={filePath || undefined}>
+        <span class="scope" use:tip={filePath || undefined}>
           {filePath ? filePath.split('/').pop() : 'All history'}
         </span>
       </span>
