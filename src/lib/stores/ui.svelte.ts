@@ -1,6 +1,6 @@
 import { tabs } from './tabs.svelte'
 
-export const THEMES = ['gitpad-dark', 'vs-dark', 'vs', 'hc-black']
+export const THEMES = ['gitpad-dark', 'vs', 'hc-black']
 
 export type Keybinding = 'vscode' | 'vim' | 'emacs'
 

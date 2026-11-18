@@ -4,7 +4,6 @@ import { accentTokens } from './color'
 /// the editor surface matches the surrounding chrome.
 const MONACO: Record<string, string> = {
   'gitpad-dark': 'gitpad-dark',
-  'vs-dark': 'gitpad-dark',
   vs: 'gitpad-light',
   'hc-black': 'gitpad-hc',
 }
