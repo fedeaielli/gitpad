@@ -20,6 +20,8 @@
   let truncated = $state(false)
   let noRepo = $state(false)
   let menu = $state<{ x: number; y: number; node: FileNode | null; mode: MenuMode } | null>(null)
+  /// The row that opened the menu, so Escape can put the focus back.
+  let menuAnchor = $state<HTMLElement | null>(null)
   let renaming = $state<string | null>(null)
   let renameValue = $state('')
   let dragPath = $state<string | null>(null)
@@ -183,7 +185,66 @@
   function openMenu(event: MouseEvent, node: FileNode | null) {
     event.preventDefault()
     if (noRepo) return
+    menuAnchor = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
     menu = { x: event.clientX, y: event.clientY, node, mode: 'menu' }
+  }
+
+  /// Shift+F10 and the menu key open at the row, not at the pointer.
+  function openMenuFromKey(event: KeyboardEvent, node: FileNode | null) {
+    if (event.key !== 'ContextMenu' && !(event.key === 'F10' && event.shiftKey)) return
+    event.preventDefault()
+    if (noRepo) return
+    const anchor = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+    const box = anchor?.getBoundingClientRect()
+    menuAnchor = anchor
+    menu = {
+      x: box ? box.left + 12 : 0,
+      y: box ? box.bottom : 0,
+      node,
+      mode: 'menu',
+    }
+  }
+
+  function closeMenu(refocus = false) {
+    menu = null
+    if (refocus) menuAnchor?.focus()
+  }
+
+  /// Menus take the focus on open and hand it back on Escape.
+  let menuEl = $state<HTMLElement>()
+  $effect(() => {
+    const current = menu
+    if (!current) return
+    // Read the mode so switching to the delete step moves the focus too.
+    current.mode
+    menuEl?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+  })
+
+  function onMenuKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      // Do not let the app's other overlays close behind this one.
+      event.stopPropagation()
+      closeMenu(true)
+      return
+    }
+    if (event.key === 'Tab') {
+      closeMenu()
+      return
+    }
+    const items = Array.from(
+      (event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    )
+    if (items.length === 0) return
+    const at = items.indexOf(document.activeElement as HTMLElement)
+    const move = (to: number) => {
+      event.preventDefault()
+      items[(to + items.length) % items.length].focus()
+    }
+    if (event.key === 'ArrowDown') move(at + 1)
+    else if (event.key === 'ArrowUp') move(at - 1)
+    else if (event.key === 'Home') move(0)
+    else if (event.key === 'End') move(items.length - 1)
   }
 
   /// The folder a context-menu action applies to: the node itself when it is a
@@ -293,12 +354,14 @@
             }}
             ondblclick={() => startRename(node)}
             onkeydown={(e) => {
+              openMenuFromKey(e, node)
               if (e.key === 'F2') {
                 e.preventDefault()
                 startRename(node)
               }
             }}
             onclick={() => toggle(node.path)}
+            aria-expanded={ui.expanded.includes(node.path)}
           >
             <span class="chevron" class:open={ui.expanded.includes(node.path)}>
               <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -327,6 +390,7 @@
             }}
             ondblclick={() => startRename(node)}
             onkeydown={(e) => {
+              openMenuFromKey(e, node)
               if (e.key === 'F2') {
                 e.preventDefault()
                 startRename(node)
@@ -371,22 +435,38 @@
 </div>
 
 {#if menu}
-  <button class="backdrop" type="button" aria-label="Close menu" onclick={() => (menu = null)}></button>
-  <div class="menu" style="left: {menu.x}px; top: {menu.y}px">
+  <button
+    class="backdrop"
+    type="button"
+    aria-label="Close menu"
+    tabindex="-1"
+    onclick={() => closeMenu()}
+  ></button>
+  <div
+    class="menu"
+    bind:this={menuEl}
+    style="left: {menu.x}px; top: {menu.y}px"
+    role="menu"
+    aria-label="File actions"
+    tabindex="-1"
+    onkeydown={onMenuKeydown}
+  >
     {#if menu.mode === 'menu'}
-      <button onclick={() => createAt(menuBase(), 'file')}>New File</button>
-      <button onclick={() => createAt(menuBase(), 'folder')}>New Folder</button>
-      <button onclick={() => importFromPicker(false)}>Import File…</button>
-      <button onclick={() => importFromPicker(true)}>Import Folder…</button>
-      <button onclick={reveal}>Reveal in File Manager</button>
+      <button role="menuitem" onclick={() => createAt(menuBase(), 'file')}>New File</button>
+      <button role="menuitem" onclick={() => createAt(menuBase(), 'folder')}>New Folder</button>
+      <button role="menuitem" onclick={() => importFromPicker(false)}>Import File…</button>
+      <button role="menuitem" onclick={() => importFromPicker(true)}>Import Folder…</button>
+      <button role="menuitem" onclick={reveal}>Reveal in File Manager</button>
       {#if menu.node}
-        <button onclick={renameFromMenu}>Rename</button>
-        <button class="danger" onclick={() => (menu = { ...menu!, mode: 'delete' })}>Delete</button>
+        <button role="menuitem" onclick={renameFromMenu}>Rename</button>
+        <button role="menuitem" class="danger" onclick={() => (menu = { ...menu!, mode: 'delete' })}>
+          Delete
+        </button>
       {/if}
     {:else if menu.mode === 'delete'}
-      <p>Delete {menu.node?.name}?</p>
-      <button class="danger" onclick={remove}>Delete</button>
-      <button onclick={() => (menu = null)}>Cancel</button>
+      <p role="presentation">Delete {menu.node?.name}?</p>
+      <button role="menuitem" class="danger" onclick={remove}>Delete</button>
+      <button role="menuitem" onclick={() => closeMenu(true)}>Cancel</button>
     {/if}
   </div>
 {/if}
