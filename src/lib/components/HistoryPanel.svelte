@@ -321,6 +321,12 @@
                   </div>
                   {#if expanded === commit.hash}
                     <div class="details">
+                      {#if files.length > 0}
+                        <div class="files-head">
+                          <span>Changed files</span>
+                          <span class="files-total">{files.length}</span>
+                        </div>
+                      {/if}
                       <ul class="files">
                         {#each files as file (file.path)}
                           <li>
@@ -708,7 +714,22 @@
     background: var(--surface-1);
   }
   .files {
-    padding: var(--sp-1) 0;
+    padding: var(--sp-0) 0 var(--sp-1);
+  }
+  .files-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3) var(--sp-0);
+    color: var(--muted);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .files-total {
+    font-variant-numeric: tabular-nums;
   }
   .files li {
     display: flex;
