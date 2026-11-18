@@ -389,7 +389,7 @@
     flex: 0 0 auto;
     padding-left: var(--sp-0);
     color: var(--muted);
-    font-size: var(--fs-sm);
+    font-size: 13px;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
   }
@@ -408,6 +408,19 @@
   }
   .refresh {
     flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+  }
+  .refresh:disabled {
+    opacity: 0.55;
+  }
+  .refresh.spinning svg {
+    animation: spin 900ms linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .refresh.spinning svg {
+      animation: none;
+    }
   }
   .refresh svg {
     width: 14px;
@@ -440,13 +453,13 @@
   .empty-title {
     margin: 0;
     color: var(--text);
-    font-size: var(--fs-sm);
+    font-size: 13px;
     font-weight: 500;
   }
   .empty-hint {
     margin: 0;
     color: var(--muted);
-    font-size: var(--fs-sm);
+    font-size: 12px;
   }
   .days,
   .card,
@@ -470,7 +483,7 @@
     padding: var(--sp-2) var(--sp-25) var(--sp-1);
     background: var(--surface-1);
     color: var(--accent-fg);
-    font-size: var(--fs-sm);
+    font-size: 12px;
     line-height: 1.2;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -495,7 +508,7 @@
     flex: 0 0 auto;
     padding-right: var(--sp-25);
     color: var(--muted);
-    font-size: var(--fs-sm);
+    font-size: 13px;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
@@ -533,7 +546,9 @@
     background: var(--surface-3);
   }
   .commit.active {
+    border-left-color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, var(--surface-3));
+    box-shadow: inset 1px 0 0 var(--accent);
   }
   .head-row {
     display: flex;
@@ -545,7 +560,7 @@
     flex: 1;
     flex-direction: column;
     justify-content: center;
-    gap: var(--sp-0);
+    gap: 3px;
     min-width: 0;
     container-type: inline-size;
     padding: var(--sp-1) var(--sp-25);
@@ -691,7 +706,7 @@
     min-width: 18px;
     height: 18px;
     padding: 0 var(--sp-05);
-    border-radius: var(--r-sm);
+    border-radius: 4px;
     background: color-mix(in srgb, var(--badge) 18%, transparent);
     color: var(--badge);
     font-size: var(--fs-2xs);
@@ -707,10 +722,31 @@
   .badge.D {
     --badge: var(--err);
   }
+  /* Card metrics are frozen at the pre-refactor sizes, see DESIGN.md. */
+  .files .text-btn {
+    min-height: 28px;
+    padding: 0 var(--sp-1);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .files .text-btn:hover:not(:disabled) {
+    background: var(--surface-3);
+    text-decoration: none;
+  }
+  .files .text-btn:disabled {
+    opacity: 0.5;
+  }
   .actions {
     display: flex;
     justify-content: flex-end;
     padding: var(--sp-1) var(--sp-25) var(--sp-25);
+  }
+  .actions .btn {
+    background: transparent;
+    font-weight: 500;
+  }
+  .actions .btn:disabled {
+    opacity: 0.5;
   }
   /* High contrast is a legibility guarantee, not a place to soften surfaces. */
   :global(:root[data-theme='hc-black']) .card {
