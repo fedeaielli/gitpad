@@ -570,15 +570,8 @@
     background: var(--surface-3);
   }
   .commit.active {
-    border-width: 2px;
     border-color: var(--accent);
     background: transparent;
-  }
-  /* A 2px outline must not change the row's total height: give the extra 2px
-     back to the head and the expand strip. */
-  .commit.active .head-row,
-  .commit.active .expand {
-    min-height: 46px;
   }
   /* The card's 1px border sits outside this radius, so the accent follows the
      curve instead of squaring off against it. */
@@ -593,14 +586,9 @@
   .commit.active:only-child {
     border-radius: calc(var(--r-lg) - 1px);
   }
-  /* The active row's 2px bottom border replaces the next divider; reclaim its
-     1px so the row below keeps the same height. */
+  /* The active row's 1px bottom border replaces the next divider. */
   .commit.active + .commit {
-    border-top-width: 0;
-  }
-  .commit.active + .commit .head-row,
-  .commit.active + .commit .expand {
-    min-height: 49px;
+    border-top-color: transparent;
   }
   .head-row {
     display: flex;
