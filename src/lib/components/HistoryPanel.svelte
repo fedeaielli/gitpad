@@ -557,11 +557,6 @@
     --kind: var(--ok);
     --kind-ink: var(--ok);
   }
-  .commit.update,
-  .commit.sync {
-    --kind: var(--accent-fg);
-    --kind-ink: var(--accent-fg);
-  }
   .commit + .commit {
     border-top-color: color-mix(in srgb, var(--divider) 70%, transparent);
   }
@@ -722,19 +717,29 @@
     white-space: nowrap;
   }
   .badge {
+    --badge: var(--muted);
+    display: inline-flex;
     flex: 0 0 auto;
-    width: 14px;
-    font-size: var(--fs-xs);
-    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--badge) 18%, transparent);
+    color: var(--badge);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    line-height: 1;
   }
   .badge.M {
-    color: var(--accent-fg);
+    --badge: var(--warn);
   }
   .badge.A {
-    color: var(--ok);
+    --badge: var(--ok);
   }
   .badge.D {
-    color: var(--err);
+    --badge: var(--err);
   }
   .files button {
     flex: 0 0 auto;
