@@ -422,8 +422,16 @@
     box-shadow: var(--shadow-2);
     animation: gp-pop-in var(--t-spring) var(--ease-spring);
   }
+  /* Frozen metric (DESIGN.md): the field is taller than a standard control. */
   input {
+    height: auto;
     margin: var(--sp-2);
+    padding: var(--sp-2) var(--sp-25);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
   }
   .searching {
     min-height: 18px;
