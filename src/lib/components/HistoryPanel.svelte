@@ -483,7 +483,7 @@
   }
   .day-count {
     flex: 0 0 auto;
-    padding-right: var(--sp-0);
+    padding-right: var(--sp-25);
     color: var(--muted);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
