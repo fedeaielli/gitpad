@@ -199,8 +199,9 @@
     {#each groups as group (group.key)}
       <li class="day">{group.label}</li>
       {#each group.commits as commit (commit.hash)}
+        {@const kind = kindOf(commit.message)}
         <li
-          class="commit"
+          class="commit {kind}"
           class:open={expanded === commit.hash}
           class:active={ui.timelineCommit?.hash === commit.hash}
         >
@@ -212,7 +213,7 @@
                   {timeLabel(commit.timestamp)} · {commit.author} · {fileCount(commit.filesChanged)}
                 </span>
               </span>
-              <span class="msg {kindOf(commit.message)}">{commit.message}</span>
+              <span class="msg {kind}">{commit.message}</span>
             </button>
             <button
               class="expand"
@@ -302,18 +303,41 @@
     padding: var(--sp-0) 0 var(--sp-2);
   }
   .commit {
+    --kind: var(--border-strong);
+    --kind-ink: var(--muted);
     margin: 5px var(--sp-2);
     border: 1px solid var(--border);
+    border-left: 1px solid var(--kind);
     border-radius: var(--r-md);
     background: var(--surface-2);
     overflow: hidden;
   }
+  .commit.delete {
+    --kind: var(--err);
+    --kind-ink: var(--err);
+  }
+  .commit.revert {
+    --kind: var(--warn);
+    --kind-ink: var(--warn);
+  }
+  .commit.import {
+    --kind: var(--ok);
+    --kind-ink: var(--ok);
+  }
+  .commit.update,
+  .commit.sync {
+    --kind: var(--accent-fg);
+    --kind-ink: var(--accent-fg);
+  }
   .commit:hover,
   .commit.open {
     border-color: var(--border-strong);
+    border-left-color: var(--kind);
   }
   .commit.active {
-    box-shadow: inset 2px 0 0 var(--accent);
+    border-color: var(--accent);
+    border-left-color: var(--kind);
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
   }
   .day {
     position: sticky;
@@ -385,8 +409,9 @@
     transform: rotate(90deg);
   }
   .row code {
-    color: var(--muted);
-    font-size: var(--fs-2xs);
+    color: var(--kind-ink);
+    font-size: var(--fs-xs);
+    font-weight: 600;
   }
   /* Identity on one line, the message gets the other to itself. */
   .id {
