@@ -579,9 +579,9 @@
   .msg {
     overflow: hidden;
     color: var(--text);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    line-height: 1.35;
+    line-height: 1.25;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -591,7 +591,8 @@
     gap: var(--sp-1);
     min-width: 0;
     color: var(--muted);
-    font-size: var(--fs-xs);
+    font-size: 11px;
+    line-height: 1.2;
   }
   .meta code {
     flex: 0 0 auto;
@@ -667,7 +668,7 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font-size: 12px;
+    font-size: var(--fs-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -694,7 +695,7 @@
     border-radius: var(--r-sm);
     background: transparent;
     color: var(--accent-fg);
-    font-size: var(--fs-xs);
+    font-size: 12px;
     font-weight: 500;
   }
   .files button:hover:not(:disabled) {
