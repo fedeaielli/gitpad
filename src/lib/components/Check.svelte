@@ -22,6 +22,9 @@
     align-items: center;
     justify-content: center;
     padding: var(--sp-05);
+    /* The input is 1px and pointer-events: none, so the box under the cursor
+       is this span and the svg; neither inherits a pointer from anywhere. */
+    cursor: pointer;
   }
   input {
     position: absolute;
