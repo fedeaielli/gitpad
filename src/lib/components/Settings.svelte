@@ -143,7 +143,35 @@
     return (contrast(ui.accent, surfaceForTheme()) ?? 99) < 3
   })
   const user = $derived(auth.user)
+  const displayName = $derived(user?.name?.trim() || user?.login || '')
+  const memberSince = $derived.by(() => {
+    const raw = user?.createdAt
+    if (!raw) return ''
+    const date = new Date(raw)
+    return Number.isNaN(date.getTime())
+      ? ''
+      : `Member since ${date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`
+  })
+  const accountPending = $derived(auth.authState === 'pending')
+  const changesLabel = $derived(
+    gitStatus.changes.length === 0
+      ? 'Clean'
+      : `${gitStatus.changes.length} change${gitStatus.changes.length === 1 ? '' : 's'}`,
+  )
+  const syncLabel = $derived(
+    gitStatus.ahead > 0 && gitStatus.behind > 0
+      ? `${gitStatus.ahead} ahead · ${gitStatus.behind} behind`
+      : gitStatus.ahead > 0
+        ? `${gitStatus.ahead} to push`
+        : gitStatus.behind > 0
+          ? `${gitStatus.behind} to pull`
+          : 'Up to date',
+  )
+  const lastPushLabel = $derived(
+    gitStatus.lastPush ? gitStatus.lastPush.toLocaleString() : 'Never',
+  )
   let accountError = $state('')
+  let keyringOk = $state<boolean | null>(null)
   let pat = $state('')
   let signingIn = $state(false)
   let newExt = $state('')
@@ -180,6 +208,9 @@
   )
 
   onMount(async () => {
+    void invoke<boolean>('auth_keyring_ok')
+      .then((ok) => (keyringOk = ok))
+      .catch(() => {})
     await loadUser()
     if (!auth.user) accountError = 'not connected'
     fonts = (await invoke<string[]>('fs_list_fonts').catch(() => [])) ?? []
@@ -337,6 +368,10 @@
   async function refreshUser() {
     await loadUser(true)
     accountError = auth.user ? '' : 'not connected'
+  }
+
+  function openProfile() {
+    if (user) void openExternal(`https://github.com/${user.login}`)
   }
 
   /// A local-only folder keeps its history: attach `origin` and push, no clone.
@@ -824,31 +859,115 @@
             {/if}
           </section>
         {:else}
-          <section class="section">
-            {#if user}
-              <div class="field">
-                <span>Signed in</span>
-                <div class="account">
+          {#if user}
+            <section class="section">
+              <h3>Profile</h3>
+              <div class="profile-card">
+                <button class="avatar" aria-label="Open GitHub profile" onclick={openProfile}>
                   <img src={user.avatarUrl} alt="" />
-                  <span>{user.login}</span>
+                </button>
+                <div class="identity">
+                  <button class="profile-name" onclick={openProfile}>{displayName}</button>
+                  {#if displayName !== user.login}
+                    <span class="handle">@{user.login}</span>
+                  {/if}
+                  {#if user.bio?.trim()}
+                    <p class="bio">{user.bio.trim()}</p>
+                  {/if}
+                  {#if memberSince}
+                    <p class="joined">{memberSince}</p>
+                  {/if}
                 </div>
               </div>
-              {#if gitStatus.configured && !gitStatus.hasRemote}
-                <div class="field">
-                  <span>GitHub repository</span>
-                  <div class="inline">
-                    <span class="hint">Local only — commits stay on this machine</span>
-                    <button class="change" disabled={connecting} onclick={attachToGithub}>
-                      {connecting ? 'Connecting…' : 'Connect'}
-                    </button>
+            </section>
+
+            <section class="section">
+              <h3>Repository</h3>
+              {#if gitStatus.configured}
+                <div class="repo account-repo">
+                  <div class="field">
+                    <span>Folder</span>
+                    <span class="path">{ui.repoPath || 'Default app folder'}</span>
                   </div>
+                  {#if gitStatus.branch}
+                    <div class="field">
+                      <span>Branch</span>
+                      <span class="mono">{gitStatus.branch}</span>
+                    </div>
+                  {/if}
+                  <div class="field"><span>Changes</span><span>{changesLabel}</span></div>
+                  <div class="field">
+                    <span>Remote</span>
+                    <span>{gitStatus.hasRemote ? 'Connected' : 'Local only'}</span>
+                  </div>
+                  {#if gitStatus.hasRemote}
+                    <div class="field"><span>Sync</span><span>{syncLabel}</span></div>
+                    <div class="field"><span>Last push</span><span>{lastPushLabel}</span></div>
+                  {/if}
+                  {#if gitStatus.conflicts.length > 0}
+                    <div class="field conflict">
+                      <span>Conflicts</span>
+                      <span>{gitStatus.conflicts.length} to resolve</span>
+                    </div>
+                  {/if}
+                  {#if !gitStatus.hasRemote}
+                    <div class="field">
+                      <span>GitHub repository</span>
+                      <div class="inline">
+                        <span class="hint">Local only — commits stay on this machine</span>
+                        <button class="change" disabled={connecting} onclick={attachToGithub}>
+                          {connecting ? 'Connecting…' : 'Connect'}
+                        </button>
+                      </div>
+                    </div>
+                  {/if}
+                </div>
+              {:else}
+                <div class="repo-empty">
+                  <p class="note">
+                    No repository yet. Set one up in Sync to start committing your notes.
+                  </p>
+                  <button class="change" onclick={() => (tab = 'sync')}>Open Sync</button>
                 </div>
               {/if}
+            </section>
+
+            <section class="section">
+              <h3>Session</h3>
               <div class="field">
-                <span></span>
+                <span>Profile data</span>
+                <button class="change" disabled={accountPending} onclick={refreshUser}>
+                  {accountPending ? 'Refreshing…' : 'Refresh account'}
+                </button>
+              </div>
+              {#if keyringOk !== null}
+                <div class="field">
+                  <span>Token storage</span>
+                  <span>{keyringOk ? 'OS keyring' : 'Protected file'}</span>
+                </div>
+                {#if !keyringOk}
+                  <p class="note">
+                    The OS keyring is unavailable: the token is kept in a protected file on this
+                    machine.
+                  </p>
+                {/if}
+              {/if}
+              <div class="field">
+                <span>GitHub tokens</span>
+                <button
+                  class="link"
+                  onclick={() => void openExternal('https://github.com/settings/tokens')}
+                >
+                  Manage on GitHub
+                </button>
+              </div>
+              <div class="field">
+                <span>End this session. Your notes stay on this machine.</span>
                 <button class="danger" onclick={logout}>Logout</button>
               </div>
-            {:else}
+            </section>
+          {:else}
+            <section class="section">
               <div class="field">
                 <span>GitHub login</span>
                 <GithubLogin onsuccess={refreshUser} />
@@ -874,8 +993,8 @@
               {#if accountError}
                 <p class="note" id="pat-account-error" role="alert">{accountError}</p>
               {/if}
-            {/if}
-          </section>
+            </section>
+          {/if}
         {/if}
       </div>
     </div>
@@ -1189,8 +1308,9 @@
   .path {
     overflow-wrap: anywhere;
   }
-  /* About as one product card: identity, update action, then the links. */
-  .about-card {
+  /* About and Account share the one card surface: identity first, then detail. */
+  .about-card,
+  .profile-card {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
@@ -1226,6 +1346,77 @@
     background: var(--surface-2);
     color: var(--muted);
     font-size: var(--fs-sm);
+  }
+  .profile-card {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .avatar {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+  }
+  .avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .avatar:hover {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .identity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-05);
+    min-width: 0;
+  }
+  .profile-name {
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-align: left;
+    cursor: pointer;
+  }
+  .profile-name:hover {
+    color: var(--accent-fg);
+    text-decoration: underline;
+  }
+  .handle {
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  .bio {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-size: var(--fs-md);
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .joined {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  .avatar:focus-visible,
+  .profile-name:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
   }
   .about-card .note {
     margin: 0;
@@ -1311,6 +1502,34 @@
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     background: var(--surface-1);
+  }
+  .account-repo .path {
+    max-width: 60%;
+    min-width: 0;
+    font-family: ui-monospace, monospace;
+    font-size: var(--fs-sm);
+    text-align: right;
+  }
+  .account-repo .mono {
+    font-family: ui-monospace, monospace;
+    font-size: var(--fs-sm);
+  }
+  .field.conflict > :last-child {
+    color: var(--err);
+  }
+  .repo-empty {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-1);
+  }
+  .repo-empty .note {
+    margin: 0;
   }
   .folder {
     display: flex;
@@ -1582,16 +1801,6 @@
     height: 32px;
     min-width: 0;
   }
-  .account {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-  }
-  .account img {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-  }
   .danger {
     display: inline-flex;
     align-items: center;
@@ -1602,7 +1811,6 @@
     border-radius: var(--r-md);
     color: var(--err);
     font-size: inherit;
-    justify-self: start;
   }
   .danger:hover:not(:disabled) {
     background: color-mix(in srgb, var(--err) 14%, transparent);
