@@ -104,8 +104,8 @@ to the rules above.
   popovers with `gp-pop-in`.
 - One shared `.spin` for busy icons. Never a second keyframe for rotation.
 - Press feedback is the global 1 px sink on `button`; do not add another.
-- `prefers-reduced-motion: reduce` must collapse to a cross-fade; progress
-  indicators stay animated.
+- `prefers-reduced-motion: reduce` collapses to an instant appearance: no slide,
+  no spring, no draw. Progress indicators stay animated.
 
 ## Themes
 

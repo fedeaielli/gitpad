@@ -417,11 +417,6 @@
   .refresh.spinning svg {
     animation: spin 900ms linear infinite;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .refresh.spinning svg {
-      animation: none;
-    }
-  }
   .refresh svg {
     width: 14px;
     height: 14px;

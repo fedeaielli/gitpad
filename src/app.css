@@ -585,9 +585,11 @@ textarea {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
-  /* Progress must stay visible: slower beats frozen, which reads as broken. */
+  /* Progress must stay visible: slower beats frozen, which reads as broken.
+     The circle carries its own dash keyframe, so it needs naming too. */
   .loading,
   .spinner,
+  .spinner circle,
   .spinning svg,
   .bone {
     animation-duration: 2s !important;
