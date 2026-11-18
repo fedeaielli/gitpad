@@ -21,15 +21,64 @@
 
   type Tab = 'appearance' | 'sync' | 'editor' | 'extensions' | 'logs' | 'account' | 'about'
 
-  const TABS: Array<{ id: Tab; label: string }> = [
-    { id: 'appearance', label: 'Appearance' },
-    { id: 'sync', label: 'Sync' },
-    { id: 'editor', label: 'Editor' },
-    { id: 'extensions', label: 'Extensions' },
-    { id: 'logs', label: 'Logs' },
-    { id: 'account', label: 'Account' },
-    { id: 'about', label: 'About' },
+  /// Codicon paths, filled like the activity bar's; `box` only for the icons
+  /// drawn on a larger grid.
+  const TABS: Array<{ id: Tab; label: string; icon: string; box?: string }> = [
+    {
+      id: 'appearance',
+      label: 'Appearance',
+      icon: 'M8.00101 1C4.13401 1 1.00101 3.8 1.00101 7.667C1.00101 8.956 2.04501 10 3.33401 10C4.75101 10 4.72101 9 6.00001 9C6.64401 9 7.00001 9.606 7.00001 10.25V11.5C7.00001 13.433 8.56701 15 10.5 15C13.653 15 14.999 11.215 14.999 8C14.999 4.134 11.866 1 8.00001 1H8.00101ZM10.5 14C9.12201 14 8.00001 12.878 8.00001 11.5V10.25C8.00001 8.967 7.14001 8 6.00001 8C5.04001 8 4.49801 8.412 4.13901 8.685C3.85401 8.902 3.72401 9 3.33401 9C2.59901 9 2.00101 8.402 2.00101 7.667C2.00101 4.436 4.58001 2 8.00101 2C11.309 2 14 4.692 14 8C14 10.412 13.068 14 10.501 14H10.5ZM12 11C12 11.552 11.552 12 11 12C10.448 12 10 11.552 10 11C10 10.448 10.448 10 11 10C11.552 10 12 10.448 12 11ZM13 8C13 8.552 12.552 9 12 9C11.448 9 11 8.552 11 8C11 7.448 11.448 7 12 7C12.552 7 13 7.448 13 8ZM6.00001 5C6.00001 5.552 5.55201 6 5.00001 6C4.44801 6 4.00001 5.552 4.00001 5C4.00001 4.448 4.44801 4 5.00001 4C5.55201 4 6.00001 4.448 6.00001 5ZM10 5C10 4.448 10.448 4 11 4C11.552 4 12 4.448 12 5C12 5.552 11.552 6 11 6C10.448 6 10 5.552 10 5ZM9.00001 4C9.00001 4.552 8.55201 5 8.00001 5C7.44801 5 7.00001 4.552 7.00001 4C7.00001 3.448 7.44801 3 8.00001 3C8.55201 3 9.00001 3.448 9.00001 4Z',
+    },
+    {
+      id: 'sync',
+      label: 'Sync',
+      icon: 'M14 3.5V6.5C14 6.78 13.78 7 13.5 7H10.5C10.22 7 9.99999 6.78 9.99999 6.5C9.99999 6.22 10.22 6 10.5 6H12.58C11.78 4.17 10.01 3 7.99999 3C5.77999 3 3.79999 4.5 3.18999 6.64C3.12999 6.86 2.92999 7 2.70999 7C2.65999 7 2.61999 7 2.56999 6.98C2.29999 6.9 2.14999 6.63 2.22999 6.36C2.95999 3.79 5.32999 2 7.99999 2C10.05 2 11.91 3.02 13 4.69V3.5C13 3.22 13.22 3 13.5 3C13.78 3 14 3.22 14 3.5ZM13.42 9.02C13.16 8.95 12.88 9.1 12.8 9.37C12.19 11.51 10.22 13.01 7.98999 13.01C5.97999 13.01 4.20999 11.84 3.40999 10.01H5.48999C5.76999 10.01 5.98999 9.79 5.98999 9.51C5.98999 9.23 5.76999 9.01 5.48999 9.01H2.48999C2.20999 9.01 1.98999 9.23 1.98999 9.51V12.51C1.98999 12.79 2.20999 13.01 2.48999 13.01C2.76999 13.01 2.98999 12.79 2.98999 12.51V11.32C4.07999 12.98 5.93999 14.01 7.98999 14.01C10.66 14.01 13.03 12.22 13.76 9.65C13.84 9.38 13.68 9.11 13.41 9.03L13.42 9.02Z',
+    },
+    {
+      id: 'editor',
+      label: 'Editor',
+      icon: 'M9.80307 3.0431C10.0554 3.15525 10.1691 3.45073 10.0569 3.70307L6.05691 12.7031C5.94475 12.9554 5.64927 13.0691 5.39693 12.9569C5.14459 12.8448 5.03094 12.5493 5.14309 12.2969L9.14309 3.29693C9.25525 3.04459 9.55073 2.93094 9.80307 3.0431ZM4.33218 5.3763C4.53857 5.55976 4.55716 5.87579 4.3737 6.08218L2.66898 8L4.3737 9.91782C4.55716 10.1242 4.53857 10.4402 4.33218 10.6237C4.12579 10.8072 3.80975 10.7886 3.6263 10.5822L1.6263 8.33218C1.4579 8.14274 1.4579 7.85726 1.6263 7.66782L3.6263 5.41782C3.80975 5.21143 4.12579 5.19284 4.33218 5.3763ZM11.6678 5.3763C11.8742 5.19284 12.1902 5.21143 12.3737 5.41782L14.3737 7.66782C14.5421 7.85726 14.5421 8.14274 14.3737 8.33218L12.3737 10.5822C12.1902 10.7886 11.8742 10.8072 11.6678 10.6237C11.4614 10.4402 11.4428 10.1242 11.6263 9.91782L13.331 8L11.6263 6.08218C11.4428 5.87579 11.4614 5.55976 11.6678 5.3763Z',
+    },
+    {
+      id: 'extensions',
+      label: 'Extensions',
+      icon: 'M15 4.95703C15 4.58711 14.8563 4.24054 14.5949 3.97992L12.0096 1.39234C11.4879 0.86922 10.5788 0.86922 10.0571 1.39234L8 3.45119V3.32321C8 2.55068 7.37187 1.922 6.6 1.922H2.4C1.62813 1.922 1 2.55068 1 3.32321V13.5988C1 14.3713 1.62813 15 2.4 15H12.6667C13.4385 15 14.0667 14.3713 14.0667 13.5988V9.39514C14.0667 8.62261 13.4385 7.99393 12.6667 7.99393H12.5379L14.5949 5.93508C14.8553 5.67445 15 5.32602 15 4.95703ZM2.4 2.85521H6.6C6.85667 2.85521 7.06667 3.06446 7.06667 3.32228V7.99299H1.93333V3.32228C1.93333 3.06446 2.14333 2.85521 2.4 2.85521ZM1.93333 13.5979V8.92714H7.06667V14.0649H2.4C2.14333 14.0649 1.93333 13.8547 1.93333 13.5979ZM13.1333 9.39421V13.5979C13.1333 13.8547 12.9233 14.0649 12.6667 14.0649H8V8.92714H12.6667C12.9233 8.92714 13.1333 9.13638 13.1333 9.39421ZM8 7.99299V6.46287L9.5288 7.99299H8ZM13.9351 5.2737L11.3488 7.86221C11.1789 8.03223 10.8859 8.03223 10.716 7.86221L8.12973 5.2737C8.0448 5.18963 7.99813 5.07753 7.99813 4.95796C7.99813 4.83839 8.0448 4.7263 8.12973 4.64129L10.716 2.05278C10.8009 1.96777 10.9129 1.92106 11.0324 1.92106C11.1519 1.92106 11.2639 1.96777 11.3488 2.05278L13.9351 4.64129C14.02 4.72536 14.0667 4.83746 14.0667 4.95703C14.0667 5.0766 14.02 5.1887 13.9351 5.2737Z',
+    },
+    {
+      id: 'logs',
+      label: 'Logs',
+      box: '0 0 24 25',
+      icon: 'M8.25 8.06775C7.836 8.06775 7.5 8.40375 7.5 8.81775C7.5 9.23175 7.836 9.56775 8.25 9.56775H15.75C16.164 9.56775 16.5 9.23175 16.5 8.81775C16.5 8.40375 16.164 8.06775 15.75 8.06775H8.25ZM7.5 13.3177C7.5 12.9037 7.836 12.5677 8.25 12.5677H15.75C16.164 12.5677 16.5 12.9037 16.5 13.3177C16.5 13.7317 16.164 14.0677 15.75 14.0677H8.25C7.836 14.0677 7.5 13.7317 7.5 13.3177ZM8.25 17.0677C7.836 17.0677 7.5 17.4037 7.5 17.8177C7.5 18.2317 7.836 18.5677 8.25 18.5677H11.25C11.664 18.5677 12 18.2317 12 17.8177C12 17.4037 11.664 17.0677 11.25 17.0677H8.25ZM6.75 0.567749C6.336 0.567749 6 0.903749 6 1.31775V2.06775H5.25C4.007 2.06775 3 3.07475 3 4.31775V22.3177C3 23.5607 4.007 24.5677 5.25 24.5677H14.25C14.449 24.5677 14.64 24.4888 14.78 24.3477L20.78 18.3477C20.921 18.2067 21 18.0167 21 17.8177V4.31775C21 3.07475 19.993 2.06775 18.75 2.06775H18V1.31775C18 0.903749 17.664 0.567749 17.25 0.567749C16.836 0.567749 16.5 0.903749 16.5 1.31775V2.06775H12.75V1.31775C12.75 0.567749 12.414 0.567749 12 0.567749C11.586 0.567749 11.25 0.903749 11.25 1.31775V2.06775H7.5V1.31775C7.5 0.903749 7.164 0.567749 6.75 0.567749ZM18.75 3.56775C19.164 3.56775 19.5 3.90375 19.5 4.31775V17.0677H15.75C14.507 17.0677 13.5 18.0747 13.5 19.3177V23.0677H5.25C4.836 23.0677 4.5 22.7317 4.5 22.3177V4.31775C4.5 3.90375 4.836 3.56775 5.25 3.56775H18.75ZM18.439 18.5677L15 22.0067V19.3177C15 18.9037 15.336 18.5677 15.75 18.5677H18.439Z',
+    },
+    {
+      id: 'account',
+      label: 'Account',
+      icon: 'M6 5C6 3.89543 6.89543 3 8 3C9.10457 3 10 3.89543 10 5C10 6.10457 9.10457 7 8 7C6.89543 7 6 6.10457 6 5ZM5.49998 8L10.5 8C11.3284 8 12 8.67157 12 9.5C12 10.6161 11.541 11.5103 10.7879 12.1148C10.0466 12.7098 9.05308 13 8 13C6.94692 13 5.95342 12.7098 5.21215 12.1148C4.45897 11.5103 4 10.6161 4 9.5C4 8.67161 4.67156 8 5.49998 8ZM8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM1 8C1 4.13401 4.13401 1 8 1C11.866 1 15 4.13401 15 8C15 11.866 11.866 15 8 15C4.13401 15 1 11.866 1 8Z',
+    },
+    {
+      id: 'about',
+      label: 'About',
+      icon: 'M8.49902 7.49998C8.49902 7.22384 8.27517 6.99998 7.99902 6.99998C7.72288 6.99998 7.49902 7.22384 7.49902 7.49998V10.5C7.49902 10.7761 7.72288 11 7.99902 11C8.27517 11 8.49902 10.7761 8.49902 10.5V7.49998ZM8.74807 5.50001C8.74807 5.91369 8.41271 6.24905 7.99903 6.24905C7.58535 6.24905 7.25 5.91369 7.25 5.50001C7.25 5.08633 7.58535 4.75098 7.99903 4.75098C8.41271 4.75098 8.74807 5.08633 8.74807 5.50001ZM8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1ZM2 8C2 4.68629 4.68629 2 8 2C11.3137 2 14 4.68629 14 8C14 11.3137 11.3137 14 8 14C4.68629 14 2 11.3137 2 8Z',
+    },
   ]
+
+  /// Arrow keys move selection without leaving the nav: automatic activation.
+  function onNavKey(e: KeyboardEvent) {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
+    e.preventDefault()
+    const index = TABS.findIndex((item) => item.id === tab)
+    const next =
+      e.key === 'Home'
+        ? 0
+        : e.key === 'End'
+          ? TABS.length - 1
+          : (index + (e.key === 'ArrowDown' ? 1 : -1) + TABS.length) % TABS.length
+    tab = TABS[next].id
+    const buttons = (e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>(
+      '[role="tab"]',
+    )
+    buttons[next]?.focus()
+  }
 
   const LANGUAGES = [
     'plaintext',
@@ -316,361 +365,381 @@
       </button>
     </header>
 
-    <div class="tabs" role="tablist">
-      {#each TABS as item (item.id)}
-        <button
-          role="tab"
-          class="tab"
-          class:active={tab === item.id}
-          aria-selected={tab === item.id}
-          onclick={() => (tab = item.id)}
-        >
-          {item.label}
-        </button>
-      {/each}
-    </div>
+    <div class="layout">
+      <div
+        class="rail"
+        role="tablist"
+        aria-orientation="vertical"
+        aria-label="Settings sections"
+        tabindex="-1"
+        onkeydown={onNavKey}
+      >
+        {#each TABS as item (item.id)}
+          <button
+            role="tab"
+            id="settings-tab-{item.id}"
+            aria-controls="settings-panel"
+            class="tab"
+            class:active={tab === item.id}
+            aria-selected={tab === item.id}
+            tabindex={tab === item.id ? 0 : -1}
+            onclick={() => (tab = item.id)}
+          >
+            <svg viewBox={item.box ?? '0 0 16 16'} aria-hidden="true">
+              <path d={item.icon} />
+            </svg>
+            <span>{item.label}</span>
+          </button>
+        {/each}
+      </div>
 
-    <div class="body">
-      {#if tab === 'appearance'}
-        <section class="section">
-          <h3>Appearance</h3>
-          <label class="field">
-            <span>Theme</span>
-            <select bind:value={ui.editorTheme}>
-              {#each THEMES as theme (theme)}
-                <option value={theme}>{theme}</option>
-              {/each}
-            </select>
-          </label>
-          <div class="field">
-            <span>Accent color</span>
-            <div class="accent-picker">
-              {#each ACCENT_PRESETS as color (color)}
-                <button
-                  type="button"
-                  class="swatch"
-                  class:active={ui.accent === color}
-                  style="--swatch-color: {color}"
-                  aria-label="Accent {color}"
-                  aria-pressed={ui.accent === color}
-                  onclick={() => (ui.accent = color)}
-                ></button>
-              {/each}
-              <input
-                type="text"
-                class="hex-input"
-                value={ui.accent}
-                placeholder="#0078d4"
-                aria-label="Accent hex value"
-                onchange={(e) => {
-                  const v = e.currentTarget.value.trim()
-                  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) ui.accent = v
-                }}
-              />
-              {#if ui.accent}
-                <button type="button" class="reset-accent" onclick={() => (ui.accent = '')}>
-                  Reset
-                </button>
-              {/if}
-              {#if accentWarning}
-                <span class="accent-warn">Low contrast with panel background</span>
-              {/if}
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <h3>Editor</h3>
-          <label class="field">
-            <span>Font size</span>
-            <div class="inline">
-              <input
-                type="number"
-                min="8"
-                max="32"
-                value={ui.fontSize}
-                onchange={(e) =>
-                  clamp(e.currentTarget.valueAsNumber, 8, 32, (n) => (ui.fontSize = n))}
-              />
-              <span class="hint">8–32 px</span>
-            </div>
-          </label>
-          <label class="field">
-            <span>Font family</span>
-            <select class="wide" bind:value={ui.fontFamily}>
-              <option value={DEFAULT_FONT}>Default (monospace)</option>
-              {#each fontOptions as font (font)}
-                <option value={font}>{font}</option>
-              {/each}
-            </select>
-          </label>
-        </section>
-      {:else if tab === 'sync'}
-        <section class="section">
-          <h3>Automatic sync</h3>
-          <label class="toggle">
-            <input type="checkbox" bind:checked={ui.autoSync} />
-            <span>Push automatically after each save</span>
-          </label>
-          <label class="field">
-            <span>Autosave delay</span>
-            <div class="inline">
-              <input
-                type="range"
-                min="500"
-                max="10000"
-                step="500"
-                value={ui.saveDebounceMs}
-                oninput={(e) => (ui.saveDebounceMs = e.currentTarget.valueAsNumber)}
-              />
-              <span class="value">{ui.saveDebounceMs / 1000}s</span>
-            </div>
-          </label>
-          <label class="field">
-            <span>Push delay</span>
-            <div class="inline">
-              <input
-                type="number"
-                min="5"
-                max="300"
-                value={Math.round(ui.pushIdleMs / 1000)}
-                onchange={(e) =>
-                  clamp(e.currentTarget.valueAsNumber, 5, 300, (n) => (ui.pushIdleMs = n * 1000))}
-              />
-              <span class="hint">seconds after the last edit</span>
-            </div>
-          </label>
-        </section>
-
-        <section class="section">
-          <h3>Repository</h3>
-          <div class="repo">
-            <p class="folder">
-              <span class="label">Folder</span>
-              <span class="path">{ui.repoPath || 'Default app folder'}</span>
-            </p>
-            <div class="actions">
-              <button
-                type="button"
-                class="change"
-                use:tip={'Open an existing folder; a plain folder is initialised with git'}
-                disabled={localBusy}
-                onclick={useLocalRepo}
-              >
-                {localBusy ? 'Opening…' : 'Use another folder…'}
-              </button>
-              <button
-                type="button"
-                class="change"
-                use:tip={'Move the folder on disk to another location'}
-                disabled={moving || !ui.repoPath}
-                onclick={moveRepo}
-              >
-                {moving ? 'Moving…' : 'Move folder…'}
-              </button>
-              <button
-                type="button"
-                class="change"
-                aria-expanded={importOpen}
-                onclick={() => (importOpen = !importOpen)}
-              >
-                {importOpen ? 'Cancel import' : 'Import…'}
-              </button>
-            </div>
-            {#if importOpen}
-              <div class="import">
+      <div
+        class="body"
+        id="settings-panel"
+        role="tabpanel"
+        aria-labelledby="settings-tab-{tab}"
+      >
+        {#if tab === 'appearance'}
+          <section class="section">
+            <h3>Appearance</h3>
+            <label class="field">
+              <span>Theme</span>
+              <select bind:value={ui.editorTheme}>
+                {#each THEMES as theme (theme)}
+                  <option value={theme}>{theme}</option>
+                {/each}
+              </select>
+            </label>
+            <div class="field">
+              <span>Accent color</span>
+              <div class="accent-picker">
+                {#each ACCENT_PRESETS as color (color)}
+                  <button
+                    type="button"
+                    class="swatch"
+                    class:active={ui.accent === color}
+                    style="--swatch-color: {color}"
+                    aria-label="Accent {color}"
+                    aria-pressed={ui.accent === color}
+                    onclick={() => (ui.accent = color)}
+                  ></button>
+                {/each}
                 <input
                   type="text"
-                  class="url"
-                  placeholder="https://github.com/user/repo.git"
-                  aria-label="Repository URL to import"
-                  bind:value={importUrl}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') void importRepo()
+                  class="hex-input"
+                  value={ui.accent}
+                  placeholder="#0078d4"
+                  aria-label="Accent hex value"
+                  onchange={(e) => {
+                    const v = e.currentTarget.value.trim()
+                    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) ui.accent = v
                   }}
                 />
-                <div class="pick">
-                  <span class="hint path">
-                    {importFolder || 'Default folder (next to your documents)'}
-                  </span>
-                  <button
-                    type="button"
-                    class="change"
-                    disabled={importing}
-                    onclick={chooseImportFolder}
-                  >
-                    Choose…
+                {#if ui.accent}
+                  <button type="button" class="reset-accent" onclick={() => (ui.accent = '')}>
+                    Reset
                   </button>
-                </div>
-                <div class="actions">
-                  <button
-                    type="button"
-                    class="change cta"
-                    disabled={importing || !importUrl.trim()}
-                    onclick={importRepo}
-                  >
-                    {importing ? 'Cloning…' : 'Clone as active repository'}
-                  </button>
-                  <span class="hint">Open tabs close: they belong to the current repository.</span>
-                </div>
-              </div>
-            {/if}
-          </div>
-        </section>
-      {:else if tab === 'editor'}
-        <section class="section">
-          <label class="field">
-            <span>Keybindings</span>
-            <select bind:value={ui.keybindings}>
-              {#each KEYBINDINGS as mode (mode)}
-                <option value={mode}>{mode}</option>
-              {/each}
-            </select>
-          </label>
-          <p class="note">
-            {ui.keybindings === 'vscode'
-              ? 'Standard Monaco shortcuts.'
-              : `${ui.keybindings} keybindings are applied to the editor; Ctrl+P still opens the palette.`}
-          </p>
-        </section>
-      {:else if tab === 'extensions'}
-        <section class="section">
-          <h3>File types</h3>
-          <ul class="extensions">
-            {#each extensions as [ext, lang] (ext)}
-              <li>
-                <span class="ext">.{ext}</span>
-                <span class="lang">{lang}</span>
-                <button aria-label="Remove .{ext}" onclick={() => removeExtension(ext)}>×</button>
-              </li>
-            {/each}
-          </ul>
-          <div class="add">
-            <input
-              placeholder="ext"
-              aria-label="File extension"
-              bind:value={newExt}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') addExtension()
-              }}
-            />
-            <select bind:value={newLang} aria-label="Language for the extension">
-              {#each LANGUAGES as lang (lang)}
-                <option value={lang}>{lang}</option>
-              {/each}
-            </select>
-            <button class="primary" onclick={addExtension}>Add</button>
-          </div>
-          {#if extMessage}
-            <p class="note" role="status">{extMessage}</p>
-          {/if}
-        </section>
-      {:else if tab === 'logs'}
-        <section class="section wide">
-          <LogsPane />
-        </section>
-      {:else if tab === 'about'}
-        <section class="section">
-          <div class="field">
-            <span>Version</span>
-            <span>{aboutVersion ? `GitPad ${aboutVersion}` : 'GitPad'}</span>
-          </div>
-          <div class="field">
-            <span>Updates</span>
-            <div class="inline">
-              <button class="change" disabled={updateState === 'checking'} onclick={checkForUpdates}>
-                {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
-              </button>
-              {#if updateState === 'newer'}
-                <button class="primary" onclick={() => void openExternal(releaseUrl)}>
-                  Get GitPad {latestVersion}
-                </button>
-              {/if}
-            </div>
-          </div>
-          {#if updateState === 'current'}
-            <p class="note" role="status">You are on the latest version.</p>
-          {:else if updateState === 'failed'}
-            <p class="note" role="status">Could not reach GitHub. Try again later.</p>
-          {/if}
-          <div class="field">
-            <span>Author</span>
-            <div class="inline">
-              <button class="change" onclick={() => void openExternal('https://github.com/fedeaielli')}>
-                @fedeaielli
-              </button>
-              <button
-                class="change"
-                onclick={() => void openExternal('https://github.com/fedeaielli/gitpad')}
-              >
-                Source
-              </button>
-              <button
-                class="change"
-                onclick={() => void openExternal('https://github.com/fedeaielli/gitpad/releases')}
-              >
-                Releases
-              </button>
-            </div>
-          </div>
-          {#if changelog}
-            <pre class="changelog" aria-label="Changelog for this version">{changelog}</pre>
-          {/if}
-        </section>
-      {:else}
-        <section class="section">
-          {#if user}
-            <div class="field">
-              <span>Signed in</span>
-              <div class="account">
-                <img src={user.avatarUrl} alt="" />
-                <span>{user.login}</span>
+                {/if}
+                {#if accentWarning}
+                  <span class="accent-warn">Low contrast with panel background</span>
+                {/if}
               </div>
             </div>
-            {#if gitStatus.configured && !gitStatus.hasRemote}
-              <div class="field">
-                <span>GitHub repository</span>
-                <div class="inline">
-                  <span class="hint">Local only — commits stay on this machine</span>
-                  <button class="change" disabled={connecting} onclick={attachToGithub}>
-                    {connecting ? 'Connecting…' : 'Connect'}
-                  </button>
-                </div>
-              </div>
-            {/if}
-            <div class="field">
-              <span></span>
-              <button class="danger" onclick={logout}>Logout</button>
-            </div>
-          {:else}
-            <div class="field">
-              <span>GitHub login</span>
-              <GithubLogin onsuccess={refreshUser} />
-            </div>
-            <p class="note">Or paste a personal access token (scope: repo).</p>
-            <div class="field">
-              <span>Personal access token</span>
+          </section>
+  
+          <section class="section">
+            <h3>Editor</h3>
+            <label class="field">
+              <span>Font size</span>
               <div class="inline">
                 <input
-                  type="password"
-                  placeholder="ghp_…"
-                  aria-label="Personal access token"
-                  aria-invalid={!!accountError}
-                  aria-describedby={accountError ? 'pat-account-error' : undefined}
-                  bind:value={pat}
-                  onkeydown={(e) => e.key === 'Enter' && signIn()}
+                  type="number"
+                  min="8"
+                  max="32"
+                  value={ui.fontSize}
+                  onchange={(e) =>
+                    clamp(e.currentTarget.valueAsNumber, 8, 32, (n) => (ui.fontSize = n))}
                 />
-                <button class="primary" disabled={!pat.trim() || signingIn} onclick={signIn}>
-                  {signingIn ? 'Signing in…' : 'Sign in'}
+                <span class="hint">8–32 px</span>
+              </div>
+            </label>
+            <label class="field">
+              <span>Font family</span>
+              <select class="wide" bind:value={ui.fontFamily}>
+                <option value={DEFAULT_FONT}>Default (monospace)</option>
+                {#each fontOptions as font (font)}
+                  <option value={font}>{font}</option>
+                {/each}
+              </select>
+            </label>
+          </section>
+        {:else if tab === 'sync'}
+          <section class="section">
+            <h3>Automatic sync</h3>
+            <label class="toggle">
+              <input type="checkbox" bind:checked={ui.autoSync} />
+              <span>Push automatically after each save</span>
+            </label>
+            <label class="field">
+              <span>Autosave delay</span>
+              <div class="inline">
+                <input
+                  type="range"
+                  min="500"
+                  max="10000"
+                  step="500"
+                  value={ui.saveDebounceMs}
+                  oninput={(e) => (ui.saveDebounceMs = e.currentTarget.valueAsNumber)}
+                />
+                <span class="value">{ui.saveDebounceMs / 1000}s</span>
+              </div>
+            </label>
+            <label class="field">
+              <span>Push delay</span>
+              <div class="inline">
+                <input
+                  type="number"
+                  min="5"
+                  max="300"
+                  value={Math.round(ui.pushIdleMs / 1000)}
+                  onchange={(e) =>
+                    clamp(e.currentTarget.valueAsNumber, 5, 300, (n) => (ui.pushIdleMs = n * 1000))}
+                />
+                <span class="hint">seconds after the last edit</span>
+              </div>
+            </label>
+          </section>
+  
+          <section class="section">
+            <h3>Repository</h3>
+            <div class="repo">
+              <p class="folder">
+                <span class="label">Folder</span>
+                <span class="path">{ui.repoPath || 'Default app folder'}</span>
+              </p>
+              <div class="actions">
+                <button
+                  type="button"
+                  class="change"
+                  use:tip={'Open an existing folder; a plain folder is initialised with git'}
+                  disabled={localBusy}
+                  onclick={useLocalRepo}
+                >
+                  {localBusy ? 'Opening…' : 'Use another folder…'}
+                </button>
+                <button
+                  type="button"
+                  class="change"
+                  use:tip={'Move the folder on disk to another location'}
+                  disabled={moving || !ui.repoPath}
+                  onclick={moveRepo}
+                >
+                  {moving ? 'Moving…' : 'Move folder…'}
+                </button>
+                <button
+                  type="button"
+                  class="change"
+                  aria-expanded={importOpen}
+                  onclick={() => (importOpen = !importOpen)}
+                >
+                  {importOpen ? 'Cancel import' : 'Import…'}
+                </button>
+              </div>
+              {#if importOpen}
+                <div class="import">
+                  <input
+                    type="text"
+                    class="url"
+                    placeholder="https://github.com/user/repo.git"
+                    aria-label="Repository URL to import"
+                    bind:value={importUrl}
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter') void importRepo()
+                    }}
+                  />
+                  <div class="pick">
+                    <span class="hint path">
+                      {importFolder || 'Default folder (next to your documents)'}
+                    </span>
+                    <button
+                      type="button"
+                      class="change"
+                      disabled={importing}
+                      onclick={chooseImportFolder}
+                    >
+                      Choose…
+                    </button>
+                  </div>
+                  <div class="actions">
+                    <button
+                      type="button"
+                      class="change cta"
+                      disabled={importing || !importUrl.trim()}
+                      onclick={importRepo}
+                    >
+                      {importing ? 'Cloning…' : 'Clone as active repository'}
+                    </button>
+                    <span class="hint">Open tabs close: they belong to the current repository.</span>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          </section>
+        {:else if tab === 'editor'}
+          <section class="section">
+            <label class="field">
+              <span>Keybindings</span>
+              <select bind:value={ui.keybindings}>
+                {#each KEYBINDINGS as mode (mode)}
+                  <option value={mode}>{mode}</option>
+                {/each}
+              </select>
+            </label>
+            <p class="note">
+              {ui.keybindings === 'vscode'
+                ? 'Standard Monaco shortcuts.'
+                : `${ui.keybindings} keybindings are applied to the editor; Ctrl+P still opens the palette.`}
+            </p>
+          </section>
+        {:else if tab === 'extensions'}
+          <section class="section">
+            <h3>File types</h3>
+            <ul class="extensions">
+              {#each extensions as [ext, lang] (ext)}
+                <li>
+                  <span class="ext">.{ext}</span>
+                  <span class="lang">{lang}</span>
+                  <button aria-label="Remove .{ext}" onclick={() => removeExtension(ext)}>×</button>
+                </li>
+              {/each}
+            </ul>
+            <div class="add">
+              <input
+                placeholder="ext"
+                aria-label="File extension"
+                bind:value={newExt}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') addExtension()
+                }}
+              />
+              <select bind:value={newLang} aria-label="Language for the extension">
+                {#each LANGUAGES as lang (lang)}
+                  <option value={lang}>{lang}</option>
+                {/each}
+              </select>
+              <button class="primary" onclick={addExtension}>Add</button>
+            </div>
+            {#if extMessage}
+              <p class="note" role="status">{extMessage}</p>
+            {/if}
+          </section>
+        {:else if tab === 'logs'}
+          <section class="section">
+            <LogsPane />
+          </section>
+        {:else if tab === 'about'}
+          <section class="section">
+            <div class="field">
+              <span>Version</span>
+              <span>{aboutVersion ? `GitPad ${aboutVersion}` : 'GitPad'}</span>
+            </div>
+            <div class="field">
+              <span>Updates</span>
+              <div class="inline">
+                <button class="change" disabled={updateState === 'checking'} onclick={checkForUpdates}>
+                  {updateState === 'checking' ? 'Checking…' : 'Check for updates'}
+                </button>
+                {#if updateState === 'newer'}
+                  <button class="primary" onclick={() => void openExternal(releaseUrl)}>
+                    Get GitPad {latestVersion}
+                  </button>
+                {/if}
+              </div>
+            </div>
+            {#if updateState === 'current'}
+              <p class="note" role="status">You are on the latest version.</p>
+            {:else if updateState === 'failed'}
+              <p class="note" role="status">Could not reach GitHub. Try again later.</p>
+            {/if}
+            <div class="field">
+              <span>Author</span>
+              <div class="inline">
+                <button class="change" onclick={() => void openExternal('https://github.com/fedeaielli')}>
+                  @fedeaielli
+                </button>
+                <button
+                  class="change"
+                  onclick={() => void openExternal('https://github.com/fedeaielli/gitpad')}
+                >
+                  Source
+                </button>
+                <button
+                  class="change"
+                  onclick={() => void openExternal('https://github.com/fedeaielli/gitpad/releases')}
+                >
+                  Releases
                 </button>
               </div>
             </div>
-            {#if accountError}
-              <p class="note" id="pat-account-error" role="alert">{accountError}</p>
+            {#if changelog}
+              <pre class="changelog" aria-label="Changelog for this version">{changelog}</pre>
             {/if}
-          {/if}
-        </section>
-      {/if}
+          </section>
+        {:else}
+          <section class="section">
+            {#if user}
+              <div class="field">
+                <span>Signed in</span>
+                <div class="account">
+                  <img src={user.avatarUrl} alt="" />
+                  <span>{user.login}</span>
+                </div>
+              </div>
+              {#if gitStatus.configured && !gitStatus.hasRemote}
+                <div class="field">
+                  <span>GitHub repository</span>
+                  <div class="inline">
+                    <span class="hint">Local only — commits stay on this machine</span>
+                    <button class="change" disabled={connecting} onclick={attachToGithub}>
+                      {connecting ? 'Connecting…' : 'Connect'}
+                    </button>
+                  </div>
+                </div>
+              {/if}
+              <div class="field">
+                <span></span>
+                <button class="danger" onclick={logout}>Logout</button>
+              </div>
+            {:else}
+              <div class="field">
+                <span>GitHub login</span>
+                <GithubLogin onsuccess={refreshUser} />
+              </div>
+              <p class="note">Or paste a personal access token (scope: repo).</p>
+              <div class="field">
+                <span>Personal access token</span>
+                <div class="inline">
+                  <input
+                    type="password"
+                    placeholder="ghp_…"
+                    aria-label="Personal access token"
+                    aria-invalid={!!accountError}
+                    aria-describedby={accountError ? 'pat-account-error' : undefined}
+                    bind:value={pat}
+                    onkeydown={(e) => e.key === 'Enter' && signIn()}
+                  />
+                  <button class="primary" disabled={!pat.trim() || signingIn} onclick={signIn}>
+                    {signingIn ? 'Signing in…' : 'Sign in'}
+                  </button>
+                </div>
+              </div>
+              {#if accountError}
+                <p class="note" id="pat-account-error" role="alert">{accountError}</p>
+              {/if}
+            {/if}
+          </section>
+        {/if}
+      </div>
     </div>
   </div>
 </div>
@@ -694,8 +763,8 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    width: min(880px, 92vw);
-    height: min(620px, 88vh);
+    width: min(960px, 94vw);
+    height: min(660px, 90vh);
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
@@ -735,46 +804,67 @@
     background: var(--surface-0);
     color: var(--text);
   }
-  .tabs {
+  .layout {
     display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  /* The sections as a column: one row each, the same height, the rail's full
+     width. Selection is the accent bar plus --surface-2, never a type step. */
+  .rail {
+    display: flex;
+    flex: 0 0 200px;
+    flex-direction: column;
     gap: var(--sp-0);
-    padding: var(--sp-1) var(--sp-2) 0;
-    border-bottom: 1px solid var(--divider);
+    overflow-y: auto;
+    padding: var(--sp-2);
+    border-right: 1px solid var(--divider);
     background: var(--surface-1);
   }
   .tab {
     position: relative;
-    padding: var(--sp-2) var(--sp-3);
+    display: flex;
+    flex: 0 0 56px;
+    align-items: center;
+    gap: var(--sp-25);
+    width: 100%;
+    padding: 0 var(--sp-3);
     border: none;
-    border-top: 2px solid transparent;
-    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    border-radius: var(--r-md);
     background: transparent;
     color: var(--muted);
-    /* The same size and weight on every tab: the accent bar and the colour
-       carry selection, not a step in the type. */
-    font-size: 15px;
+    font-size: var(--fs-lg);
     font-weight: 500;
-    letter-spacing: 0.01em;
+    text-align: left;
     cursor: pointer;
   }
+  .tab svg {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+  .tab span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
   .tab:hover {
-    /* Half a step: the active tab owns --surface-2 outright. */
     background: color-mix(in srgb, var(--surface-2) 55%, transparent);
     color: var(--text);
   }
-  /* Joined to the body below, bold, and underlined by the accent bar: hover
-     must never look the same as selected. */
   .tab.active {
     background: var(--surface-2);
     color: var(--text);
   }
-  /* Inset past the corners: a border-top would follow the radius and bow. */
-  .tab.active::after {
+  /* Inset past the corners: a border-left would follow the radius and bow. */
+  .tab.active::before {
     position: absolute;
-    top: 0;
-    right: var(--r-sm);
-    left: var(--r-sm);
-    height: 2px;
+    top: var(--r-sm);
+    bottom: var(--r-sm);
+    left: 0;
+    width: 2px;
+    border-radius: var(--r-pill);
     background: var(--accent);
     content: '';
   }
@@ -783,32 +873,32 @@
     flex: 1;
     flex-direction: column;
     gap: var(--sp-4);
+    min-width: 0;
     overflow-y: auto;
-    padding: var(--sp-4) var(--sp-4) var(--sp-6);
+    padding: var(--sp-4) var(--sp-6) var(--sp-6);
     background: var(--surface-0);
-    /* One type scale for every tab: rows, values and controls read at 15 px,
+    /* One type scale for every tab: rows, values and controls read at 16 px,
        the hints and group titles sit a step below. */
-    font-size: 15px;
+    font-size: var(--fs-lg);
   }
+  /* Rows run the panel's full width: the label opens the row and the control
+     closes it, so the eye scans one left edge and one right edge. */
   .field {
     display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--sp-4);
+    min-height: 32px;
   }
-  /* Grouped settings: one heading names what the rows below decide, in one
-     column centred in the dialog. */
+  .field > :last-child {
+    justify-self: end;
+  }
+  /* Grouped settings: one heading names what the rows below decide. */
   .section {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
     width: 100%;
-    max-width: 560px;
-    margin-inline: auto;
-  }
-  /* The log needs a wider column than a settings row. */
-  .section.wide {
-    max-width: 720px;
   }
   .section > h3 {
     margin: 0;
@@ -851,7 +941,7 @@
   .modal input[type='text'],
   .modal input[type='number'] {
     box-sizing: border-box;
-    height: 30px;
+    height: 32px;
     padding: 0 var(--sp-2);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
@@ -870,6 +960,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--sp-25);
   }
   .inline input[type='number'] {
@@ -877,7 +968,7 @@
   }
   .inline input[type='range'] {
     flex: 1;
-    max-width: 280px;
+    max-width: 320px;
   }
   .wide {
     width: 100%;
@@ -911,7 +1002,7 @@
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    height: 30px;
+    height: 32px;
     padding: 0 var(--sp-3);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
@@ -1005,7 +1096,9 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--sp-2);
+    max-width: 340px;
   }
   .swatch {
     width: 24px;
@@ -1111,7 +1204,7 @@
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
-    height: 30px;
+    height: 32px;
     padding: 0 var(--sp-3);
     border: 1px solid var(--err);
     border-radius: var(--r-md);
@@ -1121,5 +1214,12 @@
   }
   .danger:hover:not(:disabled) {
     background: color-mix(in srgb, var(--err) 14%, transparent);
+  }
+  /* The window's minimum is 720 px: the rail gives 40 px back before the
+     labels start wrapping. */
+  @media (max-width: 820px) {
+    .rail {
+      flex-basis: 160px;
+    }
   }
 </style>
