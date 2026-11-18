@@ -25,6 +25,7 @@
   let expanded = $state('')
   let files = $state<FileChange[]>([])
   let busy = $state(false)
+  let loading = $state(false)
   let error = $state<string | null>(null)
   /// Ignore a response that lost the race against a newer tab or expansion.
   let loadSeq = 0
@@ -39,10 +40,19 @@
   async function load(target = filePath) {
     if (!gitStatus.configured) return
     const seq = ++loadSeq
-    const result = target
-      ? await invoke<CommitEntry[]>('git_file_log', { path: target }).catch(() => [])
-      : await invoke<CommitEntry[]>('git_log').catch(() => [])
-    if (seq === loadSeq) commits = result
+    loading = true
+    error = null
+    try {
+      const result = target
+        ? await invoke<CommitEntry[]>('git_file_log', { path: target })
+        : await invoke<CommitEntry[]>('git_log')
+      if (seq === loadSeq) commits = result
+    } catch (e) {
+      // Keep the last good list on screen; the summary's error line explains why.
+      if (seq === loadSeq) error = errorMessage(e)
+    } finally {
+      if (seq === loadSeq) loading = false
+    }
   }
 
   // Reload when the view opens, on another tab, and whenever a sync finishes.
@@ -103,7 +113,7 @@
     const restore = allDeleted && expanded === commit.hash
     const question = restore
       ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'} from ${commit.shortHash}?`
-      : `Revert ${commit.shortHash}: ${commit.message}?`
+      : `Revert ${commit.shortHash}: ${humanize(commit.message)}?`
     const confirmed = await confirmDialog({
       title: restore ? 'Restore deleted items' : 'Revert commit',
       message: question,
@@ -169,6 +179,36 @@
     return 'other'
   }
 
+  /// GitPad writes `gitpad: <verb> <detail> <ISO8601>`; the rail carries the verb,
+  /// so the row only needs the sentence a person would say.
+  function humanize(message: string) {
+    if (!message.startsWith('gitpad: ')) return message
+    const body = message
+      .replace(/\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/, '')
+      .slice('gitpad: '.length)
+    const space = body.indexOf(' ')
+    const verb = space === -1 ? body : body.slice(0, space)
+    const detail = space === -1 ? '' : body.slice(space + 1)
+    switch (verb) {
+      case 'update':
+        return detail ? `Updated ${detail}` : 'Updated notes'
+      case 'delete':
+        return detail ? `Deleted ${detail}` : 'Deleted a note'
+      case 'rename':
+        return detail ? `Renamed ${detail}` : 'Renamed a note'
+      case 'import':
+        return detail ? `Imported ${detail}` : 'Imported notes'
+      case 'revert':
+        return detail ? `Reverted ${detail}` : 'Reverted a commit'
+      case 'sync':
+        return 'Synced notes'
+      case 'merge':
+        return 'Merged origin'
+      default:
+        return message
+    }
+  }
+
   /// Consecutive commits share a day header; the log is already newest first.
   function groupByDay(entries: CommitEntry[]): CommitGroup[] {
     const groups: CommitGroup[] = []
@@ -185,116 +225,193 @@
 {#if !gitStatus.configured}
   <p class="empty">Open or clone a repository to see its history.</p>
 {:else}
-  {#if filePath}
-    <p class="filter">
-      History for <code>{filePath.split('/').pop()}</code>
-    </p>
-  {/if}
-  {#if commits.length === 0}
-    <p class="empty">
-      {filePath ? 'No commits touch this file yet.' : 'No commits yet.'}
-    </p>
-  {/if}
-  <ul class="commits">
-    {#each groups as group (group.key)}
-      <li class="day">
-        <span class="day-name">
-          <span class="dot" aria-hidden="true"></span>
-          {group.label}
-        </span>
-        <span
-          class="day-count"
-          aria-label={`${group.commits.length} commit${group.commits.length === 1 ? '' : 's'}`}
-        >
-          {group.commits.length}
-        </span>
-      </li>
-      {#each group.commits as commit (commit.hash)}
-        {@const kind = kindOf(commit.message)}
-        <li
-          class="commit {kind}"
-          class:open={expanded === commit.hash}
-          class:active={ui.timelineCommit?.hash === commit.hash}
-        >
-          <div class="head-row">
-            <button class="row" onclick={() => open(commit)}>
-              <span class="id">
-                <code>{commit.shortHash}</code>
-                <span class="meta">
-                  {timeLabel(commit.timestamp)} · {commit.author} · {fileCount(commit.filesChanged)}
-                </span>
+  <div class="panel" aria-busy={loading}>
+    <div class="summary">
+      <span class="count">
+        {loading ? 'Loading…' : `${commits.length} commit${commits.length === 1 ? '' : 's'}`}
+      </span>
+      <button
+        class="refresh"
+        class:busy={loading}
+        disabled={loading}
+        use:tip={'Refresh'}
+        aria-label="Refresh history"
+        onclick={() => void load()}
+      >
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M14 8a6 6 0 1 1-6-6c1.68 0 3.29.67 4.49 1.83L14 5.33" />
+          <path d="M14 2v4h-4" />
+        </svg>
+      </button>
+    </div>
+
+    {#if filePath}
+      <p class="filter">
+        History for <code>{filePath.split('/').pop()}</code>
+      </p>
+    {/if}
+    {#if error}
+      <p class="error" role="alert">{error}</p>
+    {/if}
+
+    {#if commits.length === 0 && !loading && !error}
+      <p class="empty">
+        {filePath ? 'No commits touch this file yet.' : 'No commits yet.'}
+      </p>
+    {:else if groups.length > 0}
+      <ul class="days">
+        {#each groups as group (group.key)}
+          <li class="day-group">
+            <div class="day">
+              <span class="day-name">
+                <span class="dot" aria-hidden="true"></span>
+                {group.label}
               </span>
-              <span class="msg {kind}">{commit.message}</span>
-            </button>
-            <button
-              class="expand"
-              class:open={expanded === commit.hash}
-              aria-expanded={expanded === commit.hash}
-              aria-label={expanded === commit.hash ? 'Hide files' : 'Show files'}
-              onclick={() => toggle(commit)}
-            >
-              <span class="chev">
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path d="M6 3.5 10.5 8 6 12.5" />
-                </svg>
+              <span
+                class="day-count"
+                aria-label={`${group.commits.length} commit${group.commits.length === 1 ? '' : 's'}`}
+              >
+                {group.commits.length}
               </span>
-            </button>
-          </div>
-          {#if expanded === commit.hash}
-            <div class="actions">
-              <button disabled={busy} onclick={() => revert(commit)}>
-                {allDeleted
-                  ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'}`
-                  : 'Revert commit'}
-              </button>
             </div>
-            <ul class="files">
-              {#each files as file (file.path)}
-                <li>
-                  <span class="badge {file.status}">{file.status}</span>
-                  <span class="path">{file.path}</span>
-                  {#if file.status !== 'D'}
-                    <button
-                      disabled={busy}
-                      use:tip={`Restore ${file.path}`}
-                      onclick={() => restore(commit, file)}
-                    >
-                      Restore
+            <ul class="card">
+              {#each group.commits as commit (commit.hash)}
+                {@const kind = kindOf(commit.message)}
+                <li
+                  class="commit {kind}"
+                  class:open={expanded === commit.hash}
+                  class:active={ui.timelineCommit?.hash === commit.hash}
+                >
+                  <div class="head-row">
+                    <button class="row" onclick={() => open(commit)}>
+                      <span class="msg">{humanize(commit.message)}</span>
+                      <span class="meta">
+                        <code>{commit.shortHash}</code>
+                        <span>{timeLabel(commit.timestamp)}</span>
+                        {#if commit.author && commit.author !== 'GitPad'}
+                          <span class="author">{commit.author}</span>
+                        {/if}
+                        <span class="files-count">{fileCount(commit.filesChanged)}</span>
+                      </span>
                     </button>
+                    <button
+                      class="expand"
+                      class:open={expanded === commit.hash}
+                      aria-expanded={expanded === commit.hash}
+                      aria-label={expanded === commit.hash ? 'Hide files' : 'Show files'}
+                      onclick={() => toggle(commit)}
+                    >
+                      <span class="chev">
+                        <svg viewBox="0 0 16 16" aria-hidden="true">
+                          <path d="M6 3.5 10.5 8 6 12.5" />
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
+                  {#if expanded === commit.hash}
+                    <div class="details">
+                      <ul class="files">
+                        {#each files as file (file.path)}
+                          <li>
+                            <span class="badge {file.status}">{file.status}</span>
+                            <span class="path">{file.path}</span>
+                            {#if file.status !== 'D'}
+                              <button
+                                disabled={busy}
+                                use:tip={`Restore ${file.path}`}
+                                onclick={() => restore(commit, file)}
+                              >
+                                Restore
+                              </button>
+                            {/if}
+                          </li>
+                        {/each}
+                      </ul>
+                      <div class="actions">
+                        <button disabled={busy} onclick={() => revert(commit)}>
+                          {allDeleted
+                            ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'}`
+                            : 'Revert commit'}
+                        </button>
+                      </div>
+                    </div>
                   {/if}
                 </li>
               {/each}
             </ul>
-          {/if}
-        </li>
-      {/each}
-    {/each}
-  </ul>
-{/if}
-{#if error}
-  <p class="error" role="alert">{error}</p>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </div>
 {/if}
 
 <style>
-  .error {
-    margin: 0;
-    padding: var(--sp-05) var(--sp-2);
-    color: var(--err);
-    font-size: var(--fs-xs);
-    overflow-wrap: anywhere;
+  .panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
-  .empty {
-    margin: 0;
-    padding: var(--sp-6) var(--sp-3);
+  .summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2) var(--sp-05);
+  }
+  .count {
     color: var(--muted);
     font-size: var(--fs-xs);
-    text-align: center;
-    overflow-wrap: anywhere;
+    font-variant-numeric: tabular-nums;
+  }
+  .refresh {
+    display: grid;
+    flex: 0 0 26px;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--muted);
+    transition:
+      background var(--t-fast),
+      color var(--t-fast);
+  }
+  .refresh:hover:not(:disabled) {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .refresh:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+  .refresh svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .refresh.busy svg {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .refresh.busy svg {
+      animation: none;
+    }
   }
   .filter {
     margin: 0;
-    padding: var(--sp-05) var(--sp-2);
-    border-bottom: 1px solid var(--border);
+    padding: 0 var(--sp-2) var(--sp-1);
     color: var(--muted);
     font-size: var(--fs-2xs);
     overflow: hidden;
@@ -304,24 +421,80 @@
   .filter code {
     color: var(--accent-fg);
   }
-  .commits,
+  .error {
+    margin: 0;
+    padding: 0 var(--sp-2) var(--sp-05);
+    color: var(--err);
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+  }
+  .empty {
+    margin: 0;
+    padding: var(--sp-6) var(--sp-3);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .days,
+  .card,
   .files {
     list-style: none;
     margin: 0;
     padding: 0;
   }
-  .commits {
-    padding: var(--sp-0) 0 var(--sp-2);
+  .days {
+    padding-bottom: var(--sp-2);
+  }
+  /* One card per day: the day label stays outside it, stuck to the top. */
+  .day {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-25) var(--sp-05);
+    background: var(--surface-1);
+    color: var(--accent-fg);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .day-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: var(--sp-1);
+    border-radius: var(--r-pill);
+    background: var(--accent);
+    vertical-align: middle;
+  }
+  .day-count {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    margin: 0 var(--sp-2) var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-2);
+    overflow: hidden;
   }
   .commit {
     --kind: var(--border-strong);
     --kind-ink: var(--muted);
-    margin: 5px var(--sp-2);
-    border: 1px solid var(--border);
     border-left: 1px solid var(--kind);
-    border-radius: var(--r-md);
-    background: var(--surface-2);
-    overflow: hidden;
+    background: transparent;
   }
   .commit.delete {
     --kind: var(--err);
@@ -340,84 +513,86 @@
     --kind: var(--accent-fg);
     --kind-ink: var(--accent-fg);
   }
+  .commit + .commit {
+    border-top: 1px solid var(--divider);
+  }
   .commit:hover,
   .commit.open {
-    border-color: var(--border-strong);
-    border-left-color: var(--kind);
+    background: var(--surface-3);
   }
   .commit.active {
-    border-color: var(--accent);
-    border-left-color: var(--kind);
     background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
-  }
-  .day {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-2);
-    padding: 7px var(--sp-2) var(--sp-05);
-    background: var(--surface-1);
-    color: var(--muted);
-    font-size: var(--fs-2xs);
-    font-weight: 600;
-  }
-  .day-name {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--sp-1);
-    min-width: 0;
-  }
-  .dot {
-    flex: 0 0 auto;
-    width: 6px;
-    height: 6px;
-    border-radius: var(--r-pill);
-    background: var(--accent);
-  }
-  .day-count {
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
+    box-shadow: inset 0 0 0 1px var(--accent);
   }
   .head-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    min-height: 48px;
   }
   .row {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: var(--sp-0);
+    justify-content: center;
+    gap: 3px;
     min-width: 0;
-    padding: var(--sp-1) var(--sp-2);
-    border-color: transparent;
+    padding: var(--sp-1) var(--sp-25);
+    border: 0;
+    border-radius: 0;
     background: transparent;
     text-align: left;
   }
-  .row:hover {
-    background: var(--surface-3);
+  .row:focus-visible,
+  .expand:focus-visible {
+    outline-offset: -2px;
+  }
+  .msg {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .meta {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-1);
+    min-width: 0;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+  }
+  .meta code {
+    flex: 0 0 auto;
+    color: var(--kind-ink);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+  }
+  .meta > span {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .meta .author {
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .meta .files-count {
+    margin-left: auto;
   }
   .expand {
     display: grid;
-    flex: 0 0 26px;
+    flex: 0 0 28px;
     place-items: center;
-    width: 26px;
-    height: auto;
-    align-self: stretch;
-    margin: 0;
+    width: 28px;
+    min-height: 48px;
     padding: 0;
     border: 0;
     border-left: 1px solid var(--border);
     border-radius: 0;
     background: transparent;
     color: var(--muted);
-    font-size: var(--fs-md);
-    line-height: 1;
-    transition:
-      background var(--t-fast),
-      color var(--t-fast);
   }
   .expand:hover,
   .expand.open {
@@ -433,78 +608,30 @@
     height: 14px;
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.5;
+    stroke-width: 1.4;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
   .expand.open .chev {
     transform: rotate(90deg);
   }
-  .row code {
-    color: var(--kind-ink);
-    font-size: var(--fs-xs);
-    font-weight: 600;
-  }
-  /* Identity on one line, the message gets the other to itself. */
-  .id {
-    display: flex;
-    align-items: baseline;
-    gap: var(--sp-05);
-    min-width: 0;
-  }
-  .msg {
-    overflow: hidden;
-    color: var(--text);
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .msg.delete {
-    color: var(--err);
-  }
-  .msg.revert {
-    color: var(--warn);
-  }
-  .msg.import {
-    color: var(--ok);
-  }
-  .meta {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--muted);
-    font-size: var(--fs-2xs);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .actions {
-    padding: 0 var(--sp-2) var(--sp-05);
-  }
-  .actions button {
-    min-height: 32px;
-    padding: 0 var(--sp-3);
-    border: 1px solid var(--border-strong);
-    background: transparent;
-    color: var(--accent-fg);
-    font-size: var(--fs-xs);
-    font-weight: 600;
-  }
-  .actions button:hover:not(:disabled) {
-    background: var(--surface-3);
-  }
-  .actions button:disabled,
-  .files button:disabled {
-    cursor: default;
-    opacity: 0.5;
+  /* Files sit on their own surface so the row above stays the primary line. */
+  .details {
+    border-top: 1px solid var(--divider);
+    background: var(--surface-1);
   }
   .files {
-    padding-bottom: var(--sp-05);
+    padding: var(--sp-05) 0;
   }
   .files li {
     display: flex;
     align-items: center;
     gap: var(--sp-1);
-    padding: 1px var(--sp-2) 1px 18px;
+    min-height: 28px;
+    padding: 0 var(--sp-2) 0 var(--sp-3);
+  }
+  .files li:hover {
+    background: var(--surface-2);
   }
   .path {
     flex: 1;
@@ -517,7 +644,6 @@
   .badge {
     flex: 0 0 auto;
     width: 12px;
-    border-radius: var(--r-pill);
     font-size: var(--fs-2xs);
     font-weight: 600;
   }
@@ -531,17 +657,40 @@
     color: var(--err);
   }
   .files button {
-    /* Desktop target, not touch: 32px is the smallest that still reads as one. */
+    flex: 0 0 auto;
+    min-height: 28px;
+    padding: 0 var(--sp-1);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--accent-fg);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+  }
+  .files button:hover:not(:disabled) {
+    background: var(--surface-3);
+  }
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 var(--sp-2) var(--sp-2);
+  }
+  .actions button {
     min-height: 32px;
-    padding: 0 var(--sp-25);
+    padding: 0 var(--sp-3);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
     background: transparent;
     color: var(--text);
-    font-size: var(--fs-2xs);
+    font-size: var(--fs-xs);
+    font-weight: 500;
   }
-  .files button:hover:not(:disabled) {
-    border-color: var(--border-strong);
-    background: var(--surface-3);
+  .actions button:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+  .actions button:disabled,
+  .files button:disabled {
+    cursor: default;
+    opacity: 0.5;
   }
 </style>
