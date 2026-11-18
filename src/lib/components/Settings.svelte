@@ -975,7 +975,7 @@
   }
   .section > h3 {
     margin: 0;
-    color: var(--muted);
+    color: var(--accent-fg);
     font-size: var(--fs-sm);
     font-weight: 500;
     letter-spacing: 0.08em;
@@ -1190,7 +1190,8 @@
     border-color: var(--border-strong);
   }
   .theme-card.active {
-    border-color: var(--accent);
+    border-color: var(--accent-fg);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
   }
   .theme-card:focus-within {
     outline: var(--focus-ring);
