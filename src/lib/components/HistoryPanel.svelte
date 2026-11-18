@@ -651,14 +651,14 @@
     background: var(--surface-1);
   }
   .files {
-    padding: var(--sp-05) 0;
+    padding: var(--sp-1) 0;
   }
   .files li {
     display: flex;
     align-items: center;
-    gap: var(--sp-1);
-    min-height: 28px;
-    padding: 0 var(--sp-2) 0 var(--sp-3);
+    gap: var(--sp-2);
+    min-height: 32px;
+    padding: 0 var(--sp-25) 0 var(--sp-3);
   }
   .files li:hover {
     background: var(--surface-2);
@@ -667,14 +667,14 @@
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font-size: var(--fs-xs);
+    font-size: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .badge {
     flex: 0 0 auto;
-    width: 12px;
-    font-size: var(--fs-2xs);
+    width: 14px;
+    font-size: var(--fs-xs);
     font-weight: 600;
   }
   .badge.M {
@@ -703,7 +703,7 @@
   .actions {
     display: flex;
     justify-content: flex-end;
-    padding: 0 var(--sp-2) var(--sp-2);
+    padding: var(--sp-1) var(--sp-25) var(--sp-25);
   }
   .actions button {
     min-height: 32px;
@@ -712,7 +712,7 @@
     border-radius: var(--r-md);
     background: transparent;
     color: var(--text);
-    font-size: var(--fs-xs);
+    font-size: var(--fs-sm);
     font-weight: 500;
   }
   .actions button:hover:not(:disabled) {
