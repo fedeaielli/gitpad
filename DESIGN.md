@@ -18,6 +18,9 @@ screen borrows its controls, surfaces and rhythm. Tokens live in
   `--r-overlay`, `--shadow-2`.
 - Card or section: `--surface-1`, 1px `--border`, `--r-lg`.
 - Popover or menu: `--surface-3`, 1px `--border`, `--r-md`, `--shadow-1`.
+- Select popup: same recipe as a menu, because GTK draws the native list in its
+  own colours. The closed field copies a form control: `--surface-0`,
+  `--border-strong`, `--r-md`, 32 px. A field caps it with `--select-max`.
 - Never stack a `--surface-3` card on another surface-3; nested wells use
   `--surface-0` inside `--surface-1`.
 
