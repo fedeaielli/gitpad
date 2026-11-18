@@ -27,6 +27,12 @@
   let open = $state(false)
   let active = $state(0)
   let listEl = $state<HTMLElement>()
+  let trigger = $state<HTMLButtonElement>()
+  /// Where the list sits, measured on open: the modal body scrolls and clips,
+  /// so the popup is fixed to the viewport rather than to its field.
+  let anchor = $state<{ top: number; left: number; width: number; max: number; up: boolean } | null>(
+    null,
+  )
 
   const uid = `gp-select-${++seq}`
   const current = $derived(options.findIndex((option) => option.value === value))
@@ -34,6 +40,18 @@
   function openList() {
     if (disabled) return
     active = Math.max(0, current)
+    const box = trigger?.getBoundingClientRect()
+    if (box) {
+      // Flip up when the list would not fit below.
+      const up = box.bottom + 260 > window.innerHeight
+      anchor = {
+        top: up ? box.top - 4 : box.bottom + 4,
+        left: box.left,
+        width: box.width,
+        max: Math.max(120, up ? box.top - 12 : window.innerHeight - box.bottom - 12),
+        up,
+      }
+    }
     open = true
   }
 
@@ -87,11 +105,24 @@
     active
     listEl?.querySelector('.option.active')?.scrollIntoView({ block: 'nearest' })
   })
+
+  // A fixed list cannot follow the field it belongs to; drop it instead.
+  $effect(() => {
+    if (!open) return
+    const drop = () => closeList()
+    window.addEventListener('scroll', drop, true)
+    window.addEventListener('resize', drop)
+    return () => {
+      window.removeEventListener('scroll', drop, true)
+      window.removeEventListener('resize', drop)
+    }
+  })
 </script>
 
 <span class="wrap">
   <button
     {id}
+    bind:this={trigger}
     class="trigger"
     type="button"
     role="combobox"
@@ -112,7 +143,18 @@
   {#if open}
     <button class="backdrop" type="button" tabindex="-1" aria-label="Close" onclick={closeList}
     ></button>
-    <div class="popup" id="{uid}-list" role="listbox" bind:this={listEl}>
+    <div
+      class="popup"
+      id="{uid}-list"
+      role="listbox"
+      bind:this={listEl}
+      class:up={anchor?.up}
+      style:top={anchor && !anchor.up ? `${anchor.top}px` : 'auto'}
+      style:bottom={anchor?.up ? `${window.innerHeight - anchor.top}px` : 'auto'}
+      style:left="{anchor?.left ?? 0}px"
+      style:min-width="{anchor?.width ?? 0}px"
+      style:max-height="{Math.min(240, anchor?.max ?? 240)}px"
+    >
       {#each options as option, i (option.value)}
         <button
           id="{uid}-{i}"
@@ -134,7 +176,6 @@
 
 <style>
   .wrap {
-    position: relative;
     display: inline-block;
     width: 100%;
     /* A field can cap its control; see Settings. */
@@ -183,13 +224,9 @@
     background: transparent;
   }
   .popup {
-    position: absolute;
-    top: calc(100% + var(--sp-05));
-    left: 0;
+    position: fixed;
     z-index: 51;
     box-sizing: border-box;
-    min-width: 100%;
-    max-height: 240px;
     overflow-y: auto;
     padding: var(--sp-05);
     border: 1px solid var(--border);
@@ -200,6 +237,9 @@
     /* Grows out of the field it was clicked on, not from its centre. */
     transform-origin: top left;
     animation: gp-menu-in var(--t-fast) var(--ease-out);
+  }
+  .popup.up {
+    transform-origin: bottom left;
   }
   .option {
     display: block;
