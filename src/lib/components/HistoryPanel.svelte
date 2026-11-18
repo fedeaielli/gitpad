@@ -223,7 +223,10 @@
 </script>
 
 {#if !gitStatus.configured}
-  <p class="empty">Open or clone a repository to see its history.</p>
+  <div class="empty">
+    <p class="empty-title">No repository yet.</p>
+    <p class="empty-hint">Open or clone one to see its history.</p>
+  </div>
 {:else}
   <div class="panel" aria-busy={loading}>
     <div class="summary">
@@ -252,13 +255,20 @@
     </div>
 
     {#if error}
-      <p class="error" role="alert">{error}</p>
+      <div class="error" role="alert">{error}</div>
     {/if}
 
     {#if commits.length === 0 && !loading && !error}
-      <p class="empty">
-        {filePath ? 'No commits touch this file yet.' : 'No commits yet.'}
-      </p>
+      <div class="empty">
+        <p class="empty-title">
+          {filePath ? 'No commits for this file.' : 'No commits yet.'}
+        </p>
+        <p class="empty-hint">
+          {filePath
+            ? 'Commits that touch it will appear here.'
+            : 'Your first save will create one.'}
+        </p>
+      </div>
     {:else if groups.length > 0}
       <ul class="days">
         {#each groups as group (group.key)}
@@ -435,19 +445,34 @@
     }
   }
   .error {
-    margin: 0;
-    padding: 0 var(--sp-25) var(--sp-1);
-    color: var(--err);
+    margin: 0 var(--sp-25) var(--sp-1);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid color-mix(in srgb, var(--err) 35%, transparent);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--err) 8%, var(--surface-1));
+    color: var(--text);
     font-size: var(--fs-sm);
     overflow-wrap: anywhere;
   }
   .empty {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-05);
     margin: 0;
     padding: var(--sp-6) var(--sp-25);
-    color: var(--muted);
-    font-size: var(--fs-sm);
     text-align: center;
     overflow-wrap: anywhere;
+  }
+  .empty-title {
+    margin: 0;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .empty-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
   }
   .days,
   .card,
@@ -764,5 +789,9 @@
   :global(:root[data-theme='hc-black']) .expand,
   :global(:root[data-theme='hc-black']) .details {
     border-color: var(--divider);
+  }
+  :global(:root[data-theme='hc-black']) .error {
+    border-color: var(--err);
+    background: var(--surface-1);
   }
 </style>
