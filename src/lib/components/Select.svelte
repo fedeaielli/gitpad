@@ -14,12 +14,14 @@
     value = $bindable(),
     options,
     id,
+    ariaLabelledby,
     disabled = false,
     onchange,
   }: {
     value: T
     options: SelectOption<T>[]
     id?: string
+    ariaLabelledby?: string
     disabled?: boolean
     onchange?: () => void
   } = $props()
@@ -28,6 +30,7 @@
   let active = $state(0)
   let listEl = $state<HTMLElement>()
   let trigger = $state<HTMLButtonElement>()
+  let wrapper = $state<HTMLSpanElement>()
   /// Where the list sits, measured on open: the modal body scrolls and clips,
   /// so the popup is fixed to the viewport rather than to its field.
   let anchor = $state<{ top: number; left: number; width: number; max: number; up: boolean } | null>(
@@ -117,9 +120,21 @@
       window.removeEventListener('resize', drop)
     }
   })
+
+  // A press outside the field closes the list. A backdrop button would swallow
+  // the click that closed it, so the host had to be clicked twice.
+  $effect(() => {
+    if (!open) return
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && wrapper?.contains(event.target)) return
+      closeList()
+    }
+    window.addEventListener('pointerdown', outside, true)
+    return () => window.removeEventListener('pointerdown', outside, true)
+  })
 </script>
 
-<span class="wrap">
+<span class="wrap" bind:this={wrapper}>
   <button
     {id}
     bind:this={trigger}
@@ -130,6 +145,7 @@
     aria-expanded={open}
     aria-controls={open ? `${uid}-list` : undefined}
     aria-activedescendant={open ? `${uid}-${active}` : undefined}
+    aria-labelledby={ariaLabelledby}
     {disabled}
     onclick={() => (open ? closeList() : openList())}
     onkeydown={onKeydown}
@@ -141,8 +157,6 @@
   </button>
 
   {#if open}
-    <button class="backdrop" type="button" tabindex="-1" aria-label="Close" onclick={closeList}
-    ></button>
     <div
       class="popup"
       id="{uid}-list"
@@ -215,13 +229,6 @@
     stroke: currentColor;
     stroke-width: 1.5;
     stroke-linecap: round;
-  }
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    border: 0;
-    background: transparent;
   }
   .popup {
     position: fixed;
