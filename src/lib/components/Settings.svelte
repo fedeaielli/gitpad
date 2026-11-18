@@ -14,6 +14,7 @@
   import { open } from '@tauri-apps/plugin-dialog'
   import { errorMessage, applyGitStatus, gitStatus, type GitStatus } from '../stores/git.svelte'
   import { auth, forgetUser, loadUser, signInWithPat } from '../stores/auth.svelte'
+  import Check from './Check.svelte'
   import GithubLogin from './GithubLogin.svelte'
   import LogsPane from './LogsPane.svelte'
   import { tabs, closeTab } from '../stores/tabs.svelte'
@@ -529,7 +530,7 @@
             <h3>Automatic sync</h3>
             <label class="field">
               <span>Push automatically after each save</span>
-              <input type="checkbox" bind:checked={ui.autoSync} />
+              <Check bind:checked={ui.autoSync} />
             </label>
             <label class="field">
               <span>Autosave delay</span>
@@ -579,15 +580,15 @@
             </label>
             <label class="field">
               <span>Descending</span>
-              <input type="checkbox" bind:checked={ui.sortDesc} />
+              <Check bind:checked={ui.sortDesc} />
             </label>
             <label class="field">
               <span>Folders first</span>
-              <input type="checkbox" bind:checked={ui.foldersFirst} />
+              <Check bind:checked={ui.foldersFirst} />
             </label>
             <label class="field">
               <span>Show hidden files</span>
-              <input type="checkbox" bind:checked={ui.showHidden} />
+              <Check bind:checked={ui.showHidden} />
             </label>
           </section>
 
@@ -1183,13 +1184,6 @@
   .section + .section {
     padding-top: var(--sp-3);
     border-top: 1px solid var(--divider);
-  }
-  /* A switch row: the text names the setting, so it needs no label column. */
-  .field input[type='checkbox'] {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: var(--accent);
   }
   .modal input[type='range'] {
     accent-color: var(--accent);
