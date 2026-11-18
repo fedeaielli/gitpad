@@ -159,7 +159,7 @@
           {/each}
         </select>
       </div>
-      <button type="button" class="refresh" disabled={loading} onclick={() => void refresh()}>
+      <button type="button" class="refresh sweep" disabled={loading} onclick={() => void refresh()}>
         {loading ? 'Loading…' : 'Refresh'}
       </button>
     </div>

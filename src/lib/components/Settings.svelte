@@ -655,7 +655,7 @@
                   <div class="actions">
                     <button
                       type="button"
-                      class="change cta"
+                      class="change cta sweep"
                       disabled={importing || !importUrl.trim()}
                       onclick={importRepo}
                     >
