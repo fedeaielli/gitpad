@@ -222,20 +222,21 @@ button {
   cursor: pointer;
 }
 
-/* Window controls stay square: they sit flush against the window corner. */
-button:not(.win):not(.icon-btn) {
+/* Window controls stay square: they sit flush against the window corner.
+   Base rules sit in :where() so a component rule always outranks them. */
+:where(button:not(.win):not(.icon-btn)) {
   border-radius: var(--r-md);
 }
 
 /* One press response for every control: a 1px sink, no layout shift. */
-button:not(.win):not(:disabled) {
+:where(button:not(.win):not(:disabled)) {
   transition:
     background var(--t-fast),
     border-color var(--t-fast),
     color var(--t-fast),
     opacity var(--t-fast);
 }
-button:not(.win):not(:disabled):active {
+:where(button:not(.win):not(:disabled):active) {
   transform: translateY(1px);
 }
 
@@ -337,7 +338,7 @@ button:not(.win):not(:disabled):active {
   cursor: default;
 }
 
-input:not([type='checkbox']):not([type='radio']):not([type='range']),
+input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])),
 select {
   box-sizing: border-box;
   height: 32px;
