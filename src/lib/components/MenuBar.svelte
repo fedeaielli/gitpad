@@ -209,8 +209,9 @@
     gap: var(--sp-0);
     margin-left: var(--sp-25);
   }
-  /* Narrow windows: the centred search needs the room more than the menus do. */
-  @media (max-width: 560px) {
+  /* Narrow windows: the centred search needs the room more than the menus do.
+     The floor is a 720 px window, so 560 never matched. */
+  @media (max-width: 760px) {
     .bar {
       display: none;
     }

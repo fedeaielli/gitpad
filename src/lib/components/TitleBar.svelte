@@ -189,8 +189,9 @@
     padding-left: var(--sp-2);
     border-left: 1px solid var(--border);
   }
-  /* Narrow windows: icon only, so it cannot collide with the title or controls. */
-  @media (max-width: 560px) {
+  /* Narrow windows: icon only, so it cannot collide with the title or controls.
+     760 stays just above the 720 px window floor; the old 560 never matched. */
+  @media (max-width: 760px) {
     .search {
       flex: 0 0 24px;
       width: 24px;
