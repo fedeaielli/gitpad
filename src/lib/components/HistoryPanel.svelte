@@ -569,6 +569,11 @@
     background: var(--surface-3);
     box-shadow: inset 1px 0 0 var(--accent);
   }
+  /* The selected row is already surface-3: tint its own surface so hover
+     brightens it instead of dropping to the neutral hover. */
+  .commit.active:hover {
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface-3));
+  }
   .head-row {
     display: flex;
     align-items: stretch;
