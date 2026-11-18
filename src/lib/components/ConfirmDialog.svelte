@@ -2,6 +2,7 @@
   import { fade } from 'svelte/transition'
   import { prefersReducedMotion } from 'svelte/motion'
   import { confirmState, settleConfirm } from '../stores/confirm.svelte'
+  import { focusTrap } from '../utils/focus'
 
   let confirmButton = $state<HTMLButtonElement>()
 
@@ -16,7 +17,10 @@
   }
 
   $effect(() => {
-    if (current) confirmButton?.focus()
+    // Only an info dialog leads with its primary action. On a warning or an
+    // error the trap's first control (Cancel) must keep the focus, or Enter
+    // discards the work the dialog is asking about.
+    if (current && kind === 'info') confirmButton?.focus()
   })
 </script>
 
@@ -31,6 +35,7 @@
       aria-modal="true"
       aria-labelledby="confirm-title"
       aria-describedby="confirm-message"
+      use:focusTrap
     >
       <div class="head">
         <span class="icon" aria-hidden="true">{kind === 'info' ? 'i' : '!'}</span>
