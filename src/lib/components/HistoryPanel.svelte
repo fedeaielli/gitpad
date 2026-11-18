@@ -360,9 +360,11 @@
     padding: var(--sp-2) var(--sp-25) var(--sp-1);
   }
   .count {
+    padding-left: var(--sp-0);
     color: var(--muted);
-    font-size: var(--fs-xs);
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
+    line-height: 1.2;
   }
   .refresh {
     display: grid;
@@ -480,8 +482,11 @@
   }
   .day-count {
     flex: 0 0 auto;
+    padding-right: var(--sp-0);
     color: var(--muted);
+    font-size: var(--fs-xs);
     font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
   .card {
     margin: 0 var(--sp-25) var(--sp-25);
