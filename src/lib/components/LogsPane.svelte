@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { invoke } from '@tauri-apps/api/core'
   import { errorMessage } from '../stores/git.svelte'
+  import Select from './Select.svelte'
   import { debounce } from '../utils/debounce'
   import {
     buildSessions,
@@ -150,14 +151,17 @@
     <div class="row">
       <div class="group grow">
         <label class="label" for="log-session">Session</label>
-        <select id="log-session" bind:value={selected} onchange={() => void load()}>
-          {#if files.length === 0}
-            <option value="">No log files</option>
-          {/if}
-          {#each files as file (file.name)}
-            <option value={file.name}>{fileLabel(file)} · {bytes(file.size)}</option>
-          {/each}
-        </select>
+        <Select
+          id="log-session"
+          bind:value={selected}
+          options={files.length === 0
+            ? [{ value: '', label: 'No log files' }]
+            : files.map((file) => ({
+                value: file.name,
+                label: `${fileLabel(file)} · ${bytes(file.size)}`,
+              }))}
+          onchange={() => void load()}
+        />
       </div>
       <button type="button" class="btn btn-primary refresh sweep" disabled={loading} onclick={() => void refresh()}>
         {loading ? 'Loading…' : 'Refresh'}
@@ -166,11 +170,11 @@
     <div class="row">
       <div class="group level">
         <label class="label" for="log-level">Level</label>
-        <select id="log-level" bind:value={level}>
-          {#each LEVELS as item (item.id)}
-            <option value={item.id}>{item.label}</option>
-          {/each}
-        </select>
+        <Select
+          id="log-level"
+          bind:value={level}
+          options={LEVELS.map((item) => ({ value: item.id, label: item.label }))}
+        />
       </div>
       <div class="group">
         <span class="label" id="log-category">Category</span>
@@ -286,7 +290,6 @@
     color: var(--accent-fg);
     font-size: var(--fs-xs);
   }
-  .group select,
   .group input {
     width: 100%;
   }
