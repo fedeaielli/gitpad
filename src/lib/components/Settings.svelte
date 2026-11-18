@@ -122,6 +122,18 @@
     'hc-black': { name: 'High contrast', bg: '#000000', fg: '#ffffff', accent: '#f38518' },
   }
 
+  const PREVIEW_MODES = [
+    { value: 'off', label: 'Editor only' },
+    { value: 'split', label: 'Split' },
+    { value: 'full', label: 'Preview only' },
+  ] as const
+
+  const KEYBINDING_LABELS: Record<(typeof KEYBINDINGS)[number], string> = {
+    vscode: 'VS Code',
+    vim: 'Vim',
+    emacs: 'Emacs',
+  }
+
   // The dialog is mounted per opening, so the requested tab is read here.
   let tab = $state<Tab>(ui.settingsTab)
   // The swatches sit on the panel surface, which differs per theme: re-read it when the theme changes.
@@ -623,14 +635,14 @@
               <span>Font size</span>
               <div class="inline">
                 <input
-                  type="number"
+                  type="range"
                   min="8"
                   max="32"
+                  step="1"
                   value={ui.fontSize}
-                  onchange={(e) =>
-                    clamp(e.currentTarget.valueAsNumber, 8, 32, (n) => (ui.fontSize = n))}
+                  oninput={(e) => (ui.fontSize = e.currentTarget.valueAsNumber)}
                 />
-                <span class="hint">8–32 px</span>
+                <span class="value">{ui.fontSize}px</span>
               </div>
             </label>
             <label class="field">
@@ -642,35 +654,65 @@
                 {/each}
               </select>
             </label>
+            <p
+              class="font-sample"
+              style="font-family: {ui.fontFamily}; font-size: {ui.fontSize}px"
+            >
+              The quick brown fox
+            </p>
           </section>
 
           <section class="section">
             <h3>Markdown</h3>
-            <label class="field">
-              <span>Preview</span>
-              <select bind:value={ui.previewMode}>
-                <option value="off">Editor only</option>
-                <option value="split">Split preview</option>
-                <option value="full">Preview only</option>
-              </select>
-            </label>
+            <div class="field">
+              <span id="editor-preview-label">Markdown preview</span>
+              <div
+                class="segmented"
+                role="radiogroup"
+                aria-labelledby="editor-preview-label"
+              >
+                {#each PREVIEW_MODES as mode (mode.value)}
+                  <label class="segment" class:active={ui.previewMode === mode.value}>
+                    <input
+                      type="radio"
+                      name="editor-preview"
+                      value={mode.value}
+                      bind:group={ui.previewMode}
+                    />
+                    <span>{mode.label}</span>
+                  </label>
+                {/each}
+              </div>
+            </div>
             <p class="note">The same setting as the editor's preview buttons.</p>
           </section>
 
           <section class="section">
             <h3>Keybindings</h3>
-            <label class="field">
-              <span>Keybindings</span>
-              <select bind:value={ui.keybindings}>
+            <div class="field">
+              <span id="editor-keybindings-label">Mode</span>
+              <div
+                class="segmented"
+                role="radiogroup"
+                aria-labelledby="editor-keybindings-label"
+              >
                 {#each KEYBINDINGS as mode (mode)}
-                  <option value={mode}>{mode}</option>
+                  <label class="segment" class:active={ui.keybindings === mode}>
+                    <input
+                      type="radio"
+                      name="editor-keybindings"
+                      value={mode}
+                      bind:group={ui.keybindings}
+                    />
+                    <span>{KEYBINDING_LABELS[mode]}</span>
+                  </label>
                 {/each}
-              </select>
-            </label>
+              </div>
+            </div>
             <p class="note">
               {ui.keybindings === 'vscode'
                 ? 'Standard Monaco shortcuts.'
-                : `${ui.keybindings} keybindings are applied to the editor; Ctrl+P still opens the palette.`}
+                : `${KEYBINDING_LABELS[ui.keybindings]} keybindings are applied to the editor; Ctrl+P still opens the palette.`}
             </p>
           </section>
         {:else if tab === 'extensions'}
@@ -1071,6 +1113,63 @@
   .wide {
     width: 100%;
     max-width: 340px;
+  }
+  /* One line at the chosen family and size: dragging the slider must not
+     reflow the tab, so the box keeps its height and clips. */
+  .font-sample {
+    display: flex;
+    align-items: center;
+    min-height: 68px;
+    margin: 0;
+    padding: var(--sp-3) var(--sp-4);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    color: var(--text);
+    line-height: 1.3;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* Three choices at most: a track beats a select that hides two of them. */
+  .segmented {
+    display: inline-flex;
+    padding: 2px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-md);
+    background: var(--surface-0);
+  }
+  .segment {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 var(--sp-2);
+    border-radius: var(--r-sm);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .segment:hover {
+    color: var(--text);
+  }
+  .segment.active {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-0));
+    color: var(--accent-fg);
+  }
+  .segment:focus-within {
+    z-index: 1;
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .segment input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
   }
   .hint,
   .note {
