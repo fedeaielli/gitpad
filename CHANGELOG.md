@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.6.0 — 2026-11-18
+
+### Added
+- History is grouped by day: one card per day with that day's commit count in
+  the header and Today or Yesterday spelled out. Each row says what happened
+  (`Updated notes/x.md`, `Synced notes`, `Merged origin`) and carries the verb
+  as a coloured rail instead of the raw `gitpad:` line.
+- Expanding a commit lists its files with a badge per operation and a Restore
+  on each one; Revert becomes a restore when the commit only deleted things.
+  History reloads after every sync and has its own refresh button.
+- `/note` links one note to another: a second menu stage lists the notes with
+  the current folder first, and the link is written relative and
+  percent-encoded. Clicking it in the preview opens the target note in a tab.
+- The Account tab shows the GitHub profile — name, bio and join date — above
+  the repository state, with the session controls underneath.
+- Logs is a full-height console: sessions newest first, filters by category
+  (Editor, Git, App) and level, and a search that filters as you type.
+
+### Changed
+- Settings has a vertical section nav with icons, one centred column per
+  section, theme cards that preview the palette, and a font preview. About is
+  a product card with the version, a check for updates and the changelog for
+  the build you are running.
+- Themes go by their human names, and the leftover `vs-dark` mapping is gone.
+- The push delay only means something with automatic push and says so when it
+  is off, and an accent colour applies as soon as it is picked, with a warning
+  when it is too close to the panel background.
+- File badges in the changes list and the timeline are coloured by operation.
+
+### Fixed
+- The selected commit in History keeps its tint when hovered, no longer
+  changes height when selected, and is drawn as an outline that follows the
+  day card's rounded edges.
+
 ## 1.5.0 — 2026-11-17
 
 ### Added
