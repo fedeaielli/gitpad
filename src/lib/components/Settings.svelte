@@ -110,6 +110,14 @@
     '#d7ba7d', // amber
   ]
 
+  /// Chrome colours each theme card previews. shortcut: a new theme needs an
+  /// entry here too, add one when a theme lands.
+  const THEME_PREVIEW: Record<string, { bg: string; fg: string; accent: string }> = {
+    'gitpad-dark': { bg: '#1c1a18', fg: '#d8d3ca', accent: '#0078d4' },
+    vs: { bg: '#fbf9f4', fg: '#24211d', accent: '#005fb8' },
+    'hc-black': { bg: '#000000', fg: '#ffffff', accent: '#f38518' },
+  }
+
   // The dialog is mounted per opening, so the requested tab is read here.
   let tab = $state<Tab>(ui.settingsTab)
   // The swatches sit on the panel surface, which differs per theme: re-read it when the theme changes.
@@ -402,14 +410,32 @@
         {#if tab === 'appearance'}
           <section class="section">
             <h3>Appearance</h3>
-            <label class="field">
+            <div class="field stacked">
               <span>Theme</span>
-              <select bind:value={ui.editorTheme}>
+              <div class="themes" role="radiogroup" aria-label="Theme">
                 {#each THEMES as theme (theme)}
-                  <option value={theme}>{theme}</option>
+                  {@const preview = THEME_PREVIEW[theme]}
+                  <label class="theme-card" class:active={ui.editorTheme === theme}>
+                    <input
+                      type="radio"
+                      name="theme"
+                      value={theme}
+                      bind:group={ui.editorTheme}
+                    />
+                    <span
+                      class="preview"
+                      aria-hidden="true"
+                      style="--p-bg: {preview?.bg}; --p-fg: {preview?.fg}; --p-accent: {preview?.accent}"
+                    >
+                      <span class="bar title"></span>
+                      <span class="bar line"></span>
+                      <span class="bar accent"></span>
+                    </span>
+                    <span class="name">{theme}</span>
+                  </label>
                 {/each}
-              </select>
-            </label>
+              </div>
+            </div>
             <div class="field">
               <span>Accent color</span>
               <div class="accent-picker">
@@ -893,6 +919,15 @@
   .field > :last-child {
     justify-self: end;
   }
+  /* Stacked rows: the label opens the line, the control owns the width below. */
+  .field.stacked {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--sp-2);
+  }
+  .field.stacked > :last-child {
+    justify-self: stretch;
+  }
   /* Grouped settings: one heading names what the rows below decide. */
   .section {
     display: flex;
@@ -1098,7 +1133,77 @@
     align-items: center;
     justify-content: flex-end;
     gap: var(--sp-2);
-    max-width: 340px;
+    max-width: 100%;
+  }
+  .themes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--sp-2);
+  }
+  /* A radio each, so arrow keys work for free; the card is the visible control. */
+  .theme-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    padding: var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    cursor: pointer;
+  }
+  .theme-card:hover {
+    border-color: var(--border-strong);
+  }
+  .theme-card.active {
+    border-color: var(--accent);
+  }
+  .theme-card:focus-within {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+  }
+  .theme-card input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* A window in miniature: ground, text lines, the theme's accent. */
+  .preview {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    width: 56px;
+    height: 36px;
+    padding: 0 var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    background: var(--p-bg);
+  }
+  .bar {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--p-fg);
+  }
+  .bar.title {
+    width: 24px;
+  }
+  .bar.line {
+    width: 34px;
+    opacity: 0.55;
+  }
+  .bar.accent {
+    width: 18px;
+    background: var(--p-accent);
+  }
+  .name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   .swatch {
     width: 24px;
