@@ -510,18 +510,21 @@
                 <span class="value">{ui.saveDebounceMs / 1000}s</span>
               </div>
             </label>
-            <label class="field">
+            <label class="field" class:disabled={!ui.autoSync}>
               <span>Push delay</span>
               <div class="inline">
                 <input
                   type="number"
                   min="5"
                   max="300"
+                  disabled={!ui.autoSync}
                   value={Math.round(ui.pushIdleMs / 1000)}
                   onchange={(e) =>
                     clamp(e.currentTarget.valueAsNumber, 5, 300, (n) => (ui.pushIdleMs = n * 1000))}
                 />
-                <span class="hint">seconds after the last edit</span>
+                <span class="hint">
+                  {ui.autoSync ? 'seconds after the last edit' : 'only with automatic push'}
+                </span>
               </div>
             </label>
           </section>
@@ -1029,6 +1032,10 @@
   .field > :last-child {
     justify-self: end;
   }
+  /* The reason is in the hint; the row does not pretend to be editable. */
+  .field.disabled {
+    opacity: 0.6;
+  }
   /* Stacked rows: the label opens the line, the control owns the width below. */
   .field.stacked {
     grid-template-columns: minmax(0, 1fr);
@@ -1063,6 +1070,9 @@
     width: 16px;
     height: 16px;
     margin: 0;
+    accent-color: var(--accent);
+  }
+  .modal input[type='range'] {
     accent-color: var(--accent);
   }
   .field > span:first-child {
@@ -1318,6 +1328,8 @@
   }
   .folder .path {
     min-width: 0;
+    font-family: ui-monospace, monospace;
+    font-size: var(--fs-sm);
   }
   .actions {
     display: flex;
