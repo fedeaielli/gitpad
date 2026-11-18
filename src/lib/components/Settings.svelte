@@ -1257,10 +1257,12 @@
   /* Three choices at most: a track beats a select that hides two of them. */
   .segmented {
     display: inline-flex;
-    padding: 2px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-0);
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    background: var(--surface-1);
+    box-shadow: var(--shadow-1);
   }
   .segment {
     position: relative;
@@ -1269,18 +1271,23 @@
     justify-content: center;
     height: 26px;
     padding: 0 var(--sp-2);
-    border-radius: var(--r-sm);
+    border-radius: var(--r-pill);
     color: var(--muted);
     font-size: var(--fs-sm);
     white-space: nowrap;
     cursor: pointer;
+    transition:
+      background var(--t-base) var(--ease-out),
+      color var(--t-base) var(--ease-out),
+      box-shadow var(--t-base) var(--ease-out);
   }
   .segment:hover {
     color: var(--text);
   }
   .segment.active {
-    background: color-mix(in srgb, var(--accent) 12%, var(--surface-0));
-    color: var(--accent-fg);
+    background: var(--text);
+    color: var(--surface-0);
+    box-shadow: var(--shadow-1);
   }
   .segment:focus-within {
     z-index: 1;
