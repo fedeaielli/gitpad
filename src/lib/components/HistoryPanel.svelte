@@ -362,7 +362,7 @@
   .count {
     padding-left: var(--sp-0);
     color: var(--muted);
-    font-size: 12px;
+    font-size: 13px;
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
   }
@@ -484,7 +484,7 @@
     flex: 0 0 auto;
     padding-right: var(--sp-0);
     color: var(--muted);
-    font-size: var(--fs-xs);
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
