@@ -357,7 +357,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-2);
-    padding: var(--sp-1) var(--sp-2) var(--sp-05);
+    padding: var(--sp-2) var(--sp-25) var(--sp-1);
   }
   .count {
     color: var(--muted);
@@ -411,7 +411,7 @@
   }
   .filter {
     margin: 0;
-    padding: 0 var(--sp-2) var(--sp-1);
+    padding: 0 var(--sp-25) var(--sp-1);
     color: var(--muted);
     font-size: var(--fs-2xs);
     overflow: hidden;
@@ -423,14 +423,14 @@
   }
   .error {
     margin: 0;
-    padding: 0 var(--sp-2) var(--sp-05);
+    padding: 0 var(--sp-25) var(--sp-1);
     color: var(--err);
     font-size: var(--fs-sm);
     overflow-wrap: anywhere;
   }
   .empty {
     margin: 0;
-    padding: var(--sp-6) var(--sp-3);
+    padding: var(--sp-6) var(--sp-25);
     color: var(--muted);
     font-size: var(--fs-sm);
     text-align: center;
@@ -444,7 +444,7 @@
     padding: 0;
   }
   .days {
-    padding-bottom: var(--sp-2);
+    padding-bottom: var(--sp-25);
   }
   /* One card per day: the day label stays outside it, stuck to the top. */
   .day {
@@ -455,7 +455,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-2);
-    padding: var(--sp-1) var(--sp-25) var(--sp-05);
+    padding: var(--sp-2) var(--sp-25) var(--sp-1);
     background: var(--surface-1);
     color: var(--accent-fg);
     font-size: var(--fs-2xs);
@@ -484,10 +484,10 @@
     font-variant-numeric: tabular-nums;
   }
   .card {
-    margin: 0 var(--sp-2) var(--sp-2);
-    border: 1px solid var(--border);
+    margin: 0 var(--sp-25) var(--sp-25);
+    border: 1px solid color-mix(in srgb, var(--border) 65%, var(--surface-1));
     border-radius: var(--r-lg);
-    background: var(--surface-2);
+    background: color-mix(in srgb, var(--surface-2) 62%, var(--surface-1));
     overflow: hidden;
   }
   .commit {
@@ -515,7 +515,7 @@
     --kind-ink: var(--accent-fg);
   }
   .commit + .commit {
-    border-top-color: var(--divider);
+    border-top-color: color-mix(in srgb, var(--divider) 70%, transparent);
   }
   .commit:hover,
   .commit.open {
@@ -605,7 +605,7 @@
     min-height: 48px;
     padding: 0;
     border: 0;
-    border-left: 1px solid var(--border);
+    border-left: 1px solid color-mix(in srgb, var(--divider) 70%, transparent);
     border-radius: 0;
     background: transparent;
     color: var(--muted);
@@ -633,7 +633,7 @@
   }
   /* Files sit on their own surface so the row above stays the primary line. */
   .details {
-    border-top: 1px solid var(--divider);
+    border-top: 1px solid color-mix(in srgb, var(--divider) 70%, transparent);
     background: var(--surface-1);
   }
   .files {
@@ -708,5 +708,15 @@
   .files button:disabled {
     cursor: default;
     opacity: 0.5;
+  }
+  /* High contrast is a legibility guarantee, not a place to soften surfaces. */
+  :global(:root[data-theme='hc-black']) .card {
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+  :global(:root[data-theme='hc-black']) .commit + .commit,
+  :global(:root[data-theme='hc-black']) .expand,
+  :global(:root[data-theme='hc-black']) .details {
+    border-color: var(--divider);
   }
 </style>
