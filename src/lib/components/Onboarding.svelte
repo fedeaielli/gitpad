@@ -46,6 +46,13 @@
   $effect(() => {
     if (index > furthest) furthest = index
   })
+
+  const PANEL: Record<Step, { title: string; sub: string }> = {
+    welcome: { title: 'GitPad', sub: 'Markdown notes · Git-backed' },
+    auth: { title: 'Connect GitHub', sub: 'Credentials stored in your OS keyring' },
+    repo: { title: 'Repository', sub: 'Select where to clone your notes' },
+    done: { title: "You're set", sub: 'Everything is ready to go' },
+  }
   let token = $state('')
   let user = $state<GithubUser | null>(null)
   let repo = $state<RepoInfo | null>(null)
@@ -192,6 +199,44 @@
     class="card"
     out:fly={{ y: 6, opacity: 1, duration: prefersReducedMotion.current ? 0 : 160, easing: cubicOut }}
   >
+    <div class="panel" class:done={step === 'done'}>
+      <div class="badge" aria-hidden="true">
+        {#if step === 'welcome'}
+          <span class="mark"></span>
+        {:else if step === 'auth'}
+          <svg viewBox="0 0 16 16" width="20" height="20">
+            <path
+              fill="currentColor"
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+            />
+          </svg>
+        {:else if step === 'repo'}
+          <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.3">
+            <circle cx="4.5" cy="3.5" r="1.7" />
+            <circle cx="4.5" cy="12.5" r="1.7" />
+            <circle cx="11.5" cy="6.5" r="1.7" />
+            <path d="M4.5 5.2v5.6M9.8 6.5H8a2.5 2.5 0 0 0-2.5 2.5v1.3" />
+          </svg>
+        {:else}
+          <svg
+            viewBox="0 0 16 16"
+            width="20"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path pathLength="1" d="M3 8.6 6.4 12 13 4.6" />
+          </svg>
+        {/if}
+      </div>
+      <div>
+        <h1>{PANEL[step].title}</h1>
+        <p class="sub">{PANEL[step].sub}</p>
+      </div>
+    </div>
     <ol class="steps" aria-label="Setup steps">
       {#each STEPS as s, i}
         <li class:done={i < index} class:active={i === index}>
@@ -226,14 +271,6 @@
       {/each}
     </ol>
     {#if step === 'welcome'}
-      <div class="head">
-        <div class="brand"><span class="mark" aria-hidden="true"></span></div>
-        <div>
-          <h1>GitPad</h1>
-          <p class="sub">Markdown notes · Git-backed</p>
-        </div>
-      </div>
-      <hr class="rule" />
       <p class="lead">
         Markdown notes in a Git repository you own. Saved locally and pushed to GitHub.
       </p>
@@ -249,7 +286,6 @@
         </li>
         <li><span class="keys"><kbd>Esc</kbd></span><span>Close palette</span></li>
       </ul>
-      <hr class="rule" />
       <button class="cta" disabled={busy} onclick={() => (step = 'auth')}>
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
@@ -264,21 +300,6 @@
       </button>
       <p class="helper">An existing folder works too — GitPad initializes it if needed.</p>
     {:else if step === 'auth'}
-      <div class="head">
-        <div class="brand">
-          <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
-            />
-          </svg>
-        </div>
-        <div>
-          <h1>Connect GitHub</h1>
-          <p class="sub">Credentials stored in your OS keyring</p>
-        </div>
-      </div>
-      <hr class="rule" />
       <label class="label" for="pat">Personal access token</label>
       <div class="field">
         <input
@@ -308,21 +329,6 @@
       <div class="divider">or</div>
       <GithubLogin label="Login with GitHub" onsuccess={() => { void loadUser(true); goRepo() }} />
     {:else if step === 'repo'}
-      <div class="head">
-        <div class="brand">
-          <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
-            <circle cx="4.5" cy="3.5" r="1.7" />
-            <circle cx="4.5" cy="12.5" r="1.7" />
-            <circle cx="11.5" cy="6.5" r="1.7" />
-            <path d="M4.5 5.2v5.6M9.8 6.5H8a2.5 2.5 0 0 0-2.5 2.5v1.3" />
-          </svg>
-        </div>
-        <div>
-          <h1>Repository</h1>
-          <p class="sub">Select where to clone your notes</p>
-        </div>
-      </div>
-      <hr class="rule" />
       {#if busy}
         <p class="stage"><span class="loading"></span>{STAGES[stage]}</p>
       {:else if repo}
@@ -344,7 +350,6 @@
             {folder ? 'Change…' : 'Choose…'}
           </button>
         </div>
-        <hr class="rule" />
         <button class="cta" disabled={busy} onclick={clone}>Clone and open</button>
       {:else}
         <div class="row">
@@ -353,18 +358,6 @@
         </div>
       {/if}
     {:else}
-      <div class="head">
-        <div class="brand done">
-          <svg viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path pathLength="1" d="M3 8.6 6.4 12 13 4.6" />
-          </svg>
-        </div>
-        <div>
-          <h1>You're set</h1>
-          <p class="sub">Everything is ready to go</p>
-        </div>
-      </div>
-      <hr class="rule" />
       {#if localRepo}
         <div class="box">
           <p class="repo-name"><code>{localRepo.to}</code></p>
@@ -378,7 +371,6 @@
         <p class="lead">Edits commit locally right away. Pushes happen on idle, when the window loses focus and on close.</p>
       {/if}
       <p class="hintbox"><kbd>Ctrl</kbd><kbd>P</kbd> opens the command palette</p>
-      <hr class="rule" />
       <button class="cta" onclick={finish}>Start editing</button>
     {/if}
     {#if user && step !== 'done'}
@@ -408,7 +400,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--sp-25);
-    width: 420px;
+    width: 480px;
     max-width: calc(100vw - 32px);
     padding: 20px;
     background: var(--surface-3);
@@ -514,43 +506,56 @@
     background: var(--accent);
     color: var(--on-accent);
   }
-  .head {
+  /* The gradient panel rides over the card's top edge, the way the reference
+     card does: inset sideways, raised above the border, carrying the title. */
+  .panel {
     display: flex;
     align-items: center;
     gap: var(--sp-3);
+    min-height: 84px;
+    margin: -26px 14px 0;
+    padding: 0 var(--sp-3);
+    border-radius: 10px;
+    background: linear-gradient(
+      100deg,
+      var(--accent) 0%,
+      color-mix(in srgb, var(--accent) 72%, black) 100%
+    );
+    box-shadow: var(--shadow-1);
+    color: var(--on-accent);
   }
-  .brand {
+  .badge {
     display: grid;
     flex: 0 0 auto;
     place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    background: var(--surface-2);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--on-accent) 16%, transparent);
   }
   .mark {
     width: 20px;
     height: 24px;
-    background: var(--muted);
+    background: var(--on-accent);
     mask: url('/logo.png') center / contain no-repeat;
   }
   .sub {
     color: var(--muted);
     font-size: var(--fs-sm);
   }
+  .panel .sub {
+    color: color-mix(in srgb, var(--on-accent) 76%, transparent);
+  }
   .lead {
     font-size: var(--fs-lg);
     line-height: 1.45;
   }
-  /* The only card that means "done", so the tile carries the success colour. */
-  .brand.done {
-    border-color: var(--ok);
-    background: var(--ok-soft);
-    color: var(--ok);
+  /* The last card is the only one that means "done": the check draws in. */
+  .panel.done .badge {
+    background: color-mix(in srgb, var(--on-accent) 22%, transparent);
     animation: gp-check-pop 240ms var(--ease-out);
   }
-  .brand.done svg path {
+  .panel.done .badge svg path {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
     animation: gp-check-draw 180ms 100ms var(--ease-out) forwards;
@@ -584,12 +589,6 @@
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: var(--surface-1);
-  }
-  /* --border equals --surface-3: inside this card the rule would vanish. */
-  .rule {
-    margin: 0;
-    border: 0;
-    border-top: 1px solid var(--divider);
   }
   .label {
     color: var(--muted);
