@@ -493,7 +493,8 @@
   .commit {
     --kind: var(--border-strong);
     --kind-ink: var(--muted);
-    border-left: 1px solid var(--kind);
+    border: 1px solid transparent;
+    border-left-color: var(--kind);
     background: transparent;
   }
   .commit.delete {
@@ -514,15 +515,17 @@
     --kind-ink: var(--accent-fg);
   }
   .commit + .commit {
-    border-top: 1px solid var(--divider);
+    border-top-color: var(--divider);
   }
   .commit:hover,
   .commit.open {
     background: var(--surface-3);
   }
   .commit.active {
-    background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
-    box-shadow: inset 0 0 0 1px var(--accent);
+    border-color: var(--accent);
+  }
+  .commit.active + .commit {
+    border-top-color: transparent;
   }
   .head-row {
     display: flex;
