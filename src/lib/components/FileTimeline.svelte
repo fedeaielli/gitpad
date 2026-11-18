@@ -48,6 +48,10 @@
   let models: monaco.editor.ITextModel[] = []
   let startY = 0
   let startHeight = 0
+  /// The legal size the drag is heading to: the preview may rubber-band past
+  /// it, but the release must commit a value the clamp still accepts.
+  let settleHeight = 0
+  let settleWidth = 0
   let loadedKey = ''
 
   // Reload on another file, on a tree refresh and whenever this file's status
@@ -225,6 +229,9 @@
   // back to a legal size the moment the pointer is released.
   let dragHeight = $state<number | null>(null)
   let dragListWidth = $state<number | null>(null)
+  /// Set for one spring after a release, so the rubber band settles instead of
+  /// snapping to the clamp in a single frame.
+  let settling = $state(false)
   const shownHeight = $derived(dragHeight ?? ui.timelineHeight)
   const shownListWidth = $derived(dragListWidth ?? ui.timelineListWidth)
 
@@ -239,13 +246,29 @@
     if (!dragging) return
     const column = frame?.parentElement?.clientHeight ?? window.innerHeight
     const wanted = startHeight + (startY - e.clientY)
-    ui.timelineHeight = clampTimelineHeight(column, wanted)
+    // Preview only: the store write belongs to the release, so the config
+    // debounce is not restarted on every frame.
+    settleHeight = clampTimelineHeight(column, wanted)
     dragHeight = Math.round(resist(wanted, MIN_TIMELINE, timelineMax(column)))
   }
 
   function endResize() {
+    if (!dragging) return
     dragging = false
-    dragHeight = null
+    if (dragHeight === null) return
+    ui.timelineHeight = settleHeight
+    // shortcut: settle to the clamp, no velocity handoff; add one only if the
+    // snap still reads as a jerk.
+    settleSpring()
+  }
+
+  function settleSpring() {
+    settling = true
+    requestAnimationFrame(() => {
+      dragHeight = null
+      dragListWidth = null
+    })
+    setTimeout(() => (settling = false), 420)
   }
 
   let splitting = $state(false)
@@ -263,13 +286,16 @@
   function moveSplit(e: PointerEvent) {
     if (!splitting) return
     const raw = splitWidth + e.clientX - splitX
-    ui.timelineListWidth = Math.round(Math.min(560, Math.max(180, raw)))
+    settleWidth = Math.round(Math.min(560, Math.max(180, raw)))
     dragListWidth = Math.round(resist(raw, 180, 560))
   }
 
   function endSplit() {
+    if (!splitting) return
     splitting = false
-    dragListWidth = null
+    if (dragListWidth === null) return
+    ui.timelineListWidth = settleWidth
+    settleSpring()
   }
 
   /// Created on first use: an empty diff editor draws a sash between two blank
@@ -310,6 +336,7 @@
 
 <section
   class="timeline"
+  class:settling
   style="height: {shownHeight}px"
   aria-label="File history"
   bind:this={frame}
@@ -350,7 +377,7 @@
   {/if}
 
   <div class="body">
-    <ul class="commits" style="flex: 0 0 {shownListWidth}px">
+    <ul class="commits" class:settling style="flex: 0 0 {shownListWidth}px">
       {#if commit}
         {#each files as file (file.path)}
           <li class="row" class:active={selected === file.path}>
@@ -432,6 +459,10 @@
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     background: var(--surface-base);
+  }
+  /* Only after a release: a live drag must track the pointer 1:1. */
+  .timeline.settling {
+    transition: height var(--t-spring) var(--ease-spring);
   }
   .resize {
     position: absolute;
@@ -528,6 +559,9 @@
     border-radius: var(--r-lg);
     background: var(--surface-1);
     list-style: none;
+  }
+  .commits.settling {
+    transition: flex-basis var(--t-spring) var(--ease-spring);
   }
   /* The gap between the two panels, made grabbable, like the sidebar gutter. */
   .split {

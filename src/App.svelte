@@ -115,8 +115,14 @@
       : 'var(--w-activitybar)',
   )
   let resizing = $state(false)
+  /// Set for one spring after a release, so the rubber band settles instead of
+  /// snapping to the clamp in a single frame.
+  let settling = $state(false)
   let resizeX = 0
   let resizeWidth = 0
+  /// The legal width the drag is heading to: the preview may rubber-band past
+  /// it, but the release must commit a value the clamp still accepts.
+  let settleTo = 0
 
   function startResize(e: PointerEvent) {
     if (!ui.sidebarOpen || e.button !== 0) return
@@ -124,18 +130,28 @@
     e.preventDefault()
     resizeX = e.clientX
     resizeWidth = ui.sidebarWidth
+    settleTo = ui.sidebarWidth
     resizing = true
   }
   function moveResize(e: PointerEvent) {
     if (!resizing) return
     const raw = resizeWidth + e.clientX - resizeX
     // Rounded: config_save takes a u32, and a fractional width fails the save.
-    ui.sidebarWidth = Math.round(Math.min(maxSidebar(), Math.max(MIN_SIDEBAR, raw)))
+    settleTo = Math.round(Math.min(maxSidebar(), Math.max(MIN_SIDEBAR, raw)))
+    // Preview only: writing the store on every frame restarted the config
+    // debounce, so the width was saved dozens of times per drag.
     dragWidth = Math.round(resist(raw, MIN_SIDEBAR, maxSidebar()))
   }
   function endResize() {
+    if (!resizing) return
     resizing = false
-    dragWidth = null
+    if (dragWidth === null) return
+    ui.sidebarWidth = settleTo
+    // shortcut: settle to the clamp, no velocity handoff; add one only if the
+    // snap still reads as a jerk.
+    settling = true
+    requestAnimationFrame(() => (dragWidth = null))
+    setTimeout(() => (settling = false), 420)
   }
   /// Shrinking the window must not let the saved width swallow the editor.
   function clampSidebar() {
@@ -578,7 +594,7 @@
   <TitleBar />
   <div class="app">
     <main class="body">
-      <div class="left" style="flex: 0 0 {leftWidth}">
+      <div class="left" class:settling style="flex: 0 0 {leftWidth}">
         <ActivityBar />
         {#if ui.sidebarOpen}
           <Sidebar />
@@ -691,6 +707,10 @@
     border-right: 0;
     overflow: hidden;
     background: var(--surface-1);
+  }
+  /* Only after a release: a live drag must track the pointer 1:1. */
+  .left.settling {
+    transition: flex-basis var(--t-spring) var(--ease-spring);
   }
   /* The gap between the panels, made grabbable: it is the only place where the
      sidebar edge can be dragged without fighting the panel content. */
