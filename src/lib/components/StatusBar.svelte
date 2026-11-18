@@ -39,8 +39,10 @@
   <span class="path">{active?.path ?? 'No file'}</span>
   <span class="spacer"></span>
   {#if gitStatus.syncing || ui.importing || ui.deleting}
-    <span
+    <svg
       class="spinner"
+      viewBox="25 25 50 50"
+      role="img"
       aria-label={ui.deleting
         ? `Deleting ${ui.deleting}`
         : ui.importCommitting
@@ -48,7 +50,9 @@
           : ui.importing
             ? 'Importing'
             : 'Syncing'}
-    ></span>
+    >
+      <circle cx="50" cy="50" r="20"></circle>
+    </svg>
   {/if}
   {#if ui.deleting}
     <span>deleting…</span>
@@ -113,12 +117,33 @@
     color: var(--muted);
   }
   .spinner {
-    width: 10px;
-    height: 10px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: var(--accent-fg);
+    transform-origin: center;
+    animation: spin 2s linear infinite;
+  }
+  .spinner circle {
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 1, 200;
+    stroke-dashoffset: 0;
+    animation: dash 1.5s ease-in-out infinite;
+  }
+  @keyframes dash {
+    0% {
+      stroke-dasharray: 1, 200;
+      stroke-dashoffset: 0;
+    }
+    50% {
+      stroke-dasharray: 90, 200;
+      stroke-dashoffset: -35px;
+    }
+    100% {
+      stroke-dashoffset: -125px;
+    }
   }
   .pct {
     min-width: 3ch;
