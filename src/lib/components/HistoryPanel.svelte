@@ -460,7 +460,8 @@
     padding: var(--sp-2) var(--sp-25) var(--sp-1);
     background: var(--surface-1);
     color: var(--accent-fg);
-    font-size: var(--fs-2xs);
+    font-size: 12px;
+    line-height: 1.2;
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -484,7 +485,7 @@
     flex: 0 0 auto;
     padding-right: var(--sp-0);
     color: var(--muted);
-    font-size: 12px;
+    font-size: 13px;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
