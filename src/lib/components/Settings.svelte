@@ -8,6 +8,7 @@
   import { checkUpdate, type UpdateInfo } from '../utils/update'
   import { contrast } from '../utils/color'
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
+  import { defaultDesc } from '../utils/file-sort'
   import { focusTrap } from '../utils/focus'
   import { tip } from '../utils/tooltip'
   import { open } from '@tauri-apps/plugin-dialog'
@@ -472,39 +473,12 @@
               </div>
             </div>
           </section>
-  
-          <section class="section">
-            <h3>Editor</h3>
-            <label class="field">
-              <span>Font size</span>
-              <div class="inline">
-                <input
-                  type="number"
-                  min="8"
-                  max="32"
-                  value={ui.fontSize}
-                  onchange={(e) =>
-                    clamp(e.currentTarget.valueAsNumber, 8, 32, (n) => (ui.fontSize = n))}
-                />
-                <span class="hint">8–32 px</span>
-              </div>
-            </label>
-            <label class="field">
-              <span>Font family</span>
-              <select class="wide" bind:value={ui.fontFamily}>
-                <option value={DEFAULT_FONT}>Default (monospace)</option>
-                {#each fontOptions as font (font)}
-                  <option value={font}>{font}</option>
-                {/each}
-              </select>
-            </label>
-          </section>
         {:else if tab === 'sync'}
           <section class="section">
             <h3>Automatic sync</h3>
-            <label class="toggle">
-              <input type="checkbox" bind:checked={ui.autoSync} />
+            <label class="field">
               <span>Push automatically after each save</span>
+              <input type="checkbox" bind:checked={ui.autoSync} />
             </label>
             <label class="field">
               <span>Autosave delay</span>
@@ -535,7 +509,34 @@
               </div>
             </label>
           </section>
-  
+
+          <section class="section">
+            <h3>Files</h3>
+            <label class="field">
+              <span>Sort by</span>
+              <select
+                bind:value={ui.sortMode}
+                onchange={() => (ui.sortDesc = defaultDesc(ui.sortMode))}
+              >
+                <option value="name">Name</option>
+                <option value="modified">Modified</option>
+                <option value="type">Type</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Descending</span>
+              <input type="checkbox" bind:checked={ui.sortDesc} />
+            </label>
+            <label class="field">
+              <span>Folders first</span>
+              <input type="checkbox" bind:checked={ui.foldersFirst} />
+            </label>
+            <label class="field">
+              <span>Show hidden files</span>
+              <input type="checkbox" bind:checked={ui.showHidden} />
+            </label>
+          </section>
+
           <section class="section">
             <h3>Repository</h3>
             <div class="repo">
@@ -613,6 +614,47 @@
           </section>
         {:else if tab === 'editor'}
           <section class="section">
+            <h3>Font</h3>
+            <label class="field">
+              <span>Font size</span>
+              <div class="inline">
+                <input
+                  type="number"
+                  min="8"
+                  max="32"
+                  value={ui.fontSize}
+                  onchange={(e) =>
+                    clamp(e.currentTarget.valueAsNumber, 8, 32, (n) => (ui.fontSize = n))}
+                />
+                <span class="hint">8–32 px</span>
+              </div>
+            </label>
+            <label class="field">
+              <span>Font family</span>
+              <select class="wide" bind:value={ui.fontFamily}>
+                <option value={DEFAULT_FONT}>Default (monospace)</option>
+                {#each fontOptions as font (font)}
+                  <option value={font}>{font}</option>
+                {/each}
+              </select>
+            </label>
+          </section>
+
+          <section class="section">
+            <h3>Markdown</h3>
+            <label class="field">
+              <span>Preview</span>
+              <select bind:value={ui.previewMode}>
+                <option value="off">Editor only</option>
+                <option value="split">Split preview</option>
+                <option value="full">Preview only</option>
+              </select>
+            </label>
+            <p class="note">The same setting as the editor's preview buttons.</p>
+          </section>
+
+          <section class="section">
+            <h3>Keybindings</h3>
             <label class="field">
               <span>Keybindings</span>
               <select bind:value={ui.keybindings}>
@@ -949,14 +991,9 @@
     border-top: 1px solid var(--divider);
   }
   /* A switch row: the text names the setting, so it needs no label column. */
-  .toggle {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    cursor: pointer;
-  }
-  .toggle input {
-    flex: 0 0 auto;
+  .field input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
     margin: 0;
     accent-color: var(--accent);
   }
