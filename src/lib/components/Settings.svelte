@@ -568,9 +568,10 @@
 
           <section class="section">
             <h3>Files</h3>
-            <label class="field">
-              <span>Sort by</span>
+            <div class="field">
+              <span id="sort-by-label">Sort by</span>
               <Select
+                ariaLabelledby="sort-by-label"
                 bind:value={ui.sortMode}
                 options={[
                   { value: 'name', label: 'Name' },
@@ -579,7 +580,7 @@
                 ]}
                 onchange={() => (ui.sortDesc = defaultDesc(ui.sortMode))}
               />
-            </label>
+            </div>
             <label class="field">
               <span>Descending</span>
               <Check bind:checked={ui.sortDesc} />
@@ -686,16 +687,17 @@
                 <span class="value">{ui.fontSize}px</span>
               </div>
             </label>
-            <label class="field">
-              <span>Font family</span>
+            <div class="field">
+              <span id="font-family-label">Font family</span>
               <Select
+                ariaLabelledby="font-family-label"
                 bind:value={ui.fontFamily}
                 options={[
                   { value: DEFAULT_FONT, label: 'Default (monospace)' },
                   ...fontOptions.map((font) => ({ value: font, label: font })),
                 ]}
               />
-            </label>
+            </div>
             <p
               class="font-sample"
               style="font-family: {ui.fontFamily}; font-size: {ui.fontSize}px"
@@ -792,13 +794,14 @@
                   }}
                 />
               </label>
-              <label class="add-field">
-                <span class="label">Language</span>
+              <div class="add-field">
+                <span class="label" id="ext-language-label">Language</span>
                 <Select
+                  ariaLabelledby="ext-language-label"
                   bind:value={newLang}
                   options={LANGUAGES.map((lang) => ({ value: lang, label: lang }))}
                 />
-              </label>
+              </div>
               <button class="btn btn-primary sweep" onclick={addExtension}>Add</button>
             </div>
             {#if extMessage}
