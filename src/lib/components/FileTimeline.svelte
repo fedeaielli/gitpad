@@ -508,7 +508,7 @@
   }
   .error button {
     flex: 0 0 auto;
-    padding: 1px var(--sp-1);
+    padding: var(--sp-0) var(--sp-1);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     background: transparent;

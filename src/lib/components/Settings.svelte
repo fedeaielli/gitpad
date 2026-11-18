@@ -1229,8 +1229,8 @@
   /* Three choices at most: a track beats a select that hides two of them. */
   .segmented {
     display: inline-flex;
-    gap: 2px;
-    padding: 3px;
+    gap: var(--sp-0);
+    padding: var(--sp-0);
     border: 1px solid var(--border);
     border-radius: var(--r-pill);
     background: var(--surface-1);

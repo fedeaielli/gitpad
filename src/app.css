@@ -217,7 +217,7 @@ button {
 }
 
 /* Window controls stay square: they sit flush against the window corner. */
-button:not(.win) {
+button:not(.win):not(.icon-btn) {
   border-radius: var(--r-md);
 }
 
@@ -331,7 +331,7 @@ button:not(.win):not(:disabled):active {
   cursor: default;
 }
 
-input,
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
 select {
   box-sizing: border-box;
   height: 32px;

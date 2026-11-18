@@ -313,7 +313,7 @@
   .changes {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 0;
     margin: 0;
     padding: 0;
     list-style: none;

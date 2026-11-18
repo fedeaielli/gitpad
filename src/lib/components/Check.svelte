@@ -21,7 +21,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 5px;
+    padding: var(--sp-05);
   }
   input {
     position: absolute;
@@ -45,8 +45,8 @@
     stroke-dasharray: 241 9999999;
     stroke-dashoffset: 0;
     transition:
-      stroke-dasharray 0.3s ease-out,
-      stroke-dashoffset 0.3s ease-out,
+      stroke-dasharray var(--t-base) var(--ease-out),
+      stroke-dashoffset var(--t-base) var(--ease-out),
       stroke var(--t-fast);
   }
   input:checked + svg .path {

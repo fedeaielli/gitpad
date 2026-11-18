@@ -444,6 +444,7 @@
   }
   .rename input {
     width: 100%;
+    height: 24px;
     padding: var(--sp-0) var(--sp-05);
   }
   .chevron {
