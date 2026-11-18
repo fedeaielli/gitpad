@@ -78,7 +78,7 @@
     display: flex;
     flex: 0 0 var(--h-statusbar);
     align-items: center;
-    gap: 14px;
+    gap: var(--sp-3);
     padding: 0 var(--sp-25);
     background: var(--surface-1);
     color: var(--muted);
@@ -149,10 +149,4 @@
     min-width: 3ch;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-</style>
+  }</style>

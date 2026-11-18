@@ -339,7 +339,7 @@
       <span class="name">{name}</span>
       {#if !loading}{commits.length} commit{commits.length === 1 ? '' : 's'}{/if}
     {/if}
-    <button class="close" aria-label={commit ? 'Close commit diff' : 'Close file history'} onclick={close}>×</button>
+    <button class="icon-btn close" aria-label={commit ? 'Close commit diff' : 'Close file history'} onclick={close}>×</button>
   </header>
 
   {#if error}
@@ -380,7 +380,7 @@
               <span class="badge">Current</span>
             {/if}
             <button
-              class="restore"
+              class="btn restore"
               disabled={busy || isCurrentVersion(index, path, gitStatus.changes, dirty)}
               use:tip={isCurrentVersion(index, path, gitStatus.changes, dirty)
                 ? 'This is the current version'
@@ -485,31 +485,17 @@
     white-space: nowrap;
   }
   .close {
-    display: flex;
     flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
     margin-left: auto;
-    border: 0;
-    /* 24px square: the shared 9px radius would read as a circle here. */
-    border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--muted);
     font-size: var(--fs-lg);
     line-height: 1;
-  }
-  .close:hover {
-    background: var(--surface-2);
-    color: var(--text);
   }
   .error {
     display: flex;
     flex: 0 0 auto;
     align-items: center;
     gap: var(--sp-2);
-    padding: 3px var(--sp-2);
+    padding: var(--sp-0) var(--sp-2);
     border-radius: var(--r-md);
     background: var(--surface-2);
     color: var(--err);
@@ -543,7 +529,6 @@
     background: var(--surface-1);
     list-style: none;
   }
-  /* The gap between the two panels, made grabbable, like the sidebar gutter. */
   /* The gap between the two panels, made grabbable, like the sidebar gutter. */
   .split {
     position: relative;
@@ -583,12 +568,14 @@
     align-items: baseline;
     gap: var(--sp-2);
     min-width: 0;
-    padding: 3px var(--sp-2);
+    padding: var(--sp-0) var(--sp-2);
     text-align: left;
   }
-  .commit:hover,
-  .row.active .commit {
+  .commit:hover {
     background: var(--surface-2);
+  }
+  .row.active .commit {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
   }
   /* Two lines: each field keeps its own width, the message takes the rest. */
   .entry {
@@ -603,16 +590,6 @@
     width: fit-content;
     max-width: 100%;
     min-width: 0;
-  }
-  /* Inset past the corners: a box-shadow would follow the button radius. */
-  .row.active .commit::before {
-    position: absolute;
-    top: var(--r-md);
-    bottom: var(--r-md);
-    left: 0;
-    width: 2px;
-    background: var(--accent);
-    content: '';
   }
   code {
     flex: 0 0 auto;
@@ -651,8 +628,8 @@
     justify-content: center;
     min-width: 18px;
     height: 18px;
-    padding: 0 4px;
-    border-radius: 4px;
+    padding: 0 var(--sp-05);
+    border-radius: var(--r-sm);
     background: color-mix(in srgb, var(--badge) 18%, transparent);
     color: var(--badge);
     font-size: var(--fs-2xs);
@@ -676,18 +653,7 @@
   }
   .restore {
     flex: 0 0 auto;
-    /* Desktop target, not touch: 32px is the smallest that still reads as one. */
-    min-height: 32px;
-    padding: 0 var(--sp-25);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: transparent;
-    color: var(--text);
     font-size: var(--fs-xs);
-  }
-  .restore:hover:not(:disabled) {
-    border-color: var(--border-strong);
-    background: var(--surface-3);
   }
   /* Dimming alone still leaves a pill outline and a bright label: at 0.3 the
      text would read as a live control on the Current row. Drop the chrome. */
@@ -721,8 +687,8 @@
   }
   .hint {
     position: absolute;
-    top: 8px;
-    left: 10px;
+    top: var(--sp-2);
+    left: var(--sp-25);
     margin: 0;
     color: var(--muted);
     pointer-events: none;

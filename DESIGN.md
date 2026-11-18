@@ -40,6 +40,7 @@ screen borrows its controls, surfaces and rhythm. Tokens live in
 | `.btn-primary` | the one filled action on the screen |
 | `.btn-danger` | destructive action, `--err` border |
 | `.btn-ghost` | quiet action or close control |
+| `.text-btn` | inline text action inside a row |
 | `.icon-btn` | square icon-only control |
 
 At most one `.btn-primary` per screen. No green "recommended" text: emphasis

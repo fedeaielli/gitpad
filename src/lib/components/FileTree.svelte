@@ -309,7 +309,7 @@
             <span class="name">{node.name}</span>
           </button>
           {#if ui.expanded.includes(node.path)}
-            <div transition:slide={{ duration: prefersReducedMotion.current ? 0 : 120 }}>
+            <div transition:slide={{ duration: prefersReducedMotion.current ? 0 : 180 }}>
               {@render tree(node.children ?? [])}
             </div>
           {/if}
@@ -412,7 +412,7 @@
     gap: var(--sp-1);
     /* Inset by 4px a side: the hover/selected fill stops short of the panel
        edge, and margin + padding still add up to the old 8px label offset. */
-    width: calc(100% - 8px);
+    width: calc(100% - var(--sp-2));
     margin: 0 var(--sp-05);
     min-height: 24px;
     padding: 0 var(--sp-05);
@@ -434,22 +434,17 @@
     pointer-events: none;
   }
   .row.active {
-    /* A raised surface marks the open file. No rail: the fill alone carries
-       the selection, so the label sits at the same x as every other row. */
-    background: var(--surface-3);
+    /* A tint marks the open file. No rail: the fill alone carries the
+       selection, so the label sits at the same x as every other row. */
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
     color: var(--text);
-  }
-  /* hc-black aliases surface-3 onto surface-1, which is darker than the hover
-     fill, so the open file would read as the least prominent row. */
-  :global(:root[data-theme='hc-black']) .row.active {
-    background: var(--surface-2);
   }
   .rename {
     padding: 0 var(--sp-2);
   }
   .rename input {
     width: 100%;
-    padding: 1px var(--sp-05);
+    padding: var(--sp-0) var(--sp-05);
   }
   .chevron {
     display: inline-flex;
@@ -516,7 +511,7 @@
     min-width: 160px;
     padding: var(--sp-05);
     animation: gp-pop-in var(--t-fast) var(--ease-out);
-    background: var(--surface-2);
+    background: var(--surface-3);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
     box-shadow: var(--shadow-1);
@@ -524,7 +519,7 @@
   .menu button {
     display: block;
     width: 100%;
-    padding: 5px var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
     text-align: left;
     border-radius: var(--r-sm);
   }

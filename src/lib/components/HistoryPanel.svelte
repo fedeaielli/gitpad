@@ -240,8 +240,8 @@
         </span>
       </span>
       <button
-        class="refresh"
-        class:busy={loading}
+        class="icon-btn refresh"
+        class:spinning={loading}
         disabled={loading}
         use:tip={'Refresh'}
         aria-label="Refresh history"
@@ -334,6 +334,7 @@
                             <span class="path">{file.path}</span>
                             {#if file.status !== 'D'}
                               <button
+                                class="text-btn"
                                 disabled={busy}
                                 use:tip={`Restore ${file.path}`}
                                 onclick={() => restore(commit, file)}
@@ -345,7 +346,7 @@
                         {/each}
                       </ul>
                       <div class="actions">
-                        <button disabled={busy} onclick={() => revert(commit)}>
+                        <button class="btn" disabled={busy} onclick={() => revert(commit)}>
                           {allDeleted
                             ? `Restore ${files.length} deleted item${files.length === 1 ? '' : 's'}`
                             : 'Revert commit'}
@@ -388,7 +389,7 @@
     flex: 0 0 auto;
     padding-left: var(--sp-0);
     color: var(--muted);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-variant-numeric: tabular-nums;
     line-height: 1.2;
   }
@@ -406,27 +407,7 @@
     white-space: nowrap;
   }
   .refresh {
-    display: grid;
-    flex: 0 0 26px;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--muted);
-    transition:
-      background var(--t-fast),
-      color var(--t-fast);
-  }
-  .refresh:hover:not(:disabled) {
-    background: var(--surface-2);
-    color: var(--text);
-  }
-  .refresh:disabled {
-    cursor: default;
-    opacity: 0.55;
+    flex: 0 0 auto;
   }
   .refresh svg {
     width: 14px;
@@ -436,19 +417,6 @@
     stroke-width: 1.4;
     stroke-linecap: round;
     stroke-linejoin: round;
-  }
-  .refresh.busy svg {
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .refresh.busy svg {
-      animation: none;
-    }
   }
   .error {
     margin: 0 var(--sp-25) var(--sp-1);
@@ -472,13 +440,13 @@
   .empty-title {
     margin: 0;
     color: var(--text);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 500;
   }
   .empty-hint {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .days,
   .card,
@@ -502,7 +470,7 @@
     padding: var(--sp-2) var(--sp-25) var(--sp-1);
     background: var(--surface-1);
     color: var(--accent-fg);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     line-height: 1.2;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -527,7 +495,7 @@
     flex: 0 0 auto;
     padding-right: var(--sp-25);
     color: var(--muted);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
@@ -565,9 +533,7 @@
     background: var(--surface-3);
   }
   .commit.active {
-    border-left-color: var(--accent);
     background: color-mix(in srgb, var(--accent) 12%, var(--surface-3));
-    box-shadow: inset 1px 0 0 var(--accent);
   }
   .head-row {
     display: flex;
@@ -579,7 +545,7 @@
     flex: 1;
     flex-direction: column;
     justify-content: center;
-    gap: 3px;
+    gap: var(--sp-0);
     min-width: 0;
     container-type: inline-size;
     padding: var(--sp-1) var(--sp-25);
@@ -595,7 +561,7 @@
   .msg {
     overflow: hidden;
     color: var(--text);
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-weight: 500;
     line-height: 1.25;
     text-overflow: ellipsis;
@@ -607,7 +573,7 @@
     gap: var(--sp-1);
     min-width: 0;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     line-height: 1.2;
   }
   .meta code {
@@ -724,8 +690,8 @@
     justify-content: center;
     min-width: 18px;
     height: 18px;
-    padding: 0 4px;
-    border-radius: 4px;
+    padding: 0 var(--sp-05);
+    border-radius: var(--r-sm);
     background: color-mix(in srgb, var(--badge) 18%, transparent);
     color: var(--badge);
     font-size: var(--fs-2xs);
@@ -741,42 +707,10 @@
   .badge.D {
     --badge: var(--err);
   }
-  .files button {
-    flex: 0 0 auto;
-    min-height: 28px;
-    padding: 0 var(--sp-1);
-    border: 0;
-    border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--accent-fg);
-    font-size: 12px;
-    font-weight: 500;
-  }
-  .files button:hover:not(:disabled) {
-    background: var(--surface-3);
-  }
   .actions {
     display: flex;
     justify-content: flex-end;
     padding: var(--sp-1) var(--sp-25) var(--sp-25);
-  }
-  .actions button {
-    min-height: 32px;
-    padding: 0 var(--sp-3);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: transparent;
-    color: var(--text);
-    font-size: var(--fs-sm);
-    font-weight: 500;
-  }
-  .actions button:hover:not(:disabled) {
-    background: var(--surface-2);
-  }
-  .actions button:disabled,
-  .files button:disabled {
-    cursor: default;
-    opacity: 0.5;
   }
   /* High contrast is a legibility guarantee, not a place to soften surfaces. */
   :global(:root[data-theme='hc-black']) .card {

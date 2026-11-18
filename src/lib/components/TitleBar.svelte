@@ -53,7 +53,7 @@
     <div class="nav">
       <button
         type="button"
-        class="step"
+        class="icon-btn step"
         aria-label="Undo (Ctrl+Z)"
         use:tip={'Undo (Ctrl+Z)'}
         disabled={!hasTab || !undoState.canUndo}
@@ -63,7 +63,7 @@
       </button>
       <button
         type="button"
-        class="step"
+        class="icon-btn step"
         aria-label="Redo (Ctrl+Y)"
         use:tip={'Redo (Ctrl+Y)'}
         disabled={!hasTab || !undoState.canRedo}
@@ -148,22 +148,9 @@
     flex: 0 0 auto;
     gap: var(--sp-0);
   }
-  .step {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: var(--r-sm);
-    color: var(--muted);
-  }
-  .step:hover:not(:disabled) {
-    background: var(--surface-2);
-    color: var(--text);
-  }
   .step:disabled {
     /* Unmistakable: an arrow that cannot act must not look clickable. */
     opacity: 0.35;
-    cursor: default;
   }
   .step svg {
     width: 12px;

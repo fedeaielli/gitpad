@@ -144,7 +144,7 @@
       ></textarea>
       <button
         type="submit"
-        class="commit"
+        class="btn btn-primary commit"
         disabled={blocked || !commitMessage.trim()}
       >
         Commit
@@ -177,7 +177,7 @@
               <span class="path">{change.path}</span>
             </button>
             <button
-              class="discard"
+              class="icon-btn discard"
               aria-label={conflicted.has(change.path)
                 ? 'Resolve the conflict first'
                 : 'Discard changes'}
@@ -237,8 +237,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: 0;
     border-radius: var(--r-sm);
@@ -256,11 +256,6 @@
   }
   .acts button.spinning svg {
     animation: spin 900ms linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
   /* Same stroke language as FileIcon, so the panel reads as one icon set. */
   svg {
@@ -300,21 +295,7 @@
     color: var(--muted);
   }
   .commit {
-    padding: var(--sp-1) var(--sp-2);
-    border: 0;
-    border-radius: var(--r-md);
-    background: var(--accent);
-    color: var(--on-accent);
-    font-family: inherit;
-    font-size: var(--fs-sm);
-    cursor: pointer;
-  }
-  .commit:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--accent) 88%, #fff);
-  }
-  .commit:disabled {
-    cursor: default;
-    opacity: 0.5;
+    width: 100%;
   }
   .section {
     padding-top: var(--sp-1);
@@ -382,8 +363,8 @@
     justify-content: center;
     min-width: 18px;
     height: 18px;
-    padding: 0 4px;
-    border-radius: 4px;
+    padding: 0 var(--sp-05);
+    border-radius: var(--r-sm);
     background: color-mix(in srgb, var(--badge) 18%, transparent);
     color: var(--badge);
     font-size: var(--fs-2xs);
@@ -400,18 +381,7 @@
     --badge: var(--err);
   }
   .discard {
-    display: flex;
     flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
     opacity: 0;
   }
   /* Hidden until the row is hovered, but not from the keyboard. */

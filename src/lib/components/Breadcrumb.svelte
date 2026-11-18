@@ -44,7 +44,7 @@
     gap: var(--sp-05);
     min-width: 0;
     overflow: hidden;
-    padding: 3px var(--sp-25);
+    padding: var(--sp-0) var(--sp-25);
     background: var(--editor-surface);
     color: var(--muted);
     font-size: var(--fs-sm);

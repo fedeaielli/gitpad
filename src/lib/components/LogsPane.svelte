@@ -159,7 +159,7 @@
           {/each}
         </select>
       </div>
-      <button type="button" class="refresh sweep" disabled={loading} onclick={() => void refresh()}>
+      <button type="button" class="btn btn-primary refresh sweep" disabled={loading} onclick={() => void refresh()}>
         {loading ? 'Loading…' : 'Refresh'}
       </button>
     </div>
@@ -178,7 +178,7 @@
           {#each CATEGORIES as item (item.id)}
             <button
               type="button"
-              class="chip"
+              class="btn chip"
               aria-pressed={categories.includes(item.id)}
               onclick={() => toggle(item.id)}
             >
@@ -211,7 +211,7 @@
         : `${Math.min(total, limit)} of ${total} ${total === 1 ? 'line' : 'lines'}`}
     </span>
     {#if total > limit}
-      <button type="button" class="more" onclick={() => (limit += 300)}>Show more</button>
+      <button type="button" class="text-btn more" onclick={() => (limit += 300)}>Show more</button>
     {/if}
   </div>
 
@@ -286,58 +286,24 @@
     color: var(--accent-fg);
     font-size: var(--fs-xs);
   }
-  select,
-  input {
-    box-sizing: border-box;
+  .group select,
+  .group input {
     width: 100%;
-    height: 32px;
-    padding: 0 var(--sp-2);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-1);
-    color: var(--text);
-    font: inherit;
-  }
-  .refresh,
-  .more {
-    flex: 0 0 auto;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-1);
-    color: var(--text);
-    font: inherit;
-    cursor: pointer;
   }
   .refresh {
-    box-sizing: border-box;
+    flex: 0 0 auto;
     min-width: 96px;
-    height: 32px;
-    padding: 0 var(--sp-3);
-    border-color: var(--accent);
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-  .refresh:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--accent) 88%, black);
-  }
-  .refresh:disabled {
-    opacity: 0.55;
-    cursor: default;
   }
   .chips {
     display: flex;
     gap: var(--sp-05);
   }
   .chip {
-    height: 32px;
-    padding: 0 var(--sp-2);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-1);
+    flex: 0 0 auto;
     color: var(--muted);
-    font: inherit;
-    font-size: var(--fs-md);
-    cursor: pointer;
+  }
+  .chip:hover:not(:disabled) {
+    color: var(--text);
   }
   .chip[aria-pressed='true'] {
     border-color: var(--accent);
@@ -360,17 +326,11 @@
     color: var(--err);
   }
   .more {
-    height: 24px;
-    padding: 0 var(--sp-2);
-    border-color: var(--border);
-    background: transparent;
     color: var(--muted);
     font-size: var(--fs-xs);
   }
-  .more:hover {
+  .more:hover:not(:disabled) {
     color: var(--text);
-    border-color: var(--border-strong);
-    background: transparent;
   }
   .log {
     flex: 1 1 auto;
@@ -380,7 +340,7 @@
     border-radius: var(--r-md);
     background: var(--surface-1);
     font-family: ui-monospace, monospace;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     line-height: 1.55;
   }
   .session {
@@ -424,7 +384,7 @@
     display: grid;
     grid-template-columns: 68px 48px 56px 1fr;
     gap: var(--sp-2);
-    padding: 2px var(--sp-2);
+    padding: var(--sp-0) var(--sp-2);
     border-left: 2px solid transparent;
     white-space: pre-wrap;
     overflow-wrap: anywhere;

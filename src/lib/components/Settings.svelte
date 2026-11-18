@@ -1573,7 +1573,7 @@
   }
   .bar {
     height: 3px;
-    border-radius: 2px;
+    border-radius: var(--sp-0);
     background: var(--p-fg);
   }
   .bar.title {

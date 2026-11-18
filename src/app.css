@@ -313,6 +313,24 @@ button:not(.win):not(:disabled):active {
   border-radius: var(--r-md);
 }
 
+/* Quiet inline action: a link that is a button. */
+.text-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.text-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.text-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
 input,
 select {
   box-sizing: border-box;

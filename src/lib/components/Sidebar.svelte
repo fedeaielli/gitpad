@@ -53,7 +53,7 @@
     {#if ui.activeView === 'files'}
       <div class="actions">
         {#if ui.sidebarWidth >= NARROW}
-          <button use:tip={'New file'} aria-label="New file" onclick={() => tree?.createAtRoot('file')}>
+          <button class="icon-btn" use:tip={'New file'} aria-label="New file" onclick={() => tree?.createAtRoot('file')}>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M4 1.8h5.4l2.8 2.8v9.6H4z" />
               <path d="M9.4 1.8v2.8h2.8" />
@@ -61,6 +61,7 @@
             </svg>
           </button>
           <button
+            class="icon-btn"
             use:tip={'New folder'}
             aria-label="New folder"
             onclick={() => tree?.createAtRoot('folder')}
@@ -72,7 +73,7 @@
           </button>
         {/if}
         <button
-          class="options"
+          class="icon-btn options"
           bind:this={trigger}
           use:tip={'Tree options'}
           aria-label="Tree options"
@@ -176,8 +177,6 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    /* Rounded by the wrapper that also holds the activity bar. */
-    border-radius: 0;
     background: var(--surface-1);
   }
   .head {
@@ -201,19 +200,6 @@
     gap: var(--sp-05);
     margin-left: auto;
   }
-  .actions button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 26px;
-    border: 0;
-    border-radius: var(--r-sm);
-    background: transparent;
-    color: var(--muted);
-    font-size: var(--fs-lg);
-    line-height: 26px;
-    padding: 0 5px;
-  }
   .actions svg {
     display: block;
     width: 16px;
@@ -223,10 +209,6 @@
     stroke-width: 1.2;
     stroke-linecap: round;
     stroke-linejoin: round;
-  }
-  .actions button:hover {
-    color: var(--text);
-    background: var(--surface-2);
   }
   .dots {
     width: 16px;
@@ -242,8 +224,8 @@
   }
   .menu {
     position: absolute;
-    top: calc(100% - 2px);
-    right: 6px;
+    top: calc(100% - var(--sp-0));
+    right: var(--sp-1);
     z-index: 41;
     min-width: 180px;
     padding: var(--sp-1);

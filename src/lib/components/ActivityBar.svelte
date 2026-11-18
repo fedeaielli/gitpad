@@ -218,8 +218,6 @@
     align-items: center;
     gap: var(--sp-0);
     padding: var(--sp-05);
-    /* Rounded by the wrapper that also holds the sidebar. */
-    border-radius: 0;
     box-sizing: border-box;
     background: var(--surface-1);
   }
@@ -240,23 +238,14 @@
   .item:hover {
     color: var(--text);
   }
-  /* The view stays selected when the panel is closed; only the bar fades. */
+  /* The view stays selected when the panel is closed; the tint fades. */
   .item.active {
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-1));
+    color: var(--accent-fg);
+  }
+  .item.active:not(.open) {
     background: var(--surface-2);
     color: var(--text);
-  }
-  .item.active::before {
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: 0;
-    width: 2px;
-    background: var(--accent);
-    content: '';
-  }
-  .item.active:not(.open)::before {
-    background: var(--muted);
-    opacity: 0.4;
   }
   .item svg {
     width: 22px;
@@ -276,7 +265,7 @@
     right: 4px;
     min-width: 14px;
     height: 14px;
-    padding: 0 3px;
+    padding: 0 var(--sp-0);
     border-radius: var(--r-pill);
     background: var(--accent);
     color: var(--on-accent);

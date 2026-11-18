@@ -303,7 +303,7 @@
   }
   /* Fill and colour together: colour alone is not a state. */
   .icon.active {
-    background: var(--surface-2);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
     color: var(--accent-fg);
   }
   .icon svg {
