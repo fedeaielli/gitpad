@@ -11,7 +11,7 @@
   import { ui } from '../stores/ui.svelte'
   import { applyGitStatus, errorMessage, type GitStatus } from '../stores/git.svelte'
   import { pushToast } from '../stores/toasts.svelte'
-  import { loadUser, signInWithPat, type GithubUser } from '../stores/auth.svelte'
+  import { loadUser, signInWithPat } from '../stores/auth.svelte'
   import GithubLogin from './GithubLogin.svelte'
 
   interface RepoInfo {
@@ -54,7 +54,6 @@
     done: { title: "You're set", sub: 'Everything is ready to go' },
   }
   let token = $state('')
-  let user = $state<GithubUser | null>(null)
   let repo = $state<RepoInfo | null>(null)
   /// Folder that will hold the clone; empty keeps the app data dir.
   let folder = $state('')
@@ -97,9 +96,8 @@
     busy = true
     error = null
     try {
-      user = await signInWithPat(token.trim())
-      goRepo()
-    } catch (e) {
+      await signInWithPat(token.trim())
+      goRepo()    } catch (e) {
       fail(e)
     }
   }
@@ -271,21 +269,6 @@
       {/each}
     </ol>
     {#if step === 'welcome'}
-      <p class="lead">
-        Markdown notes in a Git repository you own. Saved locally and pushed to GitHub.
-      </p>
-      <p class="label">Keyboard shortcuts</p>
-      <ul class="shortcuts">
-        <li>
-          <span class="keys"><kbd>Ctrl</kbd><kbd>P</kbd></span><span>Command palette</span>
-        </li>
-        <li>
-          <span class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd></span><span
-            >Markdown preview</span
-          >
-        </li>
-        <li><span class="keys"><kbd>Esc</kbd></span><span>Close palette</span></li>
-      </ul>
       <button class="cta" disabled={busy} onclick={() => (step = 'auth')}>
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
@@ -298,7 +281,6 @@
       <button class="full" disabled={busy} onclick={useLocal}>
         {busy ? 'Opening…' : 'Use a local folder'}
       </button>
-      <p class="helper">An existing folder works too — GitPad initializes it if needed.</p>
     {:else if step === 'auth'}
       <label class="label" for="pat">Personal access token</label>
       <div class="field">
@@ -336,7 +318,6 @@
         <div class="box">
           <p class="repo-name"><code>{repo.fullName}</code></p>
           {#if repo.private}<span class="pill">private</span>{/if}
-          <p class="repo-url"><code>{repo.cloneUrl}</code></p>
         </div>
         <p class="label">Local folder</p>
         <div class="folder">
@@ -367,10 +348,7 @@
               : 'No remote: commits stay on this machine until you add one.'}
           </p>
         </div>
-      {:else}
-        <p class="lead">Edits commit locally right away. Pushes happen on idle, when the window loses focus and on close.</p>
       {/if}
-      <p class="hintbox"><kbd>Ctrl</kbd><kbd>P</kbd> opens the command palette</p>
       <button class="cta" onclick={finish}>Start editing</button>
     {/if}
     {#if step === 'auth' || step === 'repo'}
@@ -388,9 +366,6 @@
         {/if}
         <button class="fbtn" disabled={busy} onclick={useLocal}>Continue offline</button>
       </div>
-    {/if}
-    {#if user && step !== 'done'}
-      <p class="muted">Signed in as {user.login}</p>
     {/if}
     {#if storageNote}
       <p class="warn">{storageNote}</p>
@@ -415,10 +390,10 @@
   .card {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-25);
+    gap: var(--sp-3);
     width: 480px;
     max-width: calc(100vw - 32px);
-    padding: 20px;
+    padding: 24px;
     background: var(--surface-3);
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
@@ -528,8 +503,8 @@
     display: flex;
     align-items: center;
     gap: var(--sp-3);
-    min-height: 84px;
-    margin: -26px 14px 0;
+    min-height: 96px;
+    margin: -30px 14px 0;
     padding: 0 var(--sp-3);
     border-radius: 10px;
     background: linear-gradient(
@@ -562,10 +537,6 @@
   .panel .sub {
     color: color-mix(in srgb, var(--on-accent) 76%, transparent);
   }
-  .lead {
-    font-size: var(--fs-lg);
-    line-height: 1.45;
-  }
   /* The last card is the only one that means "done": the check draws in. */
   .panel.done .badge {
     background: color-mix(in srgb, var(--on-accent) 22%, transparent);
@@ -594,17 +565,6 @@
     to {
       stroke-dashoffset: 0;
     }
-  }
-  .hintbox {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--sp-2);
-    margin: 0;
-    padding: var(--sp-25) var(--sp-3);
-    border: 1px solid var(--border);
-    border-radius: var(--r-md);
-    background: var(--surface-1);
   }
   /* The footer carries the sideways moves: back, and the offline way out. */
   .foot {
@@ -671,37 +631,6 @@
     line-height: 1.5;
   }
   code {
-    font-family: ui-monospace, monospace;
-    font-size: var(--fs-sm);
-  }
-  .muted {
-    color: var(--muted);
-    font-size: var(--fs-xs);
-    overflow-wrap: anywhere;
-  }
-  .shortcuts {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .shortcuts li {
-    display: grid;
-    grid-template-columns: 150px 1fr;
-    align-items: center;
-    gap: var(--sp-2);
-  }
-  .keys {
-    display: flex;
-    gap: var(--sp-05);
-  }
-  kbd {
-    padding: 3px var(--sp-2);
-    border: 1px solid var(--border);
-    border-radius: var(--r-sm);
-    background: var(--surface-2);
     font-family: ui-monospace, monospace;
     font-size: var(--fs-sm);
   }
@@ -848,11 +777,6 @@
     padding: var(--sp-2) 14px;
     border-radius: var(--r-md);
     font-size: var(--fs-sm);
-  }
-  .helper {
-    color: var(--muted);
-    font-size: var(--fs-xs);
-    text-align: center;
   }
   .skip {
     align-self: center;
