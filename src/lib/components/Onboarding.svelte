@@ -30,9 +30,22 @@
   }
   type Step = 'welcome' | 'auth' | 'repo' | 'done'
 
+  const STEPS = [
+    { id: 'welcome', name: 'Start' },
+    { id: 'auth', name: 'GitHub' },
+    { id: 'repo', name: 'Repo' },
+    { id: 'done', name: 'Ready' },
+  ] as const
+
   let { onskip }: { onskip: () => void } = $props()
 
   let step = $state<Step>('welcome')
+  /// A step once reached stays open, the way a linear stepper behaves.
+  let furthest = $state(0)
+  const index = $derived(STEPS.findIndex((s) => s.id === step))
+  $effect(() => {
+    if (index > furthest) furthest = index
+  })
   let token = $state('')
   let user = $state<GithubUser | null>(null)
   let repo = $state<RepoInfo | null>(null)
@@ -179,6 +192,39 @@
     class="card"
     out:fly={{ y: 6, opacity: 1, duration: prefersReducedMotion.current ? 0 : 160, easing: cubicOut }}
   >
+    <ol class="steps" aria-label="Setup steps">
+      {#each STEPS as s, i}
+        <li class:done={i < index} class:active={i === index}>
+          <button
+            type="button"
+            class="step"
+            disabled={i > furthest}
+            aria-current={i === index ? 'step' : undefined}
+            onclick={() => (step = s.id)}
+          >
+            <span class="dot" aria-hidden="true">
+              {#if i < index}
+                <svg
+                  viewBox="0 0 16 16"
+                  width="10"
+                  height="10"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 8.4 6.3 12 13 4.6" />
+                </svg>
+              {:else}
+                {i + 1}
+              {/if}
+            </span>
+            <span class="name">{s.name}</span>
+          </button>
+        </li>
+      {/each}
+    </ol>
     {#if step === 'welcome'}
       <div class="head">
         <div class="brand"><span class="mark" aria-hidden="true"></span></div>
@@ -394,6 +440,79 @@
       opacity: 0;
       transform: translateY(4px);
     }
+  }
+  /* The path through the wizard: a dot and a label per step, aligned with the
+     drift stepper, with the line between them turning accent once passed. */
+  .steps {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .steps li {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    min-width: 0;
+  }
+  .steps li:last-child {
+    flex: 0 0 auto;
+  }
+  .steps li:not(:last-child)::after {
+    content: '';
+    flex: 1;
+    min-width: 20px;
+    height: 1px;
+    margin-left: var(--sp-2);
+    background: var(--divider);
+  }
+  .steps li.done::after {
+    background: var(--accent);
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: none;
+    color: var(--muted);
+    font-size: var(--fs-xs);
+    white-space: nowrap;
+  }
+  .step:not(:disabled):hover {
+    color: var(--text);
+  }
+  .step:disabled {
+    opacity: 1;
+    cursor: default;
+  }
+  li.active .step,
+  li.done .step {
+    color: var(--text);
+  }
+  .dot {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--border-strong);
+    border-radius: 50%;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  li.active .dot {
+    border-color: var(--accent);
+    color: var(--text);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+  li.done .dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
   }
   .head {
     display: flex;
