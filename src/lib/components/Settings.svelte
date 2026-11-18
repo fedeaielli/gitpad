@@ -698,20 +698,25 @@
               </ul>
             {/if}
             <div class="add">
-              <input
-                placeholder="ext"
-                aria-label="File extension"
-                bind:value={newExt}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') addExtension()
-                }}
-              />
-              <select bind:value={newLang} aria-label="Language for the extension">
-                {#each LANGUAGES as lang (lang)}
-                  <option value={lang}>{lang}</option>
-                {/each}
-              </select>
-              <button class="primary" onclick={addExtension}>Add</button>
+              <label class="add-field">
+                <span class="label">Extension</span>
+                <input
+                  placeholder="e.g. rs"
+                  bind:value={newExt}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter') addExtension()
+                  }}
+                />
+              </label>
+              <label class="add-field">
+                <span class="label">Language</span>
+                <select bind:value={newLang}>
+                  {#each LANGUAGES as lang (lang)}
+                    <option value={lang}>{lang}</option>
+                  {/each}
+                </select>
+              </label>
+              <button class="change accent" onclick={addExtension}>Add</button>
             </div>
             {#if extMessage}
               <p class="note" role="status">{extMessage}</p>
@@ -1444,15 +1449,26 @@
     font-size: var(--fs-sm);
   }
   .add {
-    display: flex;
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr) auto;
+    align-items: end;
     gap: var(--sp-2);
   }
-  .add input {
-    flex: 1;
+  .add-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-05);
     min-width: 0;
   }
+  .add-field .label {
+    color: var(--accent-fg);
+    font-size: var(--fs-xs);
+  }
+  .add input,
   .add select {
-    flex: 0 0 160px;
+    box-sizing: border-box;
+    width: 100%;
+    height: 32px;
     min-width: 0;
   }
   .account {
