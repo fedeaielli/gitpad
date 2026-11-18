@@ -373,11 +373,20 @@
       <p class="hintbox"><kbd>Ctrl</kbd><kbd>P</kbd> opens the command palette</p>
       <button class="cta" onclick={finish}>Start editing</button>
     {/if}
-    {#if step === 'auth' || (step === 'repo' && repo && !busy)}
+    {#if step === 'auth' || step === 'repo'}
       <div class="foot">
-        <button class="back" onclick={() => (step = step === 'repo' ? 'auth' : 'welcome')}>
-          Back
-        </button>
+        {#if step === 'repo' && !repo}
+          <span></span>
+        {:else}
+          <button
+            class="fbtn"
+            disabled={busy}
+            onclick={() => (step = step === 'repo' ? 'auth' : 'welcome')}
+          >
+            Back
+          </button>
+        {/if}
+        <button class="fbtn" disabled={busy} onclick={useLocal}>Continue offline</button>
       </div>
     {/if}
     {#if user && step !== 'done'}
@@ -597,11 +606,13 @@
     border-radius: var(--r-md);
     background: var(--surface-1);
   }
-  /* The footer keeps only the way back: forward lives with each step's action. */
+  /* The footer carries the sideways moves: back, and the offline way out. */
   .foot {
     display: flex;
+    justify-content: space-between;
+    gap: var(--sp-2);
   }
-  .back {
+  .fbtn {
     padding: var(--sp-1) 14px;
     font-size: var(--fs-sm);
   }
