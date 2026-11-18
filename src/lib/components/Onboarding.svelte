@@ -283,7 +283,7 @@
       {/each}
     </ol>
     {#if step === 'welcome'}
-      <button class="cta" disabled={busy} onclick={() => go('auth')}>
+      <button class="btn btn-primary cta" disabled={busy} onclick={() => go('auth')}>
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
           <path
             fill="currentColor"
@@ -292,7 +292,7 @@
         </svg>
         Get started with GitHub
       </button>
-      <button class="full" disabled={busy} onclick={useLocal}>
+      <button class="btn full" disabled={busy} onclick={useLocal}>
         {busy ? 'Opening…' : 'Use a local folder'}
       </button>
     {:else if step === 'auth'}
@@ -308,7 +308,7 @@
           aria-invalid={!!error}
           aria-describedby={error ? 'pat-error' : undefined}
         />
-        <button class="primary inline" disabled={busy || !token.trim()} onclick={validatePat}>
+        <button class="btn inline" disabled={busy || !token.trim()} onclick={validatePat}>
           {busy ? 'Validating…' : 'Validate'}
         </button>
       </div>
@@ -341,15 +341,15 @@
             </svg>
             <span class="path" class:set={!!target}>{target || 'Default app folder'}</span>
           </p>
-          <button class="choose" disabled={busy} onclick={chooseFolder}>
+          <button class="btn" disabled={busy} onclick={chooseFolder}>
             {folder ? 'Change…' : 'Choose…'}
           </button>
         </div>
-        <button class="cta" disabled={busy} onclick={clone}>Clone and open</button>
+        <button class="btn btn-primary cta" disabled={busy} onclick={clone}>Clone and open</button>
       {:else}
         <div class="row">
-          <button onclick={() => go('auth')}>Back</button>
-          <button class="primary" onclick={goRepo}>Retry</button>
+          <button class="btn" onclick={() => go('auth')}>Back</button>
+          <button class="btn" onclick={goRepo}>Retry</button>
         </div>
       {/if}
     {:else}
@@ -363,7 +363,7 @@
           </p>
         </div>
       {/if}
-      <button class="cta" onclick={finish}>Start editing</button>
+      <button class="btn btn-primary cta" onclick={finish}>Start editing</button>
     {/if}
     {#if step === 'auth' || step === 'repo'}
       <div class="foot">
@@ -371,14 +371,14 @@
           <span></span>
         {:else}
           <button
-            class="fbtn"
+            class="btn btn-ghost fbtn"
             disabled={busy}
             onclick={() => go(step === 'repo' ? 'auth' : 'welcome')}
           >
             Back
           </button>
         {/if}
-        <button class="fbtn" disabled={busy} onclick={useLocal}>Continue offline</button>
+        <button class="btn btn-ghost fbtn" disabled={busy} onclick={useLocal}>Continue offline</button>
       </div>
     {/if}
     {#if storageNote}
@@ -406,19 +406,19 @@
     flex-direction: column;
     gap: var(--sp-3);
     width: 480px;
-    max-width: calc(100vw - 32px);
-    padding: 24px;
-    background: var(--surface-3);
+    max-width: calc(100vw - var(--sp-6));
+    padding: var(--sp-6);
+    background: var(--surface-1);
     border: 1px solid var(--border);
     border-radius: var(--r-overlay);
     box-shadow: var(--shadow-2);
     animation:
-      gp-fade-in 200ms var(--ease-out),
-      gp-panel-in 200ms var(--ease-out);
+      gp-fade-in var(--t-base) var(--ease-out),
+      gp-panel-in var(--t-spring) var(--ease-spring);
   }
   /* Each step's blocks mount fresh, so the cascade replays per step. */
   .card > * {
-    animation: gp-step-in 160ms var(--ease-out) both;
+    animation: gp-step-in var(--t-base) var(--ease-out) both;
   }
   .card > :nth-child(2) {
     animation-delay: 30ms;
@@ -481,8 +481,8 @@
   .step {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 6px;
+    gap: var(--sp-1);
+    padding: var(--sp-05) var(--sp-1);
     border: 0;
     border-radius: var(--r-sm);
     background: none;
@@ -509,7 +509,7 @@
     height: 20px;
     border: 1px solid var(--border-strong);
     border-radius: 50%;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-variant-numeric: tabular-nums;
     transition:
       background-color var(--t-base) var(--ease-out),
@@ -534,9 +534,9 @@
     align-items: center;
     gap: var(--sp-3);
     min-height: 96px;
-    margin: -30px 14px 0;
+    margin: calc(-1 * (var(--sp-6) + var(--sp-1))) var(--sp-3) 0;
     padding: 0 var(--sp-3);
-    border-radius: 10px;
+    border-radius: var(--r-lg);
     background: linear-gradient(
       100deg,
       var(--accent) 0%,
@@ -570,12 +570,12 @@
   /* The last card is the only one that means "done": the check draws in. */
   .panel.done .badge {
     background: color-mix(in srgb, var(--on-accent) 22%, transparent);
-    animation: gp-check-pop 240ms var(--ease-out);
+    animation: gp-check-pop var(--t-base) var(--ease-out);
   }
   .panel.done .badge svg path {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    animation: gp-check-draw 180ms 100ms var(--ease-out) forwards;
+    animation: gp-check-draw var(--t-fast) var(--t-base) var(--ease-out) forwards;
   }
   @keyframes gp-check-pop {
     from {
@@ -603,7 +603,6 @@
     gap: var(--sp-2);
   }
   .fbtn {
-    padding: var(--sp-1) 14px;
     font-size: var(--fs-sm);
   }
   .label {
@@ -617,10 +616,10 @@
     display: flex;
     align-items: center;
     gap: var(--sp-05);
-    padding: 3px 3px 3px var(--sp-25);
+    padding: var(--sp-0) var(--sp-0) var(--sp-0) var(--sp-25);
     border: 1px solid var(--border-strong);
     border-radius: var(--r-md);
-    background: var(--surface-1);
+    background: var(--surface-0);
   }
   .field:focus-within {
     outline: var(--focus-ring);
@@ -633,6 +632,7 @@
   }
   .field input {
     flex: 1;
+    height: auto;
     min-width: 0;
     padding: 0;
     border: 0;
@@ -702,7 +702,7 @@
     padding: var(--sp-2) var(--sp-25);
     border: 1px solid var(--border);
     border-radius: var(--r-sm);
-    background: var(--surface-1);
+    background: var(--surface-0);
     color: var(--muted);
     font-size: var(--fs-sm);
   }
@@ -717,17 +717,6 @@
   .path.set {
     color: var(--text);
   }
-  .choose {
-    flex: 0 0 auto;
-    padding: 0 14px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-1);
-    font-size: var(--fs-sm);
-  }
-  .choose:hover:not(:disabled) {
-    border-color: var(--border-strong);
-  }
   .box {
     display: flex;
     flex-direction: column;
@@ -736,7 +725,7 @@
     padding: var(--sp-3);
     border: 1px solid var(--border);
     border-radius: var(--r-md);
-    background: var(--surface-1);
+    background: var(--surface-0);
   }
   .repo-name code {
     font-size: var(--fs-lg);
@@ -747,7 +736,7 @@
     overflow-wrap: anywhere;
   }
   .pill {
-    padding: 1px var(--sp-2);
+    padding: var(--sp-0) var(--sp-2);
     border: 1px solid var(--border);
     border-radius: var(--r-pill);
     color: var(--muted);
@@ -774,39 +763,12 @@
     color: var(--accent-fg);
     font-size: var(--fs-sm);
   }
-  button {
-    padding: var(--sp-1) var(--sp-3);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-md);
-    background: var(--surface-2);
-  }
-  button:hover:not(:disabled) {
-    border-color: var(--border-strong);
-  }
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-  .primary {
-    color: var(--ok);
-  }
   /* The one action worth the accent: every card keeps its own weight. */
   .cta {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-2);
-    padding: var(--sp-2) 14px;
-    border: 1px solid var(--accent);
-    border-radius: var(--r-md);
-    background: var(--accent);
-    color: var(--on-accent);
-    font-size: var(--fs-sm);
+    width: 100%;
   }
   .full {
-    padding: var(--sp-2) 14px;
-    border-radius: var(--r-md);
-    font-size: var(--fs-sm);
+    width: 100%;
   }
   .skip {
     align-self: center;
