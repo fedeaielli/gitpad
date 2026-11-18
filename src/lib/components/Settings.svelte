@@ -15,6 +15,7 @@
   import { errorMessage, applyGitStatus, gitStatus, type GitStatus } from '../stores/git.svelte'
   import { auth, forgetUser, loadUser, signInWithPat } from '../stores/auth.svelte'
   import Check from './Check.svelte'
+  import Select from './Select.svelte'
   import GithubLogin from './GithubLogin.svelte'
   import LogsPane from './LogsPane.svelte'
   import { tabs, closeTab } from '../stores/tabs.svelte'
@@ -569,14 +570,15 @@
             <h3>Files</h3>
             <label class="field">
               <span>Sort by</span>
-              <select
+              <Select
                 bind:value={ui.sortMode}
+                options={[
+                  { value: 'name', label: 'Name' },
+                  { value: 'modified', label: 'Modified' },
+                  { value: 'type', label: 'Type' },
+                ]}
                 onchange={() => (ui.sortDesc = defaultDesc(ui.sortMode))}
-              >
-                <option value="name">Name</option>
-                <option value="modified">Modified</option>
-                <option value="type">Type</option>
-              </select>
+              />
             </label>
             <label class="field">
               <span>Descending</span>
@@ -686,12 +688,13 @@
             </label>
             <label class="field">
               <span>Font family</span>
-              <select class="wide" bind:value={ui.fontFamily}>
-                <option value={DEFAULT_FONT}>Default (monospace)</option>
-                {#each fontOptions as font (font)}
-                  <option value={font}>{font}</option>
-                {/each}
-              </select>
+              <Select
+                bind:value={ui.fontFamily}
+                options={[
+                  { value: DEFAULT_FONT, label: 'Default (monospace)' },
+                  ...fontOptions.map((font) => ({ value: font, label: font })),
+                ]}
+              />
             </label>
             <p
               class="font-sample"
@@ -791,11 +794,10 @@
               </label>
               <label class="add-field">
                 <span class="label">Language</span>
-                <select bind:value={newLang}>
-                  {#each LANGUAGES as lang (lang)}
-                    <option value={lang}>{lang}</option>
-                  {/each}
-                </select>
+                <Select
+                  bind:value={newLang}
+                  options={LANGUAGES.map((lang) => ({ value: lang, label: lang }))}
+                />
               </label>
               <button class="btn btn-primary sweep" onclick={addExtension}>Add</button>
             </div>
@@ -1133,6 +1135,8 @@
     align-items: center;
     gap: var(--sp-4);
     min-height: 32px;
+    /* Caps the select popup's trigger; see Select.svelte. */
+    --select-max: 340px;
   }
   .field > :last-child {
     justify-self: end;
@@ -1177,7 +1181,6 @@
     color: var(--muted);
   }
   /* One control width: the value it sets, not the whole dialog. */
-  .field select,
   .field input[type='text'],
   .field input[type='number'],
   .field .inline,
@@ -1204,10 +1207,6 @@
   .inline input[type='range'] {
     flex: 1;
     max-width: 320px;
-  }
-  .wide {
-    width: 100%;
-    max-width: 340px;
   }
   /* One line at the chosen family and size: dragging the slider must not
      reflow the tab, so the box keeps its height and clips. */
@@ -1702,8 +1701,7 @@
     color: var(--accent-fg);
     font-size: var(--fs-xs);
   }
-  .add input,
-  .add select {
+  .add input {
     box-sizing: border-box;
     width: 100%;
     height: 32px;
