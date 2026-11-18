@@ -243,7 +243,7 @@
           <button
             type="button"
             class="step"
-            disabled={i > furthest}
+            disabled={busy || i > furthest}
             aria-current={i === index ? 'step' : undefined}
             onclick={() => (step = s.id)}
           >
