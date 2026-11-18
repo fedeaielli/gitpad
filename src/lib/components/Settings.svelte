@@ -676,15 +676,27 @@
         {:else if tab === 'extensions'}
           <section class="section">
             <h3>File types</h3>
-            <ul class="extensions">
-              {#each extensions as [ext, lang] (ext)}
-                <li>
-                  <span class="ext">.{ext}</span>
-                  <span class="lang">{lang}</span>
-                  <button aria-label="Remove .{ext}" onclick={() => removeExtension(ext)}>×</button>
-                </li>
-              {/each}
-            </ul>
+            {#if extensions.length === 0}
+              <p class="empty">
+                No custom file types yet. Add one below to override the language GitPad uses.
+              </p>
+            {:else}
+              <ul class="extensions">
+                {#each extensions as [ext, lang] (ext)}
+                  <li>
+                    <span class="ext">.{ext}</span>
+                    <span class="lang">{lang}</span>
+                    <button
+                      class="remove"
+                      aria-label="Remove .{ext}"
+                      onclick={() => removeExtension(ext)}
+                    >
+                      ×
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
             <div class="add">
               <input
                 placeholder="ext"
@@ -1372,33 +1384,64 @@
   .extensions {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-0);
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: inherit;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
   }
   .extensions li {
-    display: flex;
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) 32px;
     align-items: center;
-    gap: var(--sp-25);
-    padding: var(--sp-05) var(--sp-2);
+    gap: var(--sp-3);
+    min-height: 44px;
+    padding: 0 var(--sp-2) 0 var(--sp-3);
+  }
+  .extensions li + li {
+    border-top: 1px solid var(--divider);
+  }
+  .ext,
+  .lang {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .ext {
+    font-family: ui-monospace, monospace;
+  }
+  .lang {
+    color: var(--muted);
+  }
+  .remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
     border-radius: var(--r-sm);
-    background: var(--surface-0);
-  }
-  .extensions .ext {
-    width: 120px;
-  }
-  .extensions .lang {
-    flex: 1;
-    min-width: 0;
+    background: transparent;
     color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
   }
-  .extensions button {
-    color: var(--muted);
-  }
-  .extensions button:hover {
+  .remove:hover {
+    background: color-mix(in srgb, var(--err) 12%, transparent);
     color: var(--err);
+  }
+  .empty {
+    margin: 0;
+    padding: var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-1);
+    color: var(--muted);
+    font-size: var(--fs-sm);
   }
   .add {
     display: flex;
