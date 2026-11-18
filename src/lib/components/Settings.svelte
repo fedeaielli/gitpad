@@ -797,7 +797,7 @@
                   {/each}
                 </select>
               </label>
-              <button class="change accent" onclick={addExtension}>Add</button>
+              <button class="change accent sweep" onclick={addExtension}>Add</button>
             </div>
             {#if extMessage}
               <p class="note" role="status">{extMessage}</p>
@@ -818,7 +818,7 @@
                   {/if}
                 </div>
                 <button
-                  class="change accent"
+                  class="change accent sweep"
                   disabled={updateState === 'checking'}
                   onclick={checkForUpdates}
                 >
@@ -1476,7 +1476,7 @@
   .primary {
     color: var(--ok);
   }
-  .change:hover:not(:disabled):not(.accent),
+  .change:hover:not(:disabled),
   .primary:hover:not(:disabled) {
     background: var(--surface-3);
   }
@@ -1484,23 +1484,7 @@
   .change.accent {
     border-color: var(--accent);
     color: var(--on-accent);
-    background-color: var(--accent);
-    /* A 200% gradient: the flat half sits at rest, the shaded half slides in on
-       hover. A pseudo-element under the label would need a stacking context and
-       a text wrapper, so the sweep rides the button's own background. */
-    background-image: linear-gradient(
-      90deg,
-      var(--accent) 0%,
-      var(--accent) 50%,
-      color-mix(in srgb, var(--accent) 62%, black) 68%,
-      color-mix(in srgb, var(--accent) 80%, black) 100%
-    );
-    background-size: 200% 100%;
-    background-position: 0 0;
-    transition: background-position var(--t-base) var(--ease-out);
-  }
-  .change.accent:hover:not(:disabled) {
-    background-position: 100% 0;
+    background: var(--accent);
   }
   .change:disabled,
   .primary:disabled {

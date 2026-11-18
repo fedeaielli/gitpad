@@ -218,6 +218,34 @@ select {
   outline-offset: -2px;
 }
 
+/* A solid accent action: the flat accent sits at rest, the shaded half of a
+   200% gradient slides in on hover. A pseudo-element, not background-image on
+   the button, because a component's own `background` shorthand would erase it. */
+.sweep {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.sweep::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--accent) 50%,
+    color-mix(in srgb, var(--accent) 62%, black) 68%,
+    color-mix(in srgb, var(--accent) 80%, black) 100%
+  );
+  background-size: 200% 100%;
+  background-position: 0 0;
+  transition: background-position var(--t-base) var(--ease-out);
+}
+.sweep:hover:not(:disabled)::before {
+  background-position: 100% 0;
+}
+
 /* Work that waits on the network: a small ring next to the label. */
 .loading {
   flex: 0 0 auto;
