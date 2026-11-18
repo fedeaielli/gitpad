@@ -1476,18 +1476,31 @@
   .primary {
     color: var(--ok);
   }
-  .change:hover:not(:disabled),
+  .change:hover:not(:disabled):not(.accent),
   .primary:hover:not(:disabled) {
     background: var(--surface-3);
   }
   /* The one filled accent action in Settings: update checks. */
   .change.accent {
     border-color: var(--accent);
-    background: var(--accent);
     color: var(--on-accent);
+    background-color: var(--accent);
+    /* A 200% gradient: the flat half sits at rest, the shaded half slides in on
+       hover. A pseudo-element under the label would need a stacking context and
+       a text wrapper, so the sweep rides the button's own background. */
+    background-image: linear-gradient(
+      90deg,
+      var(--accent) 0%,
+      var(--accent) 50%,
+      color-mix(in srgb, var(--accent) 62%, black) 68%,
+      color-mix(in srgb, var(--accent) 80%, black) 100%
+    );
+    background-size: 200% 100%;
+    background-position: 0 0;
+    transition: background-position var(--t-base) var(--ease-out);
   }
   .change.accent:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--accent) 88%, black);
+    background-position: 100% 0;
   }
   .change:disabled,
   .primary:disabled {
