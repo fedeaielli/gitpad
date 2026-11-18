@@ -225,8 +225,8 @@
     })
   }
 
-  // Overshoot during the drag only: ui.* stays clamped, so the panel settles
-  // back to a legal size the moment the pointer is released.
+  // Overshoot during the drag only: ui.* is written once on release, so the
+  // panel holds its illegal size only while the pointer is down.
   let dragHeight = $state<number | null>(null)
   let dragListWidth = $state<number | null>(null)
   /// Set for one spring after a release, so the rubber band settles instead of
