@@ -41,21 +41,17 @@
     }
   }
 
-  function fall(node: Element, { exit }: { exit: ToastExit }) {
-    if (exit === 'timer') {
-      return {
-        duration: prefersReducedMotion.current ? 0 : 280,
-        easing: cubicOut,
-        css: (t: number) =>
-          `opacity: ${1 - t}; translate: 0 ${t * 8}px; transform: scale(${1 - 0.02 * t});`,
-      }
-    }
-    // Slide the whole card out; a few px would read as a flicker.
-    const distance = (node as HTMLElement).offsetHeight
+  function fall(_node: Element, { exit }: { exit: ToastExit }) {
+    // Both exits stay near the slot: sliding a whole card height would drag a
+    // scaled card through the ones in front of it. Downward matches the entry.
+    const timed = exit === 'timer'
+    const distance = timed ? 8 : 10
+    const shrink = timed ? 0.02 : 0.03
     return {
-      duration: prefersReducedMotion.current ? 0 : 220,
+      duration: prefersReducedMotion.current ? 0 : timed ? 280 : 200,
       easing: cubicOut,
-      css: (t: number) => `opacity: ${1 - t}; translate: 0 ${t * distance}px;`,
+      css: (t: number) =>
+        `opacity: ${1 - t}; translate: 0 ${t * distance}px; transform: scale(${1 - shrink * t});`,
     }
   }
 
@@ -192,7 +188,9 @@
     font-size: var(--fs-md);
     pointer-events: auto;
     transform-origin: bottom center;
-    transition: transform var(--t-spring) var(--ease-spring);
+    /* Same clock as the entry, so the cards ahead move out of its way instead
+       of sitting still under the arriving card. */
+    transition: transform var(--t-base) var(--ease-out);
   }
   .toast.success {
     --kind: var(--ok);
