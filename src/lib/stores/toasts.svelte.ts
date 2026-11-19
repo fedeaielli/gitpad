@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export type ToastKind = 'error' | 'warning' | 'info' | 'success'
+export type ToastExit = 'user' | 'timer'
 
 export interface Toast {
   id: number
@@ -12,6 +13,8 @@ export interface Toast {
   url?: string
   /// Label for that action; falls back to "Open link".
   action?: string
+  /// Set just before removal, so the card can pick the matching exit.
+  exit?: ToastExit
 }
 
 let seq = 0
@@ -20,17 +23,24 @@ export const toasts = $state({ items: [] as Toast[] })
 
 export type ToastCategory = 'editor' | 'git' | 'app'
 
-/// How long a toast lives, in ms. 0 means it waits for the user: an error needs
-/// reading and a link needs clicking, so neither may vanish on a timer.
+/// How long a toast lives, in ms. Severity buys reading time, and an action
+/// buys a little more so it stays clickable.
 const LIFETIME: Record<ToastKind, number> = {
-  error: 0,
-  warning: 6000,
-  success: 3500,
-  info: 3500,
+  info: 4000,
+  success: 4500,
+  warning: 6500,
+  error: 9000,
+}
+
+const ACTION_BONUS: Record<ToastKind, number> = {
+  info: 1000,
+  success: 1000,
+  warning: 1500,
+  error: 1500,
 }
 
 export function toastLifetime(kind: ToastKind, hasAction: boolean): number {
-  return hasAction ? 0 : LIFETIME[kind]
+  return LIFETIME[kind] + (hasAction ? ACTION_BONUS[kind] : 0)
 }
 
 interface Countdown {
@@ -43,7 +53,7 @@ const countdowns = new Map<number, Countdown>()
 
 function run(id: number, ms: number) {
   countdowns.set(id, {
-    handle: setTimeout(() => dismissToast(id), ms),
+    handle: setTimeout(() => dismissToast(id, 'timer'), ms),
     left: ms,
     started: Date.now(),
   })
@@ -97,7 +107,9 @@ function clearCountdown(id: number) {
   countdowns.delete(id)
 }
 
-export function dismissToast(id: number) {
+export function dismissToast(id: number, exit: ToastExit = 'user') {
   clearCountdown(id)
-  toasts.items = toasts.items.filter((t) => t.id !== id)
+  const target = toasts.items.find((toast) => toast.id === id)
+  if (target) target.exit = exit
+  toasts.items = toasts.items.filter((toast) => toast.id !== id)
 }
