@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { fade, fly } from 'svelte/transition'
-  import { flip } from 'svelte/animate'
   import { prefersReducedMotion } from 'svelte/motion'
   import {
     toasts,
@@ -11,17 +9,50 @@
     type ToastKind,
   } from '../stores/toasts.svelte'
   import { openExternal } from '../utils/open'
+  import { stackPlacement } from './toastStack'
+
+  let expanded = $state(false)
+  let heights = $state<Record<number, number>>({})
+  const ids = $derived(toasts.items.map((toast) => toast.id))
+
+  // Keep the measured heights bounded to the cards on screen.
+  $effect(() => {
+    const live = new Set(ids)
+    for (const key of Object.keys(heights)) {
+      const id = Number(key)
+      if (!live.has(id)) delete heights[id]
+    }
+  })
 
   function follow(toast: Toast) {
     if (!toast.url) return
     void openExternal(toast.url)
     dismissToast(toast.id)
   }
+
+  function rise(_node: Element) {
+    return {
+      duration: prefersReducedMotion.current ? 0 : 180,
+      css: (t: number) => `opacity: ${t}; translate: 0 ${(1 - t) * 16}px;`,
+    }
+  }
+
+  function fall(_node: Element) {
+    return {
+      duration: prefersReducedMotion.current ? 0 : 120,
+      css: (t: number) => `opacity: ${1 - t}; translate: 0 ${t * 8}px;`,
+    }
+  }
+
+  function onFocusOut(event: FocusEvent) {
+    const next = event.relatedTarget as Node | null
+    if (!next || !(event.currentTarget as HTMLElement).contains(next)) expanded = false
+  }
 </script>
 
 {#snippet kindIcon(kind: ToastKind)}
   <svg
-    class="icon"
+    class="icon {kind}"
     viewBox="0 0 16 16"
     width="16"
     height="16"
@@ -29,63 +60,72 @@
     stroke="currentColor"
     stroke-width="1.5"
     stroke-linecap="round"
+    stroke-linejoin="round"
     aria-hidden="true"
   >
-    <circle cx="8" cy="8" r="6.25" />
     {#if kind === 'success'}
+      <circle cx="8" cy="8" r="6.25" />
       <path d="M5.2 8.2 7.2 10.2 10.8 5.9" />
     {:else if kind === 'error'}
-      <path d="M6.1 6.1l3.8 3.8M9.9 6.1l-3.8 3.8" />
+      <path d="M5.5 2.5h5l3 3v5l-3 3h-5l-3-3v-5l3-3Z" />
+      <path d="m6.2 6.2 3.6 3.6m-.1-3.6-3.6 3.6" />
     {:else if kind === 'warning'}
-      <path d="M8 4.7v4.1M8 11.3v.1" />
+      <path d="M8 2.7 14 13H2L8 2.7Z" />
+      <path d="M8 6.3v3.3M8 11.4v.1" />
     {:else}
+      <circle cx="8" cy="8" r="6.25" />
       <path d="M8 7.3v4M8 4.7v.1" />
     {/if}
   </svg>
 {/snippet}
 
 {#if toasts.items.length > 0}
-  <!-- One tray, not one card per toast: stacked cards read as floating menus. -->
+  <!-- One tray, newest card in front; the older ones peek above it until the
+       pointer or keyboard focus opens the stack. -->
   <div
     class="tray"
     role="region"
     aria-label="Notifications"
-    in:fade={{ duration: prefersReducedMotion.current ? 0 : 120 }}
-    out:fade={{ duration: prefersReducedMotion.current ? 0 : 100 }}
+    onmouseenter={() => (expanded = true)}
+    onmouseleave={() => (expanded = false)}
+    onfocusin={() => (expanded = true)}
+    onfocusout={onFocusOut}
   >
-    {#each toasts.items as toast (toast.id)}
-      <div
-        class="toast {toast.kind}"
-        role={toast.kind === 'error' ? 'alert' : 'status'}
-        in:fly={{ y: 8, duration: prefersReducedMotion.current ? 0 : 140 }}
-        out:fly={{ y: 4, duration: prefersReducedMotion.current ? 0 : 100 }}
-        animate:flip={{ duration: prefersReducedMotion.current ? 0 : 150 }}
-        onmouseenter={() => pauseToast(toast.id)}
-        onmouseleave={() => resumeToast(toast.id)}
-        onfocusin={() => pauseToast(toast.id)}
-        onfocusout={() => resumeToast(toast.id)}
-      >
-        {@render kindIcon(toast.kind)}
-        <div class="body">
-          {#if toast.title}
-            <span class="title">{toast.title}</span>
-          {/if}
-          <span class="message">{toast.message}</span>
+    {#each toasts.items as toast, i (toast.id)}
+      {@const placement = stackPlacement(i, ids, heights, expanded)}
+      <div class="slot" style="z-index: {i + 1}" in:rise out:fall>
+        <div
+          class="toast"
+          role={toast.kind === 'error' ? 'alert' : 'status'}
+          style="transform: translateY(-{placement.offsetY}px) scale({placement.scale})"
+          bind:offsetHeight={heights[toast.id]}
+          onmouseenter={() => pauseToast(toast.id)}
+          onmouseleave={() => resumeToast(toast.id)}
+          onfocusin={() => pauseToast(toast.id)}
+          onfocusout={() => resumeToast(toast.id)}
+        >
+          {@render kindIcon(toast.kind)}
+          <div class="body">
+            {#if toast.title}
+              <span class="title">{toast.title}</span>
+            {/if}
+            <span class="message">{toast.message}</span>
+          </div>
           {#if toast.url}
-            <button class="action" onclick={() => follow(toast)}>
+            <button class="btn action" onclick={() => follow(toast)}>
               {toast.action ?? 'Open link'}
             </button>
           {/if}
+          <button
+            class="icon-btn close"
+            aria-label="Dismiss notification"
+            onclick={() => dismissToast(toast.id)}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.3" />
+            </svg>
+          </button>
         </div>
-        <button
-          class="icon-btn close"
-          aria-label="Dismiss notification"
-          onclick={() => dismissToast(toast.id)}
-        >
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.3" />
-          </svg>
-        </button>
       </div>
     {/each}
   </div>
@@ -94,79 +134,51 @@
 <style>
   .tray {
     position: fixed;
-    right: var(--sp-3);
+    right: var(--sp-4);
     bottom: calc(var(--h-statusbar) + var(--sp-4));
     z-index: 70;
-    display: flex;
-    flex-direction: column;
-    width: min(380px, calc(100vw - 24px));
-    overflow: hidden;
-    /* No outline in the dark and light themes: the tinted rows separate the
-       tray from the editor. hc-black keeps its border, where tint cannot show. */
-    border: 1px solid transparent;
-    border-radius: var(--r-md);
-    background: var(--surface-2);
-    box-shadow: var(--shadow-1);
+    width: min(384px, calc(100vw - var(--sp-6)));
     pointer-events: none;
   }
-  :global([data-theme='hc-black']) .tray {
-    border-color: var(--border);
+  /* The slot is unpositioned in the stack and carries the enter/exit motion;
+     the card inside moves and scales to its place in the stack. */
+  .slot {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
   }
   .toast {
-    --kind: var(--accent-fg);
-    position: relative;
-    display: grid;
-    grid-template-columns: 16px 1fr;
-    align-items: start;
-    gap: var(--sp-2);
-    /* Right gap reserves the close button's column, which is out of flow. */
-    padding: var(--sp-25) calc(var(--sp-3) + 24px) var(--sp-25) var(--sp-3);
-    /* Severity lives in the surface, not in a stripe on its edge. */
-    background: color-mix(in srgb, var(--kind) 8%, var(--surface-2));
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    background: var(--surface-3);
+    box-shadow: var(--shadow-1);
+    color: var(--text);
+    font-size: var(--fs-md);
     pointer-events: auto;
+    transform-origin: bottom center;
+    transition: transform var(--t-spring) var(--ease-spring);
   }
-  .toast.info {
-    background: var(--surface-2);
-  }
-  /* Hover lightens the row in place, so the severity tint survives it. */
-  .toast::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--text);
-    opacity: 0;
-    transition: opacity var(--t-fast);
-    pointer-events: none;
-  }
-  .toast:hover::after {
-    opacity: 0.06;
-  }
-  .toast + .toast {
-    border-top: 1px solid var(--divider);
-  }
-  .toast.error {
-    --kind: var(--err);
-  }
-  .toast.warning {
-    --kind: var(--warn);
-  }
-  .toast.success,
-  .toast.info {
-    --kind: var(--accent-fg);
-  }
+  /* Severity lives in the icon: shadcn keeps the surface neutral. */
   .icon {
-    display: block;
-    color: var(--kind);
+    flex: none;
+    color: var(--muted);
+  }
+  .icon.error {
+    color: var(--err);
   }
   .body {
     display: flex;
     min-width: 0;
+    flex: 1;
     flex-direction: column;
-    gap: var(--sp-05);
+    gap: var(--sp-1);
   }
   .title {
-    color: var(--text);
-    font-size: var(--fs-sm);
     font-weight: 600;
     line-height: 1.35;
   }
@@ -174,47 +186,23 @@
     color: var(--muted);
   }
   .message {
-    color: var(--text);
-    font-size: var(--fs-sm);
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
-  /* The action names what it does; the message itself is not a link. */
   .action {
-    align-self: start;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--accent-fg);
-    font: inherit;
-    font-size: var(--fs-sm);
-    text-align: left;
-    text-decoration: none;
-  }
-  .action:hover {
-    text-decoration: underline;
+    flex: none;
   }
   .close {
-    /* Centred on the row's full height, clear of the text flow. */
-    position: absolute;
-    top: 50%;
-    right: var(--sp-3);
-    translate: 0 -50%;
-    color: var(--muted);
-    opacity: 0.55;
-    transition: opacity var(--t-fast);
-  }
-  .toast:hover .close,
-  .toast:focus-within .close {
-    opacity: 1;
+    flex: none;
   }
   .close svg {
     display: block;
     width: 14px;
     height: 14px;
   }
-  .close:hover {
-    background: color-mix(in srgb, var(--text) 12%, transparent);
-    color: var(--text);
+  @media (prefers-reduced-motion: reduce) {
+    .toast {
+      transition: none;
+    }
   }
 </style>

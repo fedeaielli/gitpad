@@ -21,7 +21,11 @@ screen borrows its controls, surfaces and rhythm. Tokens live in
 - Select popup: same recipe as a menu, because GTK draws the native list in its
   own colours. The closed field copies a form control: `--surface-0`,
   `--border-strong`, `--r-md`, 32 px. A field caps it with `--select-max`.
-- Never stack a `--surface-3` card on another surface-3; nested wells use
+- Toast: `--surface-3`, 1px `--border`, `--r-lg`, `--shadow-1`, padding
+  `--sp-4`. Cards are separate and stack collapsed at a `--sp-3` peek; hover or
+  focus expands them, newest in front. Severity lives in the icon, not in a
+  tinted surface.
+- Never nest a `--surface-3` card inside another surface-3; nested wells use
   `--surface-0` inside `--surface-1`.
 
 ## Controls
