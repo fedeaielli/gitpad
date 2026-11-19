@@ -1,13 +1,12 @@
 <script lang="ts">
   import { prefersReducedMotion } from 'svelte/motion'
-  import { cubicOut } from 'svelte/easing'
+  import { quintOut } from 'svelte/easing'
   import {
     toasts,
     dismissToast,
     pauseToast,
     resumeToast,
     type Toast,
-    type ToastExit,
     type ToastKind,
   } from '../stores/toasts.svelte'
   import { openExternal } from '../utils/open'
@@ -33,25 +32,27 @@
     dismissToast(toast.id)
   }
 
+  // shadcn/Base UI motion: slide a full 150% of the card out of and back into
+  // the tray, 500ms on the same curve as the stack.
   function rise(_node: Element) {
     return {
-      duration: prefersReducedMotion.current ? 0 : 180,
-      easing: cubicOut,
-      css: (t: number) => `opacity: ${t}; translate: 0 ${(1 - t) * 16}px;`,
+      duration: prefersReducedMotion.current ? 0 : 500,
+      easing: quintOut,
+      css: (t: number) => `translate: 0 ${(1 - t) * 150}%;`,
     }
   }
 
-  function fall(_node: Element, { exit }: { exit: ToastExit }) {
-    // Both exits stay near the slot: sliding a whole card height would drag a
-    // scaled card through the ones in front of it. Downward matches the entry.
-    const timed = exit === 'timer'
-    const distance = timed ? 8 : 10
-    const shrink = timed ? 0.02 : 0.03
+  function fall(_node: Element) {
+    // Svelte runs an outro with `t` going 1 → 0, so p is the exit progress.
+    // shadcn slides on its fast curve and fades on a softer one, so the card
+    // stays readable while it leaves instead of blinking out.
     return {
-      duration: prefersReducedMotion.current ? 0 : timed ? 280 : 200,
-      easing: cubicOut,
-      css: (t: number) =>
-        `opacity: ${1 - t}; translate: 0 ${t * distance}px; transform: scale(${1 - shrink * t});`,
+      duration: prefersReducedMotion.current ? 0 : 500,
+      css: (t: number) => {
+        const p = 1 - t
+        const slide = 1 - (1 - p) ** 5
+        return `opacity: ${(1 - p) ** 2}; translate: 0 ${slide * 150}%;`
+      },
     }
   }
 
@@ -120,7 +121,7 @@
 >
   {#each toasts.items as toast, i (toast.id)}
     {@const placement = stackPlacement(i, ids, heights, expanded)}
-    <div class="slot" style="z-index: {i + 1}" in:rise out:fall={{ exit: toast.exit ?? 'user' }}>
+    <div class="slot" style="z-index: {i + 1}" in:rise out:fall>
       <div
         class="toast {toast.kind}"
         role={toast.kind === 'error' ? 'alert' : 'status'}
@@ -188,9 +189,9 @@
     font-size: var(--fs-md);
     pointer-events: auto;
     transform-origin: bottom center;
-    /* Same clock as the entry, so the cards ahead move out of its way instead
-       of sitting still under the arriving card. */
-    transition: transform var(--t-base) var(--ease-out);
+    /* Same clock and curve as the entry and exit, so the stack moves with the
+       card instead of after it. */
+    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   .toast.success {
     --kind: var(--ok);

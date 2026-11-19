@@ -25,7 +25,8 @@ screen borrows its controls, surfaces and rhythm. Tokens live in
   `--sp-3 --sp-4`. Cards are separate and stack collapsed at a `--sp-3` peek;
   hover or focus expands them, newest in front. Severity uses the matching icon
   colour (`--ok`, `--accent-fg`, `--warn`, `--err`) plus a 7% surface wash; the
-  border stays neutral.
+  border stays neutral. Entry and exit are shadcn's: 150% of the card height,
+  500ms, `cubic-bezier(0.22, 1, 0.36, 1)`, with the fade on exit only.
 - Never nest a `--surface-3` card inside another surface-3; nested wells use
   `--surface-0` inside `--surface-1`.
 
