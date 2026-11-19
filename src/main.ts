@@ -1,7 +1,10 @@
 import { mount } from 'svelte'
 import './app.css'
 import App from './App.svelte'
-import { logLine } from './lib/stores/toasts.svelte'
+import { logLine, pushToast } from './lib/stores/toasts.svelte'
+
+// Dev only: fire toasts from the console to check stacking and dismissal.
+if (import.meta.env.DEV) Object.assign(window, { pushToast })
 
 // With the devtools closed a UI crash leaves nothing behind: keep the line.
 window.addEventListener('error', (event) => {
