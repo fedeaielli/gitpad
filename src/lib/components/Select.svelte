@@ -9,6 +9,7 @@
   /// Drop-in for a native <select>: GTK draws the native popup in its own
   /// colours, so the list flashes white in every theme. This one is ours.
   import { stepIndex } from '../utils/select'
+  import { portal } from '../utils/portal'
 
   let {
     value = $bindable(),
@@ -127,7 +128,8 @@
   $effect(() => {
     if (!open) return
     const outside = (event: MouseEvent) => {
-      if (event.target instanceof Node && wrapper?.contains(event.target)) return
+      const target = event.target
+      if (target instanceof Node && (wrapper?.contains(target) || layerEl?.contains(target))) return
       closeList()
       event.preventDefault()
       event.stopPropagation()
@@ -170,7 +172,7 @@
     </svg>
   </button>
 
-  <div class="layer" popover="manual" bind:this={layerEl}>
+  <div class="layer" popover="manual" use:portal bind:this={layerEl}>
     {#if open}
       <button
         class="scrim"
@@ -258,6 +260,9 @@
   .layer {
     position: fixed;
     inset: 0;
+    /* Above the settings overlay, below the toasts. The top layer wins over
+       this whenever the webview supports popovers. */
+    z-index: 90;
     /* The UA stylesheet gives a popover `width/height: fit-content`; the layer
        must span the viewport or the scrim would only cover the list. */
     width: auto;
