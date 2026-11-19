@@ -1,5 +1,6 @@
 <script lang="ts">
   import { prefersReducedMotion } from 'svelte/motion'
+  import { cubicOut } from 'svelte/easing'
   import {
     toasts,
     dismissToast,
@@ -33,14 +34,18 @@
   function rise(_node: Element) {
     return {
       duration: prefersReducedMotion.current ? 0 : 180,
+      easing: cubicOut,
       css: (t: number) => `opacity: ${t}; translate: 0 ${(1 - t) * 16}px;`,
     }
   }
 
-  function fall(_node: Element) {
+  function fall(node: Element) {
+    // Slide the whole card out; a few px would read as a flicker.
+    const distance = (node as HTMLElement).offsetHeight
     return {
-      duration: prefersReducedMotion.current ? 0 : 120,
-      css: (t: number) => `opacity: ${1 - t}; translate: 0 ${t * 8}px;`,
+      duration: prefersReducedMotion.current ? 0 : 220,
+      easing: cubicOut,
+      css: (t: number) => `opacity: ${1 - t}; translate: 0 ${t * distance}px;`,
     }
   }
 
@@ -53,28 +58,33 @@
 {#snippet kindIcon(kind: ToastKind)}
   <svg
     class="icon {kind}"
-    viewBox="0 0 16 16"
+    viewBox="0 0 24 24"
     width="16"
     height="16"
     fill="none"
     stroke="currentColor"
-    stroke-width="1.5"
+    stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
     aria-hidden="true"
   >
     {#if kind === 'success'}
-      <circle cx="8" cy="8" r="6.25" />
-      <path d="M5.2 8.2 7.2 10.2 10.8 5.9" />
+      <circle cx="12" cy="12" r="10" />
+      <path d="m9 12 2 2 4-4" />
     {:else if kind === 'error'}
-      <path d="M5.5 2.5h5l3 3v5l-3 3h-5l-3-3v-5l3-3Z" />
-      <path d="m6.2 6.2 3.6 3.6m-.1-3.6-3.6 3.6" />
+      <path
+        d="M8.688 2h6.624a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2Z"
+      />
+      <path d="m15 9-6 6" />
+      <path d="m9 9 6 6" />
     {:else if kind === 'warning'}
-      <path d="M8 2.7 14 13H2L8 2.7Z" />
-      <path d="M8 6.3v3.3M8 11.4v.1" />
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
     {:else}
-      <circle cx="8" cy="8" r="6.25" />
-      <path d="M8 7.3v4M8 4.7v.1" />
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
     {/if}
   </svg>
 {/snippet}
@@ -95,7 +105,7 @@
       {@const placement = stackPlacement(i, ids, heights, expanded)}
       <div class="slot" style="z-index: {i + 1}" in:rise out:fall>
         <div
-          class="toast"
+          class="toast {toast.kind}"
           role={toast.kind === 'error' ? 'alert' : 'status'}
           style="transform: translateY(-{placement.offsetY}px) scale({placement.scale})"
           bind:offsetHeight={heights[toast.id]}
@@ -121,8 +131,8 @@
             aria-label="Dismiss notification"
             onclick={() => dismissToast(toast.id)}
           >
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.3" />
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           </button>
         </div>
@@ -149,13 +159,14 @@
     left: 0;
   }
   .toast {
+    --kind: var(--accent-fg);
     display: flex;
     align-items: center;
     gap: var(--sp-3);
     padding: var(--sp-4);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
-    background: var(--surface-3);
+    background: color-mix(in srgb, var(--kind) 7%, var(--surface-3));
     box-shadow: var(--shadow-1);
     color: var(--text);
     font-size: var(--fs-md);
@@ -163,13 +174,19 @@
     transform-origin: bottom center;
     transition: transform var(--t-spring) var(--ease-spring);
   }
-  /* Severity lives in the icon: shadcn keeps the surface neutral. */
+  .toast.success {
+    --kind: var(--ok);
+  }
+  .toast.warning {
+    --kind: var(--warn);
+  }
+  .toast.error {
+    --kind: var(--err);
+  }
+  /* Severity lives in the icon and a 7% wash; the border stays neutral. */
   .icon {
     flex: none;
-    color: var(--muted);
-  }
-  .icon.error {
-    color: var(--err);
+    color: var(--kind);
   }
   .body {
     display: flex;
