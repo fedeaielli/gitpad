@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.7.0 — 2026-11-19
+
+### Added
+- Dropdowns are drawn by GitPad instead of the system: the list follows the
+  theme, opens from the keyboard (arrows, Home, End, Enter, Escape), flips up
+  near the bottom of the window, and is pinned to the viewport so a dialog
+  cannot clip it or let a closing click fall through.
+- Toasts are a stack of cards: a severity icon and tint, a title with the
+  message underneath, and a lifetime that grows with the severity and with an
+  action. A toast with an action waits for you, a timed one fades out, and
+  resting the pointer or the focus on the stack holds the clock.
+- The onboarding wizard shows its steps as a path with a stepper, moves back
+  as well as forward, slides its content in the direction of travel, and
+  offers the repository folder from the wizard footer.
+- One set of controls across settings, dialogs and the wizard: an animated
+  checkbox, a solid button that sweeps a highlight through its fill, a pill
+  segmented control, and an animated ring in the status bar while a sync, an
+  import or a delete runs.
+
+### Changed
+- The type scale is declared in rem, so the interface follows the system text
+  size, and the narrow-window rules engage at a width you can reach.
+- Editor surface, preview, panels, dialogs and selections share one palette
+  and one set of surfaces; the spacing, radius, elevation and motion contract
+  is written down in `DESIGN.md`.
+- Sorting by name, date or type keeps the direction you chose instead of
+  resetting it when the mode changes.
+
+### Fixed
+- The confirmation dialog traps focus and defaults to Cancel; the file-tree
+  menu is reachable and announced from the keyboard; the palette announces
+  its selected command to assistive tech.
+- Progress spinners keep moving under reduced motion, onboarding scrolls
+  instead of clipping on a 480 px window, the palette search field and the
+  history cards keep their height, and a drag settles once with the spring.
+- The last native tooltips go through GitPad's own, so they follow the theme.
+
 ## 1.6.0 — 2026-11-18
 
 ### Added
