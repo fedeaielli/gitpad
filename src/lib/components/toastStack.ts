@@ -26,7 +26,10 @@ export function stackPlacement(
     }
   }
   const newest = ids[ids.length - 1]
-  const frontHeight = newest === undefined ? 0 : (heights[newest] ?? 0)
+  const previous = ids[ids.length - 2]
+  // A card that just arrived has no measured height yet; borrowing the previous
+  // front's height keeps every older card still until the measurement lands.
+  const frontHeight = heights[newest] ?? (previous === undefined ? 0 : heights[previous]) ?? 0
   const ownHeight = ids[index] === undefined ? 0 : (heights[ids[index]] ?? 0)
   const depth = newer.length
   const scale = Math.max(0, 1 - depth * 0.1)

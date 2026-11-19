@@ -16,6 +16,14 @@ describe('stackPlacement', () => {
     })
   })
 
+  it('lends the new front the previous front height until measured', () => {
+    // 4 just arrived, so it has no measured height yet. It should sit where a
+    // card of the old front's height would, not drop the older cards.
+    expect(stackPlacement(0, [1, 2, 4], heights, false)).toEqual(
+      stackPlacement(0, [1, 2, 4], { ...heights, 4: 80 }, false),
+    )
+  })
+
   it('stacks full size above the newest card when expanded', () => {
     expect(stackPlacement(2, [1, 2, 3], heights, true)).toEqual({ offsetY: 0, scale: 1 })
     expect(stackPlacement(1, [1, 2, 3], heights, true)).toEqual({
