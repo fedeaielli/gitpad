@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { FileNode } from '../stores/ui.svelte'
-import { defaultDesc, sortNodes, visibleNodes } from './file-sort'
+import { sortNodes, visibleNodes } from './file-sort'
 
 const node = (name: string, type: 'file' | 'dir', modified = 0): FileNode => ({
   name,
@@ -114,11 +114,5 @@ describe('sortNodes', () => {
   it('sorts by name inside the same extension', () => {
     const files = [node('b.md', 'file'), node('a.md', 'file')]
     expect(names(sortNodes(files, 'type', false, false))).toEqual(['a.md', 'b.md'])
-  })
-
-  it('defaults to newest first only for the modified mode', () => {
-    expect(defaultDesc('modified')).toBe(true)
-    expect(defaultDesc('name')).toBe(false)
-    expect(defaultDesc('type')).toBe(false)
   })
 })

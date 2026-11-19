@@ -3,7 +3,7 @@
   import GitPanel from './GitPanel.svelte'
   import HistoryPanel from './HistoryPanel.svelte'
   import { ui } from '../stores/ui.svelte'
-  import { defaultDesc, SORT_MODES, type SortMode } from '../utils/file-sort'
+  import { SORT_MODES, type SortMode } from '../utils/file-sort'
   import { tip } from '../utils/tooltip'
 
   const SORT_LABELS: Record<SortMode, string> = {
@@ -19,10 +19,10 @@
   /// Below this width the header cannot hold the title and three buttons on one line.
   const NARROW = 200
 
-  /// Picking a mode also snaps the direction back to that mode's natural one.
+  /// Picking a mode leaves the direction alone: the checkbox is the only thing
+  /// that decides it.
   function chooseSort(mode: SortMode) {
     ui.sortMode = mode
-    ui.sortDesc = defaultDesc(mode)
   }
 
   function closeMenu(refocus = false) {

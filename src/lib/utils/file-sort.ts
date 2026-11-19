@@ -4,11 +4,6 @@ export type SortMode = 'name' | 'modified' | 'type'
 
 export const SORT_MODES: SortMode[] = ['name', 'modified', 'type']
 
-/// Newest first reads better than oldest first, so "modified" flips the default.
-export function defaultDesc(mode: SortMode): boolean {
-  return mode === 'modified'
-}
-
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
 /// Extension without the dot; names with no dot sort before every extension.

@@ -8,7 +8,6 @@
   import { checkUpdate, type UpdateInfo } from '../utils/update'
   import { contrast } from '../utils/color'
   import { DEFAULT_FONT, surfaceForTheme } from '../utils/themes'
-  import { defaultDesc } from '../utils/file-sort'
   import { focusTrap } from '../utils/focus'
   import { tip } from '../utils/tooltip'
   import { open } from '@tauri-apps/plugin-dialog'
@@ -578,7 +577,6 @@
                   { value: 'modified', label: 'Modified' },
                   { value: 'type', label: 'Type' },
                 ]}
-                onchange={() => (ui.sortDesc = defaultDesc(ui.sortMode))}
               />
             </div>
             <label class="field">
