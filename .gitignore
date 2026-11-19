@@ -38,3 +38,6 @@ image_aa638b75.jpg
 /src/gitpad-*/
 gitpad-*.tar.gz
 *.pkg.tar.zst
+
+# opencode local state
+.opencode/
