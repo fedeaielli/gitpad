@@ -23,10 +23,10 @@ export type ToastCategory = 'editor' | 'git' | 'app'
 /// How long a toast lives, in ms. Severity buys reading time, and an action
 /// buys a little more so it stays clickable.
 const LIFETIME: Record<ToastKind, number> = {
-  info: 4000,
-  success: 4500,
-  warning: 6500,
-  error: 9000,
+  info: 2500,
+  success: 3000,
+  warning: 4500,
+  error: 6000,
 }
 
 const ACTION_BONUS: Record<ToastKind, number> = {

@@ -9,16 +9,16 @@ describe('toastLifetime', () => {
   })
 
   it('keeps the graver toast on screen longer', () => {
-    expect(toastLifetime('info', false)).toBe(4000)
-    expect(toastLifetime('success', false)).toBe(4500)
-    expect(toastLifetime('warning', false)).toBe(6500)
-    expect(toastLifetime('error', false)).toBe(9000)
+    expect(toastLifetime('info', false)).toBe(2500)
+    expect(toastLifetime('success', false)).toBe(3000)
+    expect(toastLifetime('warning', false)).toBe(4500)
+    expect(toastLifetime('error', false)).toBe(6000)
   })
 
   it('adds reading time when there is an action', () => {
-    expect(toastLifetime('info', true)).toBe(5000)
-    expect(toastLifetime('success', true)).toBe(5500)
-    expect(toastLifetime('warning', true)).toBe(8000)
-    expect(toastLifetime('error', true)).toBe(10500)
+    expect(toastLifetime('info', true)).toBe(3500)
+    expect(toastLifetime('success', true)).toBe(4000)
+    expect(toastLifetime('warning', true)).toBe(6000)
+    expect(toastLifetime('error', true)).toBe(7500)
   })
 })
