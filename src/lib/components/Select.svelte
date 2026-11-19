@@ -121,9 +121,8 @@
     }
   })
 
-  // A click outside the field closes the list and is swallowed: the click that
-  // dismisses a list must not also activate the element under it. Closing on
-  // the click, not on the press, makes that one event to consume.
+  // Second net, for whatever stacks above the scrim (a tooltip, a toast): a
+  // click there still dismisses and must not reach the element under it.
   $effect(() => {
     if (!open) return
     const outside = (event: MouseEvent) => {
@@ -160,6 +159,13 @@
   </button>
 
   {#if open}
+    <button
+      class="scrim"
+      type="button"
+      tabindex="-1"
+      aria-label="Close list"
+      onclick={closeList}
+    ></button>
     <div
       class="popup"
       id="{uid}-list"
@@ -232,6 +238,15 @@
     stroke: currentColor;
     stroke-width: 1.5;
     stroke-linecap: round;
+  }
+  /* The dismissing click lands here, so nothing underneath can receive it. */
+  .scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    border: 0;
+    background: transparent;
+    cursor: default;
   }
   .popup {
     position: fixed;
