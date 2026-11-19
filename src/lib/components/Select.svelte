@@ -30,7 +30,8 @@
   let active = $state(0)
   let listEl = $state<HTMLElement>()
   let trigger = $state<HTMLButtonElement>()
-  let wrapper = $state<HTMLSpanElement>()
+  let wrapper = $state<HTMLDivElement>()
+  let layerEl = $state<HTMLDivElement>()
   /// Where the list sits, measured on open: the modal body scrolls and clips,
   /// so the popup is fixed to the viewport rather than to its field.
   let anchor = $state<{ top: number; left: number; width: number; max: number; up: boolean } | null>(
@@ -134,9 +135,20 @@
     window.addEventListener('click', outside, true)
     return () => window.removeEventListener('click', outside, true)
   })
+
+  // The list sits in the top layer. Inside the modal's scroller a fixed box is
+  // clipped and mis-hit-tested, so clicks fell through to the row underneath;
+  // a top-layer box has the viewport as its containing block and no ancestors.
+  $effect(() => {
+    const el = layerEl
+    if (!el || typeof el.showPopover !== 'function') return
+    // shortcut: without popover support the layer stays a plain fixed box.
+    if (open && !el.matches(':popover-open')) el.showPopover()
+    else if (!open && el.matches(':popover-open')) el.hidePopover()
+  })
 </script>
 
-<span class="wrap" bind:this={wrapper}>
+<div class="wrap" bind:this={wrapper}>
   <button
     {id}
     bind:this={trigger}
@@ -158,44 +170,46 @@
     </svg>
   </button>
 
-  {#if open}
-    <button
-      class="scrim"
-      type="button"
-      tabindex="-1"
-      aria-label="Close list"
-      onclick={closeList}
-    ></button>
-    <div
-      class="popup"
-      id="{uid}-list"
-      role="listbox"
-      bind:this={listEl}
-      class:up={anchor?.up}
-      style:top={anchor && !anchor.up ? `${anchor.top}px` : 'auto'}
-      style:bottom={anchor?.up ? `${window.innerHeight - anchor.top}px` : 'auto'}
-      style:left="{anchor?.left ?? 0}px"
-      style:min-width="{anchor?.width ?? 0}px"
-      style:max-height="{Math.min(240, anchor?.max ?? 240)}px"
-    >
-      {#each options as option, i (option.value)}
-        <button
-          id="{uid}-{i}"
-          class="option"
-          class:active={i === active}
-          type="button"
-          role="option"
-          aria-selected={option.value === value}
-          tabindex="-1"
-          onmousemove={() => (active = i)}
-          onclick={() => commit(i)}
-        >
-          {option.label}
-        </button>
-      {/each}
-    </div>
-  {/if}
-</span>
+  <div class="layer" popover="manual" bind:this={layerEl}>
+    {#if open}
+      <button
+        class="scrim"
+        type="button"
+        tabindex="-1"
+        aria-label="Close list"
+        onclick={closeList}
+      ></button>
+      <div
+        class="popup"
+        id="{uid}-list"
+        role="listbox"
+        bind:this={listEl}
+        class:up={anchor?.up}
+        style:top={anchor && !anchor.up ? `${anchor.top}px` : 'auto'}
+        style:bottom={anchor?.up ? `${window.innerHeight - anchor.top}px` : 'auto'}
+        style:left="{anchor?.left ?? 0}px"
+        style:min-width="{anchor?.width ?? 0}px"
+        style:max-height="{Math.min(240, anchor?.max ?? 240)}px"
+      >
+        {#each options as option, i (option.value)}
+          <button
+            id="{uid}-{i}"
+            class="option"
+            class:active={i === active}
+            type="button"
+            role="option"
+            aria-selected={option.value === value}
+            tabindex="-1"
+            onmousemove={() => (active = i)}
+            onclick={() => commit(i)}
+          >
+            {option.label}
+          </button>
+        {/each}
+      </div>
+    {/if}
+  </div>
+</div>
 
 <style>
   .wrap {
@@ -239,18 +253,34 @@
     stroke-width: 1.5;
     stroke-linecap: round;
   }
-  /* The dismissing click lands here, so nothing underneath can receive it. */
-  .scrim {
+  /* The top-layer box: viewport-sized, so the anchor's viewport numbers apply
+     unchanged. It never paints; the scrim and the list do. */
+  .layer {
     position: fixed;
     inset: 0;
-    z-index: 50;
+    /* The UA stylesheet gives a popover `width/height: fit-content`; the layer
+       must span the viewport or the scrim would only cover the list. */
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    pointer-events: none;
+  }
+  /* The dismissing click lands here, so nothing underneath can receive it. */
+  .scrim {
+    position: absolute;
+    inset: 0;
     border: 0;
     background: transparent;
     cursor: default;
+    pointer-events: auto;
   }
   .popup {
-    position: fixed;
-    z-index: 51;
+    position: absolute;
+    pointer-events: auto;
     box-sizing: border-box;
     overflow-y: auto;
     padding: var(--sp-05);
