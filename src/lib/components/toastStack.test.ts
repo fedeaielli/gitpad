@@ -7,11 +7,11 @@ describe('stackPlacement', () => {
   it('tucks older cards behind the newest one', () => {
     expect(stackPlacement(2, [1, 2, 3], heights, false)).toEqual({ offsetY: 0, scale: 1 })
     expect(stackPlacement(1, [1, 2, 3], heights, false)).toEqual({
-      offsetY: TOAST_PEEK + 10,
+      offsetY: 100 + TOAST_PEEK - 0.9 * 80,
       scale: 0.9,
     })
     expect(stackPlacement(0, [1, 2, 3], heights, false)).toEqual({
-      offsetY: TOAST_PEEK * 2 + 20,
+      offsetY: 100 + TOAST_PEEK * 2 - 0.8 * 60,
       scale: 0.8,
     })
   })
