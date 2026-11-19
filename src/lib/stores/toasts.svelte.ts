@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export type ToastKind = 'error' | 'warning' | 'info' | 'success'
-export type ToastExit = 'user' | 'timer'
 
 export interface Toast {
   id: number
@@ -13,8 +12,6 @@ export interface Toast {
   url?: string
   /// Label for that action; falls back to "Open link".
   action?: string
-  /// Set just before removal, so the card can pick the matching exit.
-  exit?: ToastExit
 }
 
 let seq = 0
@@ -53,7 +50,7 @@ const countdowns = new Map<number, Countdown>()
 
 function run(id: number, ms: number) {
   countdowns.set(id, {
-    handle: setTimeout(() => dismissToast(id, 'timer'), ms),
+    handle: setTimeout(() => dismissToast(id), ms),
     left: ms,
     started: Date.now(),
   })
@@ -107,9 +104,7 @@ function clearCountdown(id: number) {
   countdowns.delete(id)
 }
 
-export function dismissToast(id: number, exit: ToastExit = 'user') {
+export function dismissToast(id: number) {
   clearCountdown(id)
-  const target = toasts.items.find((toast) => toast.id === id)
-  if (target) target.exit = exit
   toasts.items = toasts.items.filter((toast) => toast.id !== id)
 }
