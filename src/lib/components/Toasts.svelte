@@ -7,12 +7,14 @@
     pauseToast,
     resumeToast,
     type Toast,
+    type ToastExit,
     type ToastKind,
   } from '../stores/toasts.svelte'
   import { openExternal } from '../utils/open'
   import { stackPlacement } from './toastStack'
 
   let expanded = $state(false)
+  let pointerInside = false
   let heights = $state<Record<number, number>>({})
   const ids = $derived(toasts.items.map((toast) => toast.id))
 
@@ -39,7 +41,15 @@
     }
   }
 
-  function fall(node: Element) {
+  function fall(node: Element, { exit }: { exit: ToastExit }) {
+    if (exit === 'timer') {
+      return {
+        duration: prefersReducedMotion.current ? 0 : 280,
+        easing: cubicOut,
+        css: (t: number) =>
+          `opacity: ${1 - t}; translate: 0 ${t * 8}px; transform: scale(${1 - 0.02 * t});`,
+      }
+    }
     // Slide the whole card out; a few px would read as a flicker.
     const distance = (node as HTMLElement).offsetHeight
     return {
@@ -50,8 +60,13 @@
   }
 
   function onFocusOut(event: FocusEvent) {
+    const tray = event.currentTarget as HTMLElement
     const next = event.relatedTarget as Node | null
-    if (!next || !(event.currentTarget as HTMLElement).contains(next)) expanded = false
+    if (next && tray.contains(next)) return
+    // A removed close button drops focus to the body; the pointer still over
+    // the tray must not collapse the stack under the user.
+    if (pointerInside) return
+    expanded = false
   }
 </script>
 
@@ -89,57 +104,62 @@
   </svg>
 {/snippet}
 
-{#if toasts.items.length > 0}
-  <!-- One tray, newest card in front; the older ones peek above it until the
-       pointer or keyboard focus opens the stack. -->
-  <div
-    class="tray"
-    role="region"
-    aria-label="Notifications"
-    onmouseenter={() => (expanded = true)}
-    onmouseleave={() => (expanded = false)}
-    onfocusin={() => (expanded = true)}
-    onfocusout={onFocusOut}
-  >
-    {#each toasts.items as toast, i (toast.id)}
-      {@const placement = stackPlacement(i, ids, heights, expanded)}
-      <div class="slot" style="z-index: {i + 1}" in:rise out:fall>
-        <div
-          class="toast {toast.kind}"
-          role={toast.kind === 'error' ? 'alert' : 'status'}
-          style="transform: translateY(-{placement.offsetY}px) scale({placement.scale})"
-          bind:offsetHeight={heights[toast.id]}
-          onmouseenter={() => pauseToast(toast.id)}
-          onmouseleave={() => resumeToast(toast.id)}
-          onfocusin={() => pauseToast(toast.id)}
-          onfocusout={() => resumeToast(toast.id)}
-        >
-          {@render kindIcon(toast.kind)}
-          <div class="body">
-            {#if toast.title}
-              <span class="title">{toast.title}</span>
-            {/if}
-            <span class="message">{toast.message}</span>
-          </div>
-          {#if toast.url}
-            <button class="btn action" onclick={() => follow(toast)}>
-              {toast.action ?? 'Open link'}
-            </button>
+<!-- One tray, newest card in front; the older ones peek above it until the
+     pointer or keyboard focus opens the stack. It stays mounted with no cards
+     so the last exit animation can play. -->
+<div
+  class="tray"
+  role="region"
+  aria-label="Notifications"
+  onmouseenter={() => {
+    pointerInside = true
+    expanded = true
+  }}
+  onmouseleave={() => {
+    pointerInside = false
+    expanded = false
+  }}
+  onfocusin={() => (expanded = true)}
+  onfocusout={onFocusOut}
+>
+  {#each toasts.items as toast, i (toast.id)}
+    {@const placement = stackPlacement(i, ids, heights, expanded)}
+    <div class="slot" style="z-index: {i + 1}" in:rise out:fall={{ exit: toast.exit ?? 'user' }}>
+      <div
+        class="toast {toast.kind}"
+        role={toast.kind === 'error' ? 'alert' : 'status'}
+        style="transform: translateY(-{placement.offsetY}px) scale({placement.scale})"
+        bind:offsetHeight={heights[toast.id]}
+        onmouseenter={() => pauseToast(toast.id)}
+        onmouseleave={() => resumeToast(toast.id)}
+        onfocusin={() => pauseToast(toast.id)}
+        onfocusout={() => resumeToast(toast.id)}
+      >
+        {@render kindIcon(toast.kind)}
+        <div class="body">
+          {#if toast.title}
+            <span class="title">{toast.title}</span>
           {/if}
-          <button
-            class="icon-btn close"
-            aria-label="Dismiss notification"
-            onclick={() => dismissToast(toast.id)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-          </button>
+          <span class="message">{toast.message}</span>
         </div>
+        {#if toast.url}
+          <button class="btn action" onclick={() => follow(toast)}>
+            {toast.action ?? 'Open link'}
+          </button>
+        {/if}
+        <button
+          class="icon-btn close"
+          aria-label="Dismiss notification"
+          onclick={() => dismissToast(toast.id)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
       </div>
-    {/each}
-  </div>
-{/if}
+    </div>
+  {/each}
+</div>
 
 <style>
   .tray {
@@ -163,7 +183,7 @@
     display: flex;
     align-items: center;
     gap: var(--sp-3);
-    padding: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
     background: color-mix(in srgb, var(--kind) 7%, var(--surface-3));

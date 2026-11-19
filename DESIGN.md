@@ -22,10 +22,10 @@ screen borrows its controls, surfaces and rhythm. Tokens live in
   own colours. The closed field copies a form control: `--surface-0`,
   `--border-strong`, `--r-md`, 32 px. A field caps it with `--select-max`.
 - Toast: `--surface-3`, 1px `--border`, `--r-lg`, `--shadow-1`, padding
-  `--sp-4`. Cards are separate and stack collapsed at a `--sp-3` peek; hover or
-  focus expands them, newest in front. Severity uses the matching icon colour
-  (`--ok`, `--accent-fg`, `--warn`, `--err`) plus a 7% surface wash; the border
-  stays neutral.
+  `--sp-3 --sp-4`. Cards are separate and stack collapsed at a `--sp-3` peek;
+  hover or focus expands them, newest in front. Severity uses the matching icon
+  colour (`--ok`, `--accent-fg`, `--warn`, `--err`) plus a 7% surface wash; the
+  border stays neutral.
 - Never nest a `--surface-3` card inside another surface-3; nested wells use
   `--surface-0` inside `--surface-1`.
 
